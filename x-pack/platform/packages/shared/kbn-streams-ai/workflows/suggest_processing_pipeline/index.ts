@@ -27,6 +27,7 @@ export async function suggestProcessingPipeline({
   documents,
   fieldsMetadataClient,
   esClient,
+  guidance,
 }: {
   definition: Streams.ingest.all.Definition;
   inferenceClient: BoundInferenceClient;
@@ -37,6 +38,7 @@ export async function suggestProcessingPipeline({
   documents: FlattenRecord[];
   fieldsMetadataClient: IFieldsMetadataClient;
   esClient: ElasticsearchClient;
+  guidance?: string;
 }): Promise<StreamlangDSL | null> {
   // No need to involve reasoning if there are no sample documents
   if (documents.length === 0) {
@@ -68,7 +70,10 @@ export async function suggestProcessingPipeline({
     pipeline_schema: JSON.stringify(getPipelineDefinitionJsonSchema(pipelineDefinitionSchema)),
     initial_dataset_analysis: JSON.stringify(simulationMetrics),
     parsing_processor: parsingProcessor ? JSON.stringify(parsingProcessor) : undefined,
+    guidance: guidance || undefined,
   };
+
+  console.log(JSON.stringify(input, null, 2));
 
   // Invoke the reasoning agent to suggest the ingest pipeline
   const response = await executeAsReasoningAgent({

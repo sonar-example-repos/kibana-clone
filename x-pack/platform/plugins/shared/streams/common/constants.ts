@@ -57,3 +57,23 @@ export const STREAMS_TIERED_FEATURES = [
 export const FAILURE_STORE_SELECTOR = '::failures';
 
 export const MAX_STREAM_NAME_LENGTH = 200;
+
+/**
+ * Agent Builder / Onechat integration constants
+ */
+
+/**
+ * Attachment type ID for stream attachments
+ */
+export const STREAMS_ATTACHMENT_TYPE_ID = 'streams.stream';
+
+/**
+ * Tool IDs for agent builder tools
+ */
+export const STREAMS_SUGGEST_PARTITIONS_TOOL_ID = 'streams.suggest_partitions';
+export const STREAMS_SUGGEST_PIPELINE_TOOL_ID = 'streams.suggest_pipeline';
+export const STREAMS_GET_PROCESSING_STEPS_TOOL_ID = 'streams.get_processing_steps';
+export const STREAMS_SUGGEST_GROK_PATTERN_TOOL_ID = 'streams.suggest_grok_pattern';
+export const STREAMS_SUGGEST_DISSECT_PATTERN_TOOL_ID = 'streams.suggest_dissect_pattern';
+export const STREAMS_GET_STREAMLANG_DOCS_TOOL_ID = 'streams.get_streamlang_docs';
+export const STREAMS_SIMULATE_PIPELINE_TOOL_ID = 'streams.simulate_pipeline';

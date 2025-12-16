@@ -21,7 +21,7 @@ import {
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { css } from '@emotion/css';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { MAX_NESTING_LEVEL, getSegments } from '@kbn/streams-schema';
 import { isEmpty } from 'lodash';
 import { useScrollToActive } from '@kbn/core-chrome-navigation/src/hooks/use_scroll_to_active';
@@ -40,9 +40,11 @@ import { NoSuggestionsCallout } from './review_suggestions_form/no_suggestions_c
 import { useReviewSuggestionsForm } from './review_suggestions_form/use_review_suggestions_form';
 import { useTimefilter } from '../../../hooks/use_timefilter';
 import { useAIFeatures } from '../../../hooks/use_ai_features';
+import { useKibana } from '../../../hooks/use_kibana';
 import { NoDataEmptyPrompt } from './empty_prompt';
 import { SuggestPartitionPanel } from './partition_suggestions/suggest_partition_panel';
 import { SuggestionLoadingPrompt } from '../shared/suggestion_loading_prompt';
+import { useAgentBuilderIntegration } from './agent_builder_integration';
 
 function getReasonDisabledCreateButton(canManageRoutingRules: boolean, maxNestingLevel: boolean) {
   if (maxNestingLevel) {
@@ -60,9 +62,15 @@ export function ChildStreamList({ availableStreams }: { availableStreams: string
   const aiFeatures = useAIFeatures();
   const { timeState } = useTimefilter();
   const {
+    dependencies: {
+      start: { onechat },
+    },
+  } = useKibana();
+  const {
     fetchSuggestions,
     isLoadingSuggestions,
     suggestions,
+    setSuggestions,
     resetForm,
     previewSuggestion,
     acceptSuggestion,
@@ -81,6 +89,44 @@ export function ChildStreamList({ availableStreams }: { availableStreams: string
   const isEditingOrReorderingStreams =
     routingSnapshot.matches({ ready: 'editingRule' }) ||
     routingSnapshot.matches({ ready: 'reorderingRules' });
+
+  // Agent Builder / Onechat integration
+  const { browserApiTools, attachments } = useAgentBuilderIntegration({
+    definition,
+    uiState: {
+      currentRuleId: currentRuleId ?? undefined,
+      editingForm:
+        routingSnapshot.matches({ ready: 'editingRule' }) && currentRuleId
+          ? (() => {
+              const rule = routing.find((r) => r.id === currentRuleId);
+              return rule ? { name: rule.destination, condition: rule.where } : undefined;
+            })()
+          : undefined,
+      routing: routing.map((rule) => ({
+        name: rule.destination,
+        condition: rule.where,
+      })),
+      isReordering: routingSnapshot.matches({ ready: 'reorderingRules' }),
+      suggestions,
+    },
+    onSetPartitionSuggestions: setSuggestions,
+  });
+
+  // Configure the onechat flyout with stream context when the component mounts
+  useEffect(() => {
+    if (onechat && aiFeatures?.enabled) {
+      onechat.setConversationFlyoutActiveConfig({
+        attachments,
+        browserApiTools,
+        sessionTag: `streams-partitioning-${definition.stream.name}`,
+        newConversation: false,
+      });
+
+      return () => {
+        onechat.clearConversationFlyoutActiveConfig();
+      };
+    }
+  }, [onechat, attachments, browserApiTools, definition.stream.name, aiFeatures?.enabled]);
 
   // This isRefreshing tracks async gap between operation completion and server data arrival
   const { isRefreshing } = routingSnapshot.context;

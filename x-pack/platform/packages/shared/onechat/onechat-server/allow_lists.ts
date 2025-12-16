@@ -34,6 +34,14 @@ export const AGENT_BUILDER_BUILTIN_TOOLS: string[] = [
   `${internalNamespaces.security}.attack_discovery_search`,
   `${internalNamespaces.security}.security_labs_search`,
   `${internalNamespaces.security}.alerts`,
+  // Streams
+  'streams.suggest_partitions',
+  'streams.suggest_pipeline',
+  'streams.get_processing_steps',
+  'streams.suggest_grok_pattern',
+  'streams.suggest_dissect_pattern',
+  'streams.get_streamlang_docs',
+  'streams.simulate_pipeline',
 ];
 
 /**
