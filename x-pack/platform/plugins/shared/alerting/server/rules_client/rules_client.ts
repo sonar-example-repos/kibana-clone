@@ -4,7 +4,7 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
-
+import type { ESQLParamsV1 } from '@kbn/response-ops-rule-params';
 import type { UnmuteAlertParams } from '../application/rule/methods/unmute_alert/types';
 import type { RuleTagsParams } from '../application/rule/methods/tags';
 import { getRuleTags } from '../application/rule/methods/tags';
@@ -98,6 +98,10 @@ import type { GetGapAutoFillSchedulerParams } from '../application/gaps/auto_fil
 import { deleteGapAutoFillScheduler } from '../application/gaps/auto_fill_scheduler/methods/delete/delete_gap_auto_fill_scheduler';
 import { updateGapAutoFillScheduler } from '../application/gaps/auto_fill_scheduler/methods/update/update_gap_auto_fill_scheduler';
 import type { UpdateGapAutoFillSchedulerParams } from '../application/gaps/auto_fill_scheduler/methods/update/types';
+import { createESQLRule } from '../application/esql_rule/methods/create/create_esql_rule';
+import type { CreateESQLRuleData } from '../application/esql_rule/methods/create/types/create_esql_rule_data';
+import { updateESQLRule } from '../application/esql_rule/methods/update/update_esql_rule';
+import { type UpdateESQLRuleData } from '../application/esql_rule/methods/update/types/update_esql_rule_data';
 
 // Gap methods
 import { findGaps } from '../application/gaps/methods/find_gaps';
@@ -299,5 +303,16 @@ export class RulesClient {
 
   public getContext() {
     return this.context;
+  }
+
+  public async createESQLRule(ruleData: CreateESQLRuleData): Promise<SanitizedRule<ESQLParamsV1>> {
+    return createESQLRule(this.context, ruleData);
+  }
+
+  public async updateESQLRule(
+    ruleId: string,
+    ruleData: UpdateESQLRuleData
+  ): Promise<SanitizedRule<ESQLParamsV1>> {
+    return updateESQLRule(this.context, ruleId, ruleData);
   }
 }
