@@ -49,9 +49,7 @@ export {
 } from '@kbn/deeplinks-observability';
 
 export type { RulesLocatorParams } from '@kbn/deeplinks-observability';
-export { getCoreVitalsComponent } from './pages/overview/components/sections/ux/core_web_vitals/get_core_web_vitals_lazy';
 export { ObservabilityAlertSearchBar } from './components/alert_search_bar/get_alert_search_bar_lazy';
-export { DatePicker } from './pages/overview/components/date_picker';
 
 export type {
   Stat,
@@ -108,7 +106,6 @@ export { DatePickerContextProvider } from './context/date_picker_context/date_pi
 
 export { fromQuery, toQuery } from './utils/url';
 export { getAlertSummaryTimeRange } from './utils/alert_summary_widget';
-export { calculateTimeRangeBucketSize } from './pages/overview/helpers/calculate_bucket_size';
 export type { render } from './utils/test_helper';
 
 export { convertTo } from '../common/utils/formatters/duration';
@@ -124,10 +121,10 @@ export { getGroupFilters } from '../common/custom_threshold_rule/helpers/get_gro
 export type { GenericAggType } from './components/rule_condition_chart/rule_condition_chart';
 export { Threshold } from './components/custom_threshold/components/threshold';
 
-export { ObservabilityAlertsTable } from './components/alerts_table/alerts_table_lazy';
-export { AlertActions } from './components/alert_actions/alert_actions_lazy';
-export type {
-  GetObservabilityAlertsTableProp,
-  ObservabilityAlertsTableContext,
-  ObservabilityAlertsTableProps,
-} from './components/alerts_table/types';
+export {
+  ObservabilityAlertsTable,
+  AlertActions,
+  type GetObservabilityAlertsTableProp,
+  type ObservabilityAlertsTableContext,
+  type ObservabilityAlertsTableProps,
+} from '@kbn/observability-alerts-table';

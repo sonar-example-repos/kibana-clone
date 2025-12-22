@@ -80,14 +80,7 @@ import { AI_CHAT_EXPERIENCE_TYPE } from '@kbn/management-settings-ids';
 import type { OnechatPluginStart } from '@kbn/onechat-plugin/public';
 import type { ObservabilityAgentBuilderPluginPublicStart } from '@kbn/observability-agent-builder-plugin/public';
 import { observabilityAppId, observabilityFeatureId } from '../common';
-import {
-  ALERTS_PATH,
-  CASES_PATH,
-  OBSERVABILITY_BASE_PATH,
-  OVERVIEW_PATH,
-  RULES_PATH,
-} from '../common/locators/paths';
-import { registerDataHandler } from './context/has_data_context/data_handler';
+import { ALERTS_PATH, CASES_PATH, OBSERVABILITY_BASE_PATH } from '../common/locators/paths';
 import { createUseRulesLink } from './hooks/create_use_rules_link';
 import { RuleDetailsLocatorDefinition } from './locators/rule_details';
 import { RulesLocatorDefinition } from './locators/rules';
@@ -210,17 +203,7 @@ export class Plugin
       }),
       order: 8001,
       path: ALERTS_PATH,
-      visibleIn: [],
-      deepLinks: [
-        {
-          id: 'rules',
-          title: i18n.translate('xpack.observability.rulesLinkTitle', {
-            defaultMessage: 'Rules',
-          }),
-          path: RULES_PATH,
-          visibleIn: [],
-        },
-      ],
+      visibleIn: ['sideNav'],
       keywords: ['alerts', 'rules'],
     },
   ];
@@ -308,10 +291,11 @@ export class Plugin
       deepLinks: this.deepLinks,
       euiIconType,
       id: observabilityAppId,
+      defaultPath: '/alerts',
       mount,
       order: 8000,
-      title: i18n.translate('xpack.observability.overviewLinkTitle', {
-        defaultMessage: 'Overview',
+      title: i18n.translate('xpack.observability.alertsLinkTitle', {
+        defaultMessage: 'Alerts',
       }),
       updater$: appUpdater$,
       keywords: [
@@ -377,8 +361,9 @@ export class Plugin
                       label: i18n.translate('xpack.observability.overviewLinkTitle', {
                         defaultMessage: 'Overview',
                       }),
-                      app: observabilityAppId,
-                      path: OVERVIEW_PATH,
+                      app: 'observabilityOverview',
+                      path: '/',
+                      matchPath: (currentPath: string) => currentPath === '/' || currentPath === '',
                     },
                   ]
                 : [];
@@ -503,7 +488,6 @@ export class Plugin
     );
 
     return {
-      dashboard: { register: registerDataHandler },
       observabilityRuleTypeRegistry: this.observabilityRuleTypeRegistry,
       useRulesLink: createUseRulesLink(),
       rulesLocator,
