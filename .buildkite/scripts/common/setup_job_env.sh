@@ -148,6 +148,32 @@ EOF
   fi
 }
 
+# Set up Kibana Evals secrets
+{
+  if [[ "${KBN_EVALS:-}" =~ ^(1|true)$ ]]; then
+    echo "KBN_EVALS was set - exposing LLM connectors, Phoenix config, and ES cluster URLs"
+
+    # Extract connectors object for @kbn/evals
+    # The vault value is base64-encoded JSON (see x-pack/solutions/security/test/security_solution_api_integration/scripts/genai/vault/manage_secrets.ts)
+    #
+    # NOTE: `@kbn/gen-ai-functional-testing` expects `KIBANA_TESTING_AI_CONNECTORS` to be base64-encoded JSON.
+    export KIBANA_TESTING_AI_CONNECTORS="$(
+      vault_get security-gen-ai config | base64 -d | jq -r '(.connectors | @json | @base64)'
+    )"
+
+    # Phoenix config
+    export PHOENIX_BASE_URL="https://oblt-apps.elastic.dev/phoenix-ai/"
+    export PHOENIX_PUBLIC_URL="https://oblt-apps.elastic.dev/phoenix-ai/"
+    export PHOENIX_PROJECT_NAME="kbn-evals-ci-pipeline"
+    export PHOENIX_API_KEY="$(vault_get security-gen-ai config | base64 -d | jq -r '.phoenixKey // empty')"
+
+    # Elasticsearch cluster URL for trace-based evaluators and evaluation results
+    ES_URL="$(vault_get security-gen-ai config | base64 -d | jq -r '.esURL // empty')"
+    export TRACING_ES_URL="$ES_URL"
+    export EVALUATIONS_ES_URL="$ES_URL"
+  fi
+}
+
 # Set up GCS Service Account for CDN
 {
   GCS_SA_CDN_KEY="$(vault_get gcs-sa-cdn-prod key)"

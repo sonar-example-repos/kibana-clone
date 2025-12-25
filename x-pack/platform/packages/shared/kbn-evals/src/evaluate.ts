@@ -31,6 +31,17 @@ import {
   createOutputTokensEvaluator,
   createToolCallsEvaluator,
 } from './evaluators/trace_based';
+import { ESQL_EQUIVALENCE_EVALUATOR_NAME } from './evaluators/esql';
+
+function isElasticCloudEsUrl(esUrl: string): boolean {
+  try {
+    const withProtocol = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(esUrl) ? esUrl : `https://${esUrl}`;
+    const hostname = new URL(withProtocol).hostname.replace(/\.$/, '').toLowerCase();
+    return hostname === 'elastic-cloud.com' || hostname.endsWith('.elastic-cloud.com');
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Test type for evaluations. Loads an inference client and a
@@ -128,6 +139,10 @@ export const evaluate = base.extend<{}, EvaluationSpecificWorkerFixtures>({
             'Recall@K',
             { decimalPlaces: 2, statsToInclude: ['mean', 'median', 'stdDev', 'min', 'max'] },
           ],
+          [
+            ESQL_EQUIVALENCE_EVALUATOR_NAME,
+            { decimalPlaces: 2, statsToInclude: ['mean', 'stdDev'] },
+          ],
         ]),
         evaluatorDisplayGroups: [
           {
@@ -151,7 +166,7 @@ export const evaluate = base.extend<{}, EvaluationSpecificWorkerFixtures>({
   ],
   phoenixClient: [
     async (
-      { log, connector, evaluationConnector, repetitions, esClient, reportModelScore },
+      { log, connector, evaluationConnector, repetitions, evaluationsEsClient, reportModelScore },
       use
     ) => {
       const config = getPhoenixConfig();
@@ -199,7 +214,7 @@ export const evaluate = base.extend<{}, EvaluationSpecificWorkerFixtures>({
       });
 
       try {
-        await exportEvaluations(report, esClient, log);
+        await exportEvaluations(report, evaluationsEsClient, log);
       } catch (error) {
         log.error(
           new Error(
@@ -210,7 +225,7 @@ export const evaluate = base.extend<{}, EvaluationSpecificWorkerFixtures>({
         throw error;
       }
 
-      const scoreRepository = new EvaluationScoreRepository(esClient, log);
+      const scoreRepository = new EvaluationScoreRepository(evaluationsEsClient, log);
       await reportModelScore(scoreRepository, report.runId, log);
     },
     {
@@ -274,12 +289,27 @@ export const evaluate = base.extend<{}, EvaluationSpecificWorkerFixtures>({
   ],
   traceEsClient: [
     async ({ esClient }, use) => {
-      const traceEsClient = process.env.TRACING_ES_URL
+      const esUrl = process.env.TRACING_ES_URL;
+      const traceEsClient = esUrl
         ? createEsClientForTesting({
-            esUrl: process.env.TRACING_ES_URL,
+            esUrl,
+            isCloud: isElasticCloudEsUrl(esUrl),
           })
         : esClient;
       await use(traceEsClient);
+    },
+    { scope: 'worker' },
+  ],
+  evaluationsEsClient: [
+    async ({ esClient }, use) => {
+      const esUrl = process.env.EVALUATIONS_ES_URL;
+      const evaluationsEsClient = esUrl
+        ? createEsClientForTesting({
+            esUrl,
+            isCloud: isElasticCloudEsUrl(esUrl),
+          })
+        : esClient;
+      await use(evaluationsEsClient);
     },
     { scope: 'worker' },
   ],
@@ -292,8 +322,8 @@ export const evaluate = base.extend<{}, EvaluationSpecificWorkerFixtures>({
     { scope: 'worker' },
   ],
   evaluationAnalysisService: [
-    async ({ esClient, log }, use) => {
-      const scoreRepository = new EvaluationScoreRepository(esClient, log);
+    async ({ evaluationsEsClient, log }, use) => {
+      const scoreRepository = new EvaluationScoreRepository(evaluationsEsClient, log);
       const helper = new EvaluationAnalysisService(scoreRepository, log);
       await use(helper);
     },
