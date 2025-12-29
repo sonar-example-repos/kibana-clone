@@ -67,7 +67,7 @@ Key files:
   - Test nested property access patterns
 
 ### Phase 1.4: Integration Test Enhancements
-- [ ] Add test cases to [packages/kbn-docs-utils/src/integration_tests/api_doc_suite.test.ts](packages/kbn-docs-utils/src/integration_tests/api_doc_suite.test.ts):
+- [x] Add test cases to [packages/kbn-docs-utils/src/integration_tests/api_doc_suite.test.ts](packages/kbn-docs-utils/src/integration_tests/api_doc_suite.test.ts):
   - Test that destructured params with proper JSDoc (`@param obj.prop`) are validated correctly
   - Test that missing property-level comments are detected
   - Test validation output format
