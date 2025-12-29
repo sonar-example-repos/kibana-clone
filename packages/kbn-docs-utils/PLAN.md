@@ -46,7 +46,7 @@ Key files:
 ## Phase 1: Expand Test Coverage
 
 ### Phase 1.1: Unit Tests for Stats Collection
-- [ ] Create `src/stats.test.ts`:
+- [x] Create `src/stats.test.ts`:
   - Test `collectApiStatsForPlugin` with various scenarios
   - Test missing comment detection (including edge cases)
   - Test `any` type detection
@@ -54,14 +54,14 @@ Key files:
   - Test destructured parameter handling
 
 ### Phase 1.2: Unit Tests for Parameter Extraction
-- [ ] Expand `src/build_api_declarations/buid_api_declaration.test.ts`:
+- [x] Expand `src/build_api_declarations/buid_api_declaration.test.ts`:
   - Test destructured parameter extraction
   - Test JSDoc property tag parsing (`@param obj.prop`)
   - Test nested destructured parameters
   - Test parameter comment matching
 
 ### Phase 1.3: Unit Tests for JSDoc Utilities
-- [ ] Create `src/build_api_declarations/js_doc_utils.test.ts`:
+- [x] Create `src/build_api_declarations/js_doc_utils.test.ts`:
   - Test `getJSDocParamComment` with dot notation (`obj.prop`)
   - Test property-level parameter tags
   - Test nested property access patterns
