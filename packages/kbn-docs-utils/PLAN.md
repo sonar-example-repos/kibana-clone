@@ -103,23 +103,23 @@ Key files:
 ## Phase 3: Split Stats into Separate CLI
 
 ### Phase 3.1: Create Check Package Docs CLI
-- [ ] Create `src/cli/check_package_docs_cli.ts`:
+- [x] Create `src/cli/check_package_docs_cli.ts`:
   - Accept `--plugin` or `--package` flag (single or multiple), treating them as aliases
   - Accept validation flags: repeatable `--check` (any|comments|exports|all)
   - Output validation results (pass/fail per plugin)
   - Exit with non-zero code if validation fails
-- [ ] Create `src/cli/run_check_package_docs_cli.ts` wrapper
-- [ ] Export from [packages/kbn-docs-utils/index.ts](packages/kbn-docs-utils/index.ts)
+- [x] Create `src/cli/run_check_package_docs_cli.ts` wrapper
+- [x] Export from [packages/kbn-docs-utils/index.ts](packages/kbn-docs-utils/index.ts)
 
 ### Phase 3.2: Update Build CLI
-- [ ] Keep `--stats` flag on `build_api_docs_cli.ts`, emit a deprecation warning, and route invocation to the new check CLI
-- [ ] Update help text and documentation to note deprecation and alias behavior
-- [ ] Ensure build-only mode works correctly
+- [x] Keep `--stats` flag on `build_api_docs_cli.ts`, emit a deprecation warning, and route invocation to the new check CLI
+- [x] Update help text and documentation to note deprecation and alias behavior
+- [x] Ensure build-only mode works correctly
 
 ### Phase 3.3: Update Scripts and Documentation
-- [ ] Update [packages/kbn-docs-utils/src/README.md](packages/kbn-docs-utils/src/README.md) with new CLI usage
-- [ ] Document when to use `check_package_docs_cli` vs `build_api_docs_cli`
-- [ ] Update any scripts that use `--stats` flag
+- [x] Update [packages/kbn-docs-utils/src/README.md](packages/kbn-docs-utils/src/README.md) with new CLI usage
+- [x] Document when to use `check_package_docs_cli` vs `build_api_docs_cli`
+- [x] Update any scripts that use `--stats` flag
 
 ## Phase 4: Fix Bugs and Fill Gaps
 
