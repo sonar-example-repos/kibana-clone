@@ -75,30 +75,30 @@ Key files:
 ## Phase 2: Refactor CLI into Modular Tasks
 
 ### Phase 2.1: Extract CLI Tasks
-- [ ] Create `src/cli/tasks/` directory structure
-- [ ] Extract tasks from `build_api_docs_cli.ts`:
+- [x] Create `src/cli/tasks/` directory structure
+- [x] Extract tasks from `build_api_docs_cli.ts`:
   - `setup_project.ts` - Project initialization, plugin discovery, path resolution
   - `build_api_map.ts` - Building plugin API map
   - `collect_stats.ts` - Stats collection logic
   - `write_docs.ts` - Documentation writing
   - `report_metrics.ts` - CI metrics reporting
-- [ ] Create `src/cli/types.ts` for shared CLI types
-- [ ] Create `src/cli/parse_cli_flags.ts` for flag parsing logic
+- [x] Create `src/cli/types.ts` for shared CLI types
+- [x] Create `src/cli/parse_cli_flags.ts` for flag parsing logic
 
 ### Phase 2.2: Document and Test CLI Tasks
-- [ ] Add JSDoc comments to each task module
-- [ ] Create unit tests for each task:
+- [x] Add JSDoc comments to each task module
+- [x] Create unit tests for each task:
   - `src/cli/tasks/setup_project.test.ts`
   - `src/cli/tasks/build_api_map.test.ts`
   - `src/cli/tasks/collect_stats.test.ts`
   - `src/cli/tasks/write_docs.test.ts`
   - `src/cli/tasks/report_metrics.test.ts`
-- [ ] Create `src/cli/parse_cli_flags.test.ts`
+- [x] Create `src/cli/parse_cli_flags.test.ts`
 
 ### Phase 2.3: Refactor Main CLI
-- [ ] Update [packages/kbn-docs-utils/src/build_api_docs_cli.ts](packages/kbn-docs-utils/src/build_api_docs_cli.ts) to use extracted tasks
-- [ ] Maintain backward compatibility
-- [ ] Ensure all existing functionality works (requires integration testing)
+- [x] Update [packages/kbn-docs-utils/src/build_api_docs_cli.ts](packages/kbn-docs-utils/src/build_api_docs_cli.ts) to use extracted tasks
+- [x] Maintain backward compatibility
+- [x] Ensure all existing functionality works (requires integration testing)
 
 ## Phase 3: Split Stats into Separate CLI
 
