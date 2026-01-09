@@ -52,28 +52,23 @@ export class HeaderPageObject extends FtrService {
   }
 
   public async waitUntilLoadingHasFinished() {
-    try {
-      await this.isGlobalLoadingIndicatorVisible();
-    } catch (exception) {
-      if (exception.name === 'ElementNotVisible') {
-        // selenium might just have been too slow to catch it
-      } else {
-        throw exception;
-      }
-    }
+    const start = Date.now();
     await this.awaitGlobalLoadingIndicatorHidden();
+    this.common.logSlowTiming('header.waitUntilLoadingHasFinished', start);
   }
 
-  public async isGlobalLoadingIndicatorVisible() {
+  public async isGlobalLoadingIndicatorVisible(timeout: number = 1500) {
     this.log.debug('isGlobalLoadingIndicatorVisible');
-    return await this.testSubjects.exists('globalLoadingIndicator', { timeout: 1500 });
+    return await this.testSubjects.exists('globalLoadingIndicator', { timeout });
   }
 
   public async awaitGlobalLoadingIndicatorHidden() {
+    const start = Date.now();
     await this.testSubjects.existOrFail('globalLoadingIndicator-hidden', {
       allowHidden: true,
       timeout: this.defaultFindTimeout * 10,
     });
+    this.common.logSlowTiming('header.awaitGlobalLoadingIndicatorHidden', start);
   }
 
   public async awaitKibanaChrome() {

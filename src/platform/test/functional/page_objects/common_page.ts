@@ -13,6 +13,8 @@ import { getUrl } from '@kbn/test';
 import moment from 'moment';
 import { FtrService } from '../ftr_provider_context';
 
+const SLOW_STEP_THRESHOLD_MS = 200;
+
 interface NavigateProps {
   appConfig: {};
   ensureCurrentUrl: boolean;
@@ -33,6 +35,24 @@ export class CommonPageObject extends FtrService {
 
   private readonly defaultTryTimeout = this.config.get('timeouts.try');
   private readonly defaultFindTimeout = this.config.get('timeouts.find');
+  private readonly retryDelay = this.config.get('timeouts.retryDelay');
+
+  public logSlowTiming(label: string, start: number) {
+    if (start === 0) return;
+    const duration = Date.now() - start;
+    if (duration >= SLOW_STEP_THRESHOLD_MS) {
+      this.log.debug(`${label} took ${duration}ms`);
+    }
+  }
+
+  public async logSlowTimingFor<T>(label: string, fn: () => Promise<T> | T): Promise<T> {
+    const start = Date.now();
+    try {
+      return await fn();
+    } finally {
+      this.logSlowTiming(label, start);
+    }
+  }
 
   private getUrlWithoutPort(urlStr: string) {
     const url = new URL(urlStr);
@@ -408,16 +428,24 @@ export class CommonPageObject extends FtrService {
   async clickConfirmOnModal(ensureHidden = true) {
     this.log.debug('Clicking modal confirm');
     // make sure this data-test-subj 'confirmModalTitleText' exists because we're going to wait for it to be gone later
-    await this.testSubjects.exists('confirmModalTitleText');
+    await this.logSlowTimingFor('common.clickConfirmOnModal waitForModal', async () => {
+      await this.testSubjects.exists('confirmModalTitleText');
+    });
     // make sure button is enabled before clicking it
     // (and conveniently give UI enough time to bind a handler to it)
-    const isEnabled = await this.testSubjects.isEnabled('confirmModalConfirmButton');
-    if (!isEnabled) {
-      throw new Error('Modal confirm button is not enabled');
-    }
-    await this.testSubjects.click('confirmModalConfirmButton');
+    await this.logSlowTimingFor('common.clickConfirmOnModal waitForEnabled', async () => {
+      const isEnabled = await this.testSubjects.isEnabled('confirmModalConfirmButton');
+      if (!isEnabled) {
+        throw new Error('Modal confirm button is not enabled');
+      }
+    });
+    await this.logSlowTimingFor('common.clickConfirmOnModal clickConfirm', async () => {
+      await this.testSubjects.click('confirmModalConfirmButton');
+    });
     if (ensureHidden) {
-      await this.ensureModalOverlayHidden();
+      await this.logSlowTimingFor('common.clickConfirmOnModal waitForHidden', async () => {
+        await this.ensureModalOverlayHidden();
+      });
     }
   }
 
@@ -504,11 +532,20 @@ export class CommonPageObject extends FtrService {
 
   async waitForSaveModalToClose() {
     this.log.debug('Waiting for save modal to close');
-    await this.retry.try(async () => {
-      if (await this.testSubjects.exists('savedObjectSaveModal', { timeout: 5000 })) {
-        throw new Error('save modal still open');
-      }
-    });
+    await this.retry.tryForTime(
+      this.config.get('timeouts.try'),
+      async () => {
+        const modalStillExists = await this.find.existsByCssSelector(
+          '[data-test-subj="savedObjectSaveModal"]',
+          0
+        );
+        if (modalStillExists) {
+          throw new Error('save modal still open');
+        }
+      },
+      undefined,
+      this.retryDelay
+    );
   }
 
   async setFileInputPath(path: string) {

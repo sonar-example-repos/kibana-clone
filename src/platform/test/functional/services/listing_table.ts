@@ -86,6 +86,7 @@ export class ListingTableService extends FtrService {
   }
 
   public async waitUntilTableIsLoaded() {
+    const start = Date.now();
     await this.retry.try(async () => {
       const isLoaded = await this.find.existsByDisplayedByCssSelector(
         '[data-test-subj="itemsInMemTable"]:not(.euiBasicTable-loading)'
@@ -97,6 +98,7 @@ export class ListingTableService extends FtrService {
         throw new Error('Waiting');
       }
     });
+    this.common.logSlowTiming('listingTable.waitUntilTableIsLoaded', start);
   }
 
   public async loadNextPageIfAvailable() {
@@ -252,6 +254,7 @@ export class ListingTableService extends FtrService {
    * @param name item name
    */
   public async searchForItemWithName(name: string, { escape = true }: { escape?: boolean } = {}) {
+    const start = Date.now();
     this.log.debug(`searchForItemWithName: ${name}`);
 
     await this.retry.try(async () => {
@@ -276,6 +279,7 @@ export class ListingTableService extends FtrService {
     });
 
     await this.waitUntilTableIsLoaded();
+    this.common.logSlowTiming('listingTable.searchForItemWithName', start);
   }
 
   /**

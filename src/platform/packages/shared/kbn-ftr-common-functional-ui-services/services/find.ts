@@ -284,14 +284,30 @@ export class FindService extends FtrService {
     timeout: number = this.WAIT_FOR_EXISTS_TIME
   ): Promise<boolean> {
     this.log.debug(`Find.existsByDisplayedByCssSelector('${selector}') with timeout=${timeout}`);
+    const checkDisplayedOnce = async (implicitTimeout: number) => {
+      await this._withTimeout(implicitTimeout);
+      try {
+        const elements = await this.driver.findElements(By.css(selector));
+        const displayed = await this.filterElementIsDisplayed(this.wrapAll(elements));
+        return displayed.length > 0;
+      } finally {
+        await this._withTimeout(this.defaultFindTimeout);
+      }
+    };
+
+    if (timeout <= 0) {
+      // Fast path: single probe with no retry delay for optional element checks.
+      try {
+        return await checkDisplayedOnce(0);
+      } catch (err) {
+        return false;
+      }
+    }
     try {
       await this.retry.tryForTime(timeout, async () => {
         // make sure that the find timeout is not longer than the retry timeout
-        await this._withTimeout(Math.min(timeout, this.WAIT_FOR_EXISTS_TIME));
-        const elements = await this.driver.findElements(By.css(selector));
-        await this._withTimeout(this.defaultFindTimeout);
-        const displayed = await this.filterElementIsDisplayed(this.wrapAll(elements));
-        if (displayed.length === 0) {
+        const displayed = await checkDisplayedOnce(Math.min(timeout, this.WAIT_FOR_EXISTS_TIME));
+        if (!displayed) {
           throw new Error(`${selector} is not displayed`);
         }
       });
