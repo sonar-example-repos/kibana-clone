@@ -14,7 +14,6 @@ import { FtrService } from '../ftr_provider_context';
 
 const partitionVisChartSelector = 'partitionVisChart';
 const heatmapChartSelector = 'heatmapChart';
-const DEBUG_STATE_TIMEOUT_MS = 2000;
 
 export class VisualizeChartPageObject extends FtrService {
   private readonly testSubjects = this.ctx.getService('testSubjects');
@@ -33,10 +32,9 @@ export class VisualizeChartPageObject extends FtrService {
 
   public async getEsChartDebugState(chartSelector: string) {
     // `@elastic/charts` debug state is only available after the chart has rendered with the debug flag enabled.
-    // In fast local runs it can be briefly missing even after toggling the flag, so retry briefly here.
-    const timeout = Math.min(this.config.get('timeouts.waitFor'), DEBUG_STATE_TIMEOUT_MS);
+    // Retry until it's available using the standard waitFor timeout.
     return await this.retry.tryForTime(
-      timeout,
+      this.config.get('timeouts.waitFor'),
       async () => await this.elasticChart.getChartDebugData(chartSelector),
       undefined,
       this.retryDelay
