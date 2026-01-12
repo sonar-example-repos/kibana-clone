@@ -12,10 +12,12 @@ import type {
   HasEditCapabilities,
   CanOverrideHoverActions,
   PublishesUnsavedChanges,
+  HasLibraryTransforms,
 } from '@kbn/presentation-publishing';
 import type { MarkdownEmbeddableState } from '../server';
 
 export type MarkdownEditorApi = DefaultEmbeddableApi<MarkdownEmbeddableState> &
   PublishesUnsavedChanges &
   HasEditCapabilities &
-  CanOverrideHoverActions;
+  CanOverrideHoverActions &
+  HasLibraryTransforms;
