@@ -474,7 +474,9 @@ export async function generateRenovateCodeowners(
     );
     for (const item of preview) {
       const packages = item.packages.join(', ');
-      log.info(`   - rule[${item.index}] (${item.mode}) (${item.packages.length} pkgs): ${packages}`);
+      log.info(
+        `   - rule[${item.index}] (${item.mode}) (${item.packages.length} pkgs): ${packages}`
+      );
     }
     if (report.rulesWithNoComputedReviewersDetails.length > preview.length) {
       log.info(
