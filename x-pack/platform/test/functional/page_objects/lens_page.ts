@@ -1787,6 +1787,9 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
             return event;
           }
           function dispatchEvent(element, event, transferData) {
+            if (!element) {
+                throw new Error('Element not found for drag operation');
+            }
             if (transferData !== undefined) {
                 event.dataTransfer = transferData;
             }
@@ -1798,19 +1801,30 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
           }
 
           const origin = document.querySelector(arguments[0]);
+          if (!origin) {
+            throw new Error('Drag origin element not found: ' + arguments[0]);
+          }
           const dragStartEvent = createEvent('dragstart');
           dispatchEvent(origin, dragStartEvent);
 
           setTimeout(() => {
             const target = document.querySelector(arguments[1]);
+            if (!target) {
+              console.error('Drag over target not found: ' + arguments[1]);
+              return;
+            }
             const dragenter = createEvent('dragenter');
             const dragover = createEvent('dragover');
             dispatchEvent(target, dragenter, dragStartEvent.dataTransfer);
             dispatchEvent(target, dragover, dragStartEvent.dataTransfer);
             setTimeout(() => {
-              const target = document.querySelector(arguments[2]);
+              const dropEl = document.querySelector(arguments[2]);
+              if (!dropEl) {
+                console.error('Drop target not found: ' + arguments[2]);
+                return;
+              }
               const dropEvent = createEvent('drop');
-              dispatchEvent(target, dropEvent, dragStartEvent.dataTransfer);
+              dispatchEvent(dropEl, dropEvent, dragStartEvent.dataTransfer);
               const dragEndEvent = createEvent('dragend');
               dispatchEvent(origin, dragEndEvent, dropEvent.dataTransfer);
             }, 200)
