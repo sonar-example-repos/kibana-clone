@@ -10,34 +10,83 @@
 import type { CoreSetup, CoreStart, Plugin } from '@kbn/core/public';
 import type { EmbeddableSetup } from '@kbn/embeddable-plugin/public';
 import { CONTEXT_MENU_TRIGGER } from '@kbn/embeddable-plugin/public';
+import { i18n } from '@kbn/i18n';
 import type { UiActionsStart } from '@kbn/ui-actions-plugin/public';
 import { ADD_PANEL_TRIGGER } from '@kbn/ui-actions-plugin/public';
+import type { UsageCollectionStart } from '@kbn/usage-collection-plugin/public';
+import type { VisualizationsSetup } from '@kbn/visualizations-plugin/public';
+
 import { ADD_MARKDOWN_ACTION_ID, CONVERT_LEGACY_MARKDOWN_ACTION_ID } from './constants';
-import { MARKDOWN_EMBEDDABLE_TYPE } from '../common/constants';
+import { APP_ICON, APP_NAME, MARKDOWN_EMBEDDABLE_TYPE } from '../common/constants';
+import { setKibanaServices } from './services/kibana_services';
+import { getMarkdownClient } from './markdown_client/markdown_client';
 
-export interface SetupDeps {
+export interface MarkdownSetupDeps {
   embeddable: EmbeddableSetup;
+  visualizations: VisualizationsSetup;
 }
 
-export interface StartDeps {
+export interface MarkdownStartDeps {
   uiActions: UiActionsStart;
+  usageCollection?: UsageCollectionStart;
 }
 
-export class DashboardMarkdownPlugin implements Plugin<void, void, SetupDeps, StartDeps> {
-  public setup(core: CoreSetup<StartDeps>, { embeddable }: SetupDeps) {
+export class DashboardMarkdownPlugin
+  implements Plugin<void, void, MarkdownSetupDeps, MarkdownStartDeps>
+{
+  public setup(
+    core: CoreSetup<MarkdownStartDeps>,
+    { embeddable, visualizations }: MarkdownSetupDeps
+  ) {
     embeddable.registerReactEmbeddableFactory(MARKDOWN_EMBEDDABLE_TYPE, async () => {
       const { markdownEmbeddableFactory } = await import('./async_services');
       return markdownEmbeddableFactory;
     });
+
+    core.getStartServices().then(([_, deps]) => {
+      visualizations.registerAlias({
+        disableCreate: true, // do not allow creation through visualization listing page
+        name: MARKDOWN_EMBEDDABLE_TYPE,
+        title: APP_NAME,
+        icon: APP_ICON,
+        description: i18n.translate('markdown.description', {
+          defaultMessage: 'Use markdown to add rich text content to your dashboards.',
+        }),
+        stage: 'production',
+        appExtensions: {
+          visualizations: {
+            docTypes: [MARKDOWN_EMBEDDABLE_TYPE],
+            searchFields: ['title^3'],
+            client: getMarkdownClient,
+            toListItem(markdownItem) {
+              const { id, type, updatedAt, attributes } = markdownItem;
+              const { title, description } = attributes;
+
+              return {
+                id,
+                title,
+                description,
+                updatedAt,
+                icon: APP_ICON,
+                typeTitle: APP_NAME,
+                stage: 'production',
+                savedObjectType: type,
+              };
+            },
+          },
+        },
+      });
+    });
   }
 
-  public start(core: CoreStart, deps: StartDeps) {
-    deps.uiActions.addTriggerActionAsync(ADD_PANEL_TRIGGER, ADD_MARKDOWN_ACTION_ID, async () => {
+  public start(core: CoreStart, plugins: MarkdownStartDeps) {
+    setKibanaServices(core, plugins);
+    plugins.uiActions.addTriggerActionAsync(ADD_PANEL_TRIGGER, ADD_MARKDOWN_ACTION_ID, async () => {
       const { createMarkdownAction } = await import('./async_services');
       return createMarkdownAction();
     });
 
-    deps.uiActions.addTriggerActionAsync(
+    plugins.uiActions.addTriggerActionAsync(
       CONTEXT_MENU_TRIGGER,
       CONVERT_LEGACY_MARKDOWN_ACTION_ID,
       async () => {
