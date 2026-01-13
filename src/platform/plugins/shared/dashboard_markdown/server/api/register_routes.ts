@@ -13,12 +13,12 @@ import { registerCreateRoute } from './create';
 // import { registerUpdateRoute } from './update';
 import { registerDeleteRoute } from './delete';
 // import { registerSearchRoute } from './search';
-// import { registerReadRoute } from './read';
+import { registerReadRoute } from './read';
 
 export function registerRoutes(http: HttpServiceSetup) {
   const { versioned: versionedRouter } = http.createRouter();
   registerCreateRoute(versionedRouter);
-  // registerReadRoute(versionedRouter);
+  registerReadRoute(versionedRouter);
   // registerUpdateRoute(versionedRouter);
   registerDeleteRoute(versionedRouter);
   // registerSearchRoute(versionedRouter);
