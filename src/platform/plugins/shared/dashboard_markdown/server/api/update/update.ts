@@ -10,24 +10,25 @@
 import type { RequestHandlerContext } from '@kbn/core/server';
 import type { MarkdownSavedObjectAttributes } from '../../markdown_saved_object';
 import { MARKDOWN_EMBEDDABLE_TYPE } from '../../../common/constants';
-import type { MarkdownCreateRequestBody } from './types';
+import type { MarkdownUpdateRequestBody, MarkdownUpdateResponseBody } from './types';
 import { getMarkdownCRUResponseBody } from '../../saved_object_utils';
-import type { MarkdownCreateResponseBody } from './types';
 
-export async function create(
+export async function update(
   requestCtx: RequestHandlerContext,
-  createBody: MarkdownCreateRequestBody
-): Promise<MarkdownCreateResponseBody> {
+  id: string,
+  updateBody: MarkdownUpdateRequestBody
+): Promise<MarkdownUpdateResponseBody> {
   const { core } = await requestCtx.resolve(['core']);
 
-  const savedObject = await core.savedObjects.client.create<MarkdownSavedObjectAttributes>(
+  const savedObject = await core.savedObjects.client.update<MarkdownSavedObjectAttributes>(
     MARKDOWN_EMBEDDABLE_TYPE,
-    createBody.data,
+    id,
+    updateBody.data,
     {
-      ...(createBody.id && { id: createBody.id }),
-      ...(createBody.spaces && { initialNamespaces: createBody.spaces }),
+      /** perform a "full" update instead, where the provided attributes will fully replace the existing ones */
+      mergeAttributes: false,
     }
   );
 
-  return getMarkdownCRUResponseBody(savedObject, 'create');
+  return getMarkdownCRUResponseBody(savedObject, 'update');
 }

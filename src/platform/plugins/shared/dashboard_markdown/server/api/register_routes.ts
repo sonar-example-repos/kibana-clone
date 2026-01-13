@@ -10,7 +10,7 @@
 import type { HttpServiceSetup } from '@kbn/core/server';
 
 import { registerCreateRoute } from './create';
-// import { registerUpdateRoute } from './update';
+import { registerUpdateRoute } from './update';
 import { registerDeleteRoute } from './delete';
 // import { registerSearchRoute } from './search';
 import { registerReadRoute } from './read';
@@ -19,7 +19,7 @@ export function registerRoutes(http: HttpServiceSetup) {
   const { versioned: versionedRouter } = http.createRouter();
   registerCreateRoute(versionedRouter);
   registerReadRoute(versionedRouter);
-  // registerUpdateRoute(versionedRouter);
+  registerUpdateRoute(versionedRouter);
   registerDeleteRoute(versionedRouter);
   // registerSearchRoute(versionedRouter);
 }

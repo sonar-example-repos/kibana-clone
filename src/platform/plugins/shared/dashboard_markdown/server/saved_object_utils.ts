@@ -10,7 +10,7 @@
 import type { SavedObject, SavedObjectsUpdateResponse } from '@kbn/core/server';
 import type { MarkdownSavedObjectAttributes } from './markdown_saved_object';
 
-export function getDashboardMeta(
+export function getMarkdownMeta(
   savedObject:
     | SavedObject<MarkdownSavedObjectAttributes>
     | SavedObjectsUpdateResponse<MarkdownSavedObjectAttributes>,
@@ -40,14 +40,8 @@ export function getMarkdownCRUResponseBody(
     id: savedObject.id,
     data: {
       ...(savedObject.attributes as MarkdownSavedObjectAttributes),
-      // ...(savedObject?.accessControl && {
-      //   access_control: {
-      //     access_mode: savedObject.accessControl.accessMode,
-      //     owner: savedObject.accessControl.owner,
-      //   },
-      // }),
     },
-    meta: getDashboardMeta(savedObject, operation),
+    meta: getMarkdownMeta(savedObject, operation),
     spaces: savedObject.namespaces,
   };
 }
