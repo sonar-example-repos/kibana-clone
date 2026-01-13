@@ -7,6 +7,5 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export const MARKDOWN_EMBEDDABLE_TYPE = 'DASHBOARD_MARKDOWN';
-
-export const MARKDOWN_API_PATH = `/api/markdown`;
+export type { MarkdownCreateRequestBody, MarkdownCreateResponseBody } from './types';
+export { registerCreateRoute } from './register_create_route';

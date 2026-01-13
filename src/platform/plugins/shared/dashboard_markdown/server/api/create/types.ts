@@ -7,6 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export const MARKDOWN_EMBEDDABLE_TYPE = 'DASHBOARD_MARKDOWN';
+import type { TypeOf } from '@kbn/config-schema';
+import type { getCreateRequestBodySchema, getCreateResponseBodySchema } from './schemas';
 
-export const MARKDOWN_API_PATH = `/api/markdown`;
+export type MarkdownCreateRequestBody = TypeOf<ReturnType<typeof getCreateRequestBodySchema>>;
+export type MarkdownCreateResponseBody = TypeOf<ReturnType<typeof getCreateResponseBodySchema>>;

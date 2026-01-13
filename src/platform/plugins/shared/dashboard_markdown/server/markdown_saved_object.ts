@@ -7,6 +7,9 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export const MARKDOWN_EMBEDDABLE_TYPE = 'DASHBOARD_MARKDOWN';
+import type { TypeOf } from '@kbn/config-schema';
+import type { markdownByValueEmbeddableSchema } from './schemas';
 
-export const MARKDOWN_API_PATH = `/api/markdown`;
+export type MarkdownSavedObjectAttributes = TypeOf<typeof markdownByValueEmbeddableSchema> & {
+  projectRouting?: string;
+};

@@ -24,7 +24,7 @@ const markdownByReferenceStateSchema = schema.object({
 });
 
 // Markdown by-value embeddable schema (by-value state + titles)
-const markdownByValueEmbeddableSchema = schema.allOf(
+export const markdownByValueEmbeddableSchema = schema.allOf(
   [markdownByValueStateSchema, serializedTitlesSchema],
   {
     meta: {
