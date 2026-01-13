@@ -7,7 +7,12 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export type { MarkdownEditorState, MarkdownEmbeddableState } from './schemas';
+export {
+  type MarkdownByReferenceState,
+  type MarkdownByValueState,
+  markdownEmbeddableSchema,
+  type MarkdownEmbeddableState,
+} from './schemas';
 
 export const plugin = async () => {
   const { MarkdownPlugin } = await import('./plugin');
