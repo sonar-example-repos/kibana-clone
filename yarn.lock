@@ -2641,9 +2641,9 @@
     chroma-js "^2.4.2"
     lodash "^4.17.21"
 
-"@elastic/eui@file:./eui_111.1.0_debugging_02.tgz":
+"@elastic/eui@file:./eui_111.1.0_debugging_03.tgz":
   version "111.1.0"
-  resolved "file:./eui_111.1.0_debugging_02.tgz#593279b3711b59d5b1b8c34f261d61cdc240c818"
+  resolved "file:./eui_111.1.0_debugging_03.tgz#735cdf886cc344143561a69532678579ffd9a88d"
   dependencies:
     "@elastic/prismjs-esql" "^1.1.2"
     "@hello-pangea/dnd" "^16.6.0"
