@@ -3770,6 +3770,9 @@ paths:
                     description: The identifier for the user that created the rule.
                     nullable: true
                     type: string
+                  description:
+                    description: The description of the rule.
+                    type: string
                   enabled:
                     description: Indicates whether you want to run the rule on an interval basis after it is created.
                     type: boolean
@@ -5181,6 +5184,9 @@ paths:
                     description: The identifier for the user that created the rule.
                     nullable: true
                     type: string
+                  description:
+                    description: The description of the rule.
+                    type: string
                   enabled:
                     description: Indicates whether you want to run the rule on an interval basis after it is created.
                     type: boolean
@@ -6228,6 +6234,9 @@ paths:
                   created_by:
                     description: The identifier for the user that created the rule.
                     nullable: true
+                    type: string
+                  description:
+                    description: The description of the rule.
                     type: string
                   enabled:
                     description: Indicates whether you want to run the rule on an interval basis after it is created.
@@ -7744,6 +7753,9 @@ paths:
                   created_by:
                     description: The identifier for the user that created the rule.
                     nullable: true
+                    type: string
+                  description:
+                    description: The description of the rule.
                     type: string
                   enabled:
                     description: Indicates whether you want to run the rule on an interval basis after it is created.
