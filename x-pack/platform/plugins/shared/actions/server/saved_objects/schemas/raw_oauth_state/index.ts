@@ -5,5 +5,4 @@
  * 2.0.
  */
 
-export { rawConnectorTokenSchema as rawConnectorTokenSchemaV1 } from './v1';
-export { rawConnectorTokenSchema as rawConnectorTokenSchemaV2 } from './v2';
+export { rawOAuthStateSchema as rawOAuthStateSchemaV1 } from './v1';
