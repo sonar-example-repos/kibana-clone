@@ -290,3 +290,17 @@ export const TEMPERATURE_VALIDATION_MESSAGE = i18n.translate(
     defaultMessage: 'Temperature must be a number between 0 and 1.',
   }
 );
+
+export const TOKEN_BASED_BILLING_DESCRIPTION = i18n.translate(
+  'xpack.searchInferenceEndpoints.elastic.description',
+  {
+    defaultMessage: 'Runs on GPUs (token-based billing)',
+  }
+);
+
+export const RESOURCE_BASED_BILLING_DESCRIPTION = i18n.translate(
+  'xpack.searchInferenceEndpoints.elasticsearch.description',
+  {
+    defaultMessage: 'Runs on ML Nodes (resource-based billing)',
+  }
+);

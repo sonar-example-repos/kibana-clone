@@ -7,7 +7,12 @@
 
 import React from 'react';
 import { EuiLink } from '@elastic/eui';
-import { GEMINI, DOCUMENTATION_BASE as DOCUMENTATION } from './translations';
+import {
+  GEMINI,
+  DOCUMENTATION_BASE as DOCUMENTATION,
+  TOKEN_BASED_BILLING_DESCRIPTION,
+  RESOURCE_BASED_BILLING_DESCRIPTION,
+} from './translations';
 import { FieldType, type InternalOverrideFieldsType } from './types/types';
 
 export enum ServiceProviderKeys {
@@ -96,4 +101,9 @@ export const INTERNAL_OVERRIDE_FIELDS: InternalOverrideFieldsType = {
     ],
     serverlessOnly: true,
   },
+};
+
+export const ENDPOINT_DESCRIPTIONS: Record<string, string> = {
+  [ServiceProviderKeys.elastic]: TOKEN_BASED_BILLING_DESCRIPTION,
+  [ServiceProviderKeys.elasticsearch]: RESOURCE_BASED_BILLING_DESCRIPTION,
 };
