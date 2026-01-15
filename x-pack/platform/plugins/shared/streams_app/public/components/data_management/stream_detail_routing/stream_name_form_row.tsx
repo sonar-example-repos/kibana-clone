@@ -7,9 +7,8 @@
 
 import {
   EuiFieldText,
-  EuiFormLabel,
+  EuiFormPrepend,
   EuiFormRow,
-  EuiIcon,
   EuiLink,
   EuiScreenReaderOnly,
   EuiTextTruncate,
@@ -257,25 +256,33 @@ export function StreamNameFormRow({
         autoFocus={autoFocus}
         onChange={handleChange}
         minLength={MIN_NAME_LENGTH}
-        prepend={[
-          <EuiIcon type="streamsWired" />,
-          <EuiFormLabel
+        prepend={
+          <EuiFormPrepend
+            iconLeft="streamsWired"
+            label={
+              <>
+                <EuiScreenReaderOnly>
+                  <span>
+                    {i18n.translate('xpack.streams.streamDetailRouting.screenReaderPrefixLabel', {
+                      defaultMessage: 'Stream prefix:',
+                    })}
+                  </span>
+                </EuiScreenReaderOnly>
+                <EuiTextTruncate
+                  text={prefix}
+                  truncation="start"
+                  data-test-subj={`streamNamePrefix`}
+                />
+              </>
+            }
             css={css`
-              inline-size: min(${prefix.length}ch, ${PREFIX_MAX_VISIBLE_CHARACTERS}ch);
+              .euiFormLabel {
+                inline-size: min(${prefix.length}ch, ${PREFIX_MAX_VISIBLE_CHARACTERS}ch);
+              }
             `}
-            id={descriptionId}
             data-test-subj="streamsAppRoutingStreamNamePrefix"
-          >
-            <EuiScreenReaderOnly>
-              <span>
-                {i18n.translate('xpack.streams.streamDetailRouting.screenReaderPrefixLabel', {
-                  defaultMessage: 'Stream prefix:',
-                })}
-              </span>
-            </EuiScreenReaderOnly>
-            <EuiTextTruncate text={prefix} truncation="start" data-test-subj={`streamNamePrefix`} />
-          </EuiFormLabel>,
-        ]}
+          />
+        }
       />
     </EuiFormRow>
   );
