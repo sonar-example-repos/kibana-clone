@@ -120,6 +120,7 @@ dependsOn:
   - '@kbn/fs'
   - '@kbn/kql'
   - '@kbn/scout'
+  - '@kbn/css-utils'
 tags:
   - plugin
   - prod
