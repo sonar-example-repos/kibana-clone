@@ -133,5 +133,6 @@
     "@kbn/fs",
     "@kbn/kql",
     "@kbn/scout",
+    "@kbn/css-utils",
   ]
 }
