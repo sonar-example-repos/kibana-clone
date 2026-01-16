@@ -14,14 +14,14 @@ export function getMarkdownMeta(
   savedObject:
     | SavedObject<MarkdownSavedObjectAttributes>
     | SavedObjectsUpdateResponse<MarkdownSavedObjectAttributes>,
-  operation: 'create' | 'read' | 'update'
+  operation: 'create' | 'read' | 'update' | 'search'
 ) {
   return {
     error: savedObject.error,
     updated_at: savedObject.updated_at,
     updated_by: savedObject.updated_by,
     version: savedObject.version ?? '',
-    ...(['create', 'read'].includes(operation) && {
+    ...(['create', 'read', 'search'].includes(operation) && {
       created_at: savedObject.created_at,
       created_by: savedObject.created_by,
     }),
@@ -33,7 +33,7 @@ export function getMarkdownCRUResponseBody(
   savedObject:
     | SavedObject<MarkdownSavedObjectAttributes>
     | SavedObjectsUpdateResponse<MarkdownSavedObjectAttributes>,
-  operation: 'create' | 'read' | 'update'
+  operation: 'create' | 'read' | 'update' | 'search'
 ) {
   return {
     id: savedObject.id,

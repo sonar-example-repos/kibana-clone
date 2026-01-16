@@ -11,11 +11,11 @@ import { LRUCache } from 'lru-cache';
 import { SavedObjectNotFound } from '@kbn/kibana-utils-plugin/public';
 import type { DeleteResult } from '@kbn/content-management-plugin/common';
 import type { Reference } from '@kbn/content-management-utils';
-import type { SavedObjectAccessControl } from '@kbn/core-saved-objects-common';
 import type {
   SerializableAttributes,
   VisualizationClient,
 } from '@kbn/visualizations-plugin/public';
+import type { MarkdownSearchRequestBody, MarkdownSearchResponseBody } from '../../server/api';
 import {
   MARKDOWN_API_PATH,
   MARKDOWN_API_VERSION,
@@ -38,11 +38,7 @@ const cache = new LRUCache<string, MarkdownReadResponseBody>({
 });
 
 export const markdownClient = {
-  create: async (
-    markdownState: MarkdownState,
-    references: Reference[],
-    accessMode?: SavedObjectAccessControl['accessMode']
-  ) => {
+  create: async (markdownState: MarkdownState, references: Reference[]) => {
     return coreServices.http.post<MarkdownCreateResponseBody>(MARKDOWN_API_PATH, {
       version: MARKDOWN_API_VERSION,
       query: {
@@ -51,7 +47,6 @@ export const markdownClient = {
       body: JSON.stringify({
         data: {
           ...markdownState,
-          ...(accessMode && { access_control: { access_mode: accessMode } }),
           references,
         },
       }),
@@ -91,6 +86,15 @@ export const markdownClient = {
       cache.set(id, result);
     }
     return result;
+  },
+  search: async (searchBody: MarkdownSearchRequestBody) => {
+    return await coreServices.http.post<MarkdownSearchResponseBody>(`${MARKDOWN_API_PATH}/search`, {
+      version: MARKDOWN_API_VERSION,
+      body: JSON.stringify({
+        ...searchBody,
+        search: searchBody.search ? `${searchBody.search}*` : undefined,
+      }),
+    });
   },
   update: async (id: string, markdownState: MarkdownState, references: Reference[]) => {
     const updateResponse = await coreServices.http.put<MarkdownUpdateResponseBody>(
