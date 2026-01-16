@@ -31,11 +31,14 @@ import type {
   MarkdownByValueState,
   MarkdownByReferenceState,
 } from '../server';
-import { MARKDOWN_EMBEDDABLE_TYPE } from '../common/constants';
+import { APP_NAME, MARKDOWN_EMBEDDABLE_TYPE } from '../common/constants';
 import type { MarkdownEditorApi } from './types';
 import { MarkdownEditor } from './components/markdown_editor';
 import { MarkdownEditorPreviewSwitch } from './components/markdown_editor_preview_switch';
 import { MarkdownRenderer } from './components/markdown_renderer';
+import { loadFromLibrary } from './markdown_client/load_from_library';
+import { checkForDuplicateTitle } from './markdown_client/duplicate_title_check';
+import { markdownClient } from './markdown_client/markdown_client';
 
 const defaultMarkdownState: WithAllKeys<MarkdownByValueState> = {
   content: '',
@@ -53,20 +56,22 @@ export const markdownEmbeddableFactory: EmbeddableFactory<
   buildEmbeddable: async ({ initialState, finalizeApi, parentApi, uuid }) => {
     const titleManager = initializeTitleManager(initialState.rawState);
     const savedObjectId = (initialState.rawState as MarkdownByReferenceState).savedObjectId;
-    const markdownStateManager = initializeStateManager<MarkdownEmbeddableState>(
-      initialState.rawState,
+    const intialMarkdownState = savedObjectId
+      ? await loadFromLibrary(savedObjectId)
+      : (initialState.rawState as MarkdownByValueState);
+
+    const markdownStateManager = initializeStateManager<MarkdownByValueState>(
+      intialMarkdownState,
       defaultMarkdownState
     );
 
-    const intialLinksState = savedObjectId
-      ? await loadFromLibrary(savedObjectId)
-      : (initialState.rawState as MarkdownEmbeddableState);
-
     const isByReference = savedObjectId !== undefined;
     const defaultDescription$ = new BehaviorSubject(
-      isByReference ? intialLinksState.description : undefined
+      isByReference ? initialState.rawState.description : undefined
     );
-    const defaultTitle$ = new BehaviorSubject(isByReference ? intialLinksState.title : undefined);
+    const defaultTitle$ = new BehaviorSubject(
+      isByReference ? initialState.rawState.title : undefined
+    );
     const isEditing$ = new BehaviorSubject<boolean>(false);
     const isNewPanel$ = new BehaviorSubject<boolean>(false);
     const isPreview$ = new BehaviorSubject<boolean>(false);
@@ -89,6 +94,9 @@ export const markdownEmbeddableFactory: EmbeddableFactory<
       };
     };
 
+    const serializeState = () =>
+      isByReference ? serializeByReference(savedObjectId) : serializeByValue();
+
     const resetEditingState = () => {
       isEditing$.next(false);
       overrideHoverActions$.next(false);
@@ -107,17 +115,21 @@ export const markdownEmbeddableFactory: EmbeddableFactory<
         markdownStateManager.anyStateChange$
       ).pipe(map(() => undefined)),
       getComparators: () => {
-        return { ...titleComparators, ...markdownComparators };
+        return { ...titleComparators, ...markdownComparators, savedObjectId: 'skip' };
       },
       onReset: (lastSaved) => {
         titleManager.reinitializeState(lastSaved?.rawState);
-        markdownStateManager.reinitializeState(lastSaved?.rawState);
+        if (!savedObjectId) {
+          markdownStateManager.reinitializeState(lastSaved?.rawState as MarkdownByValueState);
+        }
       },
     });
 
     const api = finalizeApi({
       ...unsavedChangesApi,
       ...titleManager.api,
+      defaultTitle$,
+      defaultDescription$,
       serializeState,
       onEdit: async ({ isNewPanel = false } = {}) => {
         if (!apiCanAddNewPanel(parentApi)) throw new IncompatibleActionError();
@@ -131,7 +143,7 @@ export const markdownEmbeddableFactory: EmbeddableFactory<
         }
       },
       isEditingEnabled: () => true,
-      getTypeDisplayName: () => 'Markdown',
+      getTypeDisplayName: () => APP_NAME,
       overrideHoverActions$,
       OverriddenHoverActionsComponent: () => (
         <MarkdownEditorPreviewSwitch
@@ -145,14 +157,14 @@ export const markdownEmbeddableFactory: EmbeddableFactory<
       // Library transforms
       saveToLibrary: async (newTitle: string) => {
         defaultTitle$.next(newTitle);
-        const {
-          item: { id },
-        } = await linksClient.create({
-          data: {
+        const { id } = await markdownClient.create(
+          {
             content: markdownStateManager.getLatestState().content,
             title: newTitle,
+            description: defaultDescription$.getValue(),
           },
-        });
+          [] // no supported references yet
+        );
         return id;
       },
       getSerializedStateByValue: serializeByValue,
