@@ -10,7 +10,7 @@
 export { registerRoutes } from './register_routes';
 
 export type { MarkdownCreateRequestBody, MarkdownCreateResponseBody } from './create';
-export type { MarkdownReadResponseBody, MarkdownReadRequestBody } from './read';
+export type { MarkdownReadResponseBody } from './read';
 export type { MarkdownUpdateRequestBody, MarkdownUpdateResponseBody } from './update';
 export type { MarkdownSearchRequestBody, MarkdownSearchResponseBody } from './search';
 

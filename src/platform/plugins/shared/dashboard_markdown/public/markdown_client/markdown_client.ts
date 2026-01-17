@@ -15,6 +15,7 @@ import type {
   SerializableAttributes,
   VisualizationClient,
 } from '@kbn/visualizations-plugin/public';
+
 import type { MarkdownSearchRequestBody, MarkdownSearchResponseBody } from '../../server/api';
 import {
   MARKDOWN_API_PATH,

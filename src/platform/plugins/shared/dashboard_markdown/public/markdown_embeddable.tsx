@@ -106,7 +106,7 @@ export const markdownEmbeddableFactory: EmbeddableFactory<
       }
     };
 
-    const unsavedChangesApi = initializeUnsavedChanges({
+    const unsavedChangesApi = initializeUnsavedChanges<MarkdownEmbeddableState>({
       uuid,
       parentApi,
       serializeState,
