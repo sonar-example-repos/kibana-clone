@@ -13,12 +13,16 @@ import { registerRoutes } from './api/register_routes';
 import { MARKDOWN_EMBEDDABLE_TYPE } from '../common/constants';
 import type { SetupDeps, StartDeps } from './types';
 import { markdownEmbeddableSchema } from './schemas';
+import type { MarkdownState } from '.';
+import { markdownSavedObjectType } from './markdown_saved_object';
 
 export class MarkdownPlugin implements Plugin<void, void, SetupDeps, StartDeps> {
   setup(core: CoreSetup<StartDeps>, plugins: SetupDeps) {
     plugins.embeddable.registerTransforms(MARKDOWN_EMBEDDABLE_TYPE, {
       schema: markdownEmbeddableSchema,
     });
+
+    core.savedObjects.registerType<MarkdownState>(markdownSavedObjectType);
 
     registerRoutes(core.http);
   }

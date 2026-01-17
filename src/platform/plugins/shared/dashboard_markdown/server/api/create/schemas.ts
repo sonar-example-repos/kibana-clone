@@ -8,13 +8,16 @@
  */
 
 import { schema } from '@kbn/config-schema';
+import { referenceSchema } from '@kbn/content-management-utils';
 import { markdownByValueEmbeddableSchema } from '../../schemas';
+import { baseMetaSchema, createdMetaSchema, updatedMetaSchema } from '../meta_schemas';
 
 export function getCreateRequestBodySchema() {
   return schema.object({
     id: schema.maybe(schema.string()),
     data: markdownByValueEmbeddableSchema,
     spaces: schema.maybe(schema.arrayOf(schema.string(), { minSize: 1, maxSize: 1 })),
+    references: schema.maybe(schema.arrayOf(referenceSchema, { meta: { deprecated: true } })),
   });
 }
 
@@ -23,5 +26,7 @@ export function getCreateResponseBodySchema() {
     id: schema.string(),
     data: markdownByValueEmbeddableSchema,
     spaces: schema.maybe(schema.arrayOf(schema.string())),
+    meta: schema.allOf([baseMetaSchema, createdMetaSchema, updatedMetaSchema]),
+    references: schema.maybe(schema.arrayOf(referenceSchema, { meta: { deprecated: true } })),
   });
 }

@@ -42,14 +42,9 @@ export const markdownClient = {
   create: async (markdownState: MarkdownState, references: Reference[]) => {
     return coreServices.http.post<MarkdownCreateResponseBody>(MARKDOWN_API_PATH, {
       version: MARKDOWN_API_VERSION,
-      query: {
-        allowUnmappedKeys: true,
-      },
       body: JSON.stringify({
-        data: {
-          ...markdownState,
-          references,
-        },
+        data: markdownState,
+        references,
       }),
     });
   },
@@ -67,9 +62,6 @@ export const markdownClient = {
     const result = await coreServices.http
       .get<MarkdownReadResponseBody>(`${MARKDOWN_API_PATH}/${id}`, {
         version: MARKDOWN_API_VERSION,
-        query: {
-          allowUnmappedKeys: true,
-        },
       })
       .catch((e) => {
         if (e.response?.status === 404) {
@@ -102,14 +94,9 @@ export const markdownClient = {
       `${MARKDOWN_API_PATH}/${id}`,
       {
         version: MARKDOWN_API_VERSION,
-        query: {
-          allowUnmappedKeys: true,
-        },
         body: JSON.stringify({
-          data: {
-            ...markdownState,
-            references,
-          },
+          data: markdownState,
+          references,
         }),
       }
     );

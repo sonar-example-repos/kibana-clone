@@ -16,14 +16,23 @@ import { ADD_PANEL_TRIGGER } from '@kbn/ui-actions-plugin/public';
 import type { UsageCollectionStart } from '@kbn/usage-collection-plugin/public';
 import type { VisualizationsSetup } from '@kbn/visualizations-plugin/public';
 
+import { LATEST_VERSION } from '@kbn/data-views-plugin/common';
+import type { ContentManagementPublicSetup } from '@kbn/content-management-plugin/public';
 import { ADD_MARKDOWN_ACTION_ID, CONVERT_LEGACY_MARKDOWN_ACTION_ID } from './constants';
-import { APP_ICON, APP_NAME, MARKDOWN_EMBEDDABLE_TYPE } from '../common/constants';
+import {
+  APP_ICON,
+  APP_NAME,
+  MARKDOWN_EMBEDDABLE_TYPE,
+  MARKDOWN_SAVED_OBJECT_TYPE,
+} from '../common/constants';
 import { setKibanaServices } from './services/kibana_services';
 import { getMarkdownClient } from './markdown_client/markdown_client';
+import type { MarkdownEmbeddableState } from '../server';
 
 export interface MarkdownSetupDeps {
   embeddable: EmbeddableSetup;
   visualizations: VisualizationsSetup;
+  contentManagement: ContentManagementPublicSetup;
 }
 
 export interface MarkdownStartDeps {
@@ -36,7 +45,7 @@ export class DashboardMarkdownPlugin
 {
   public setup(
     core: CoreSetup<MarkdownStartDeps>,
-    { embeddable, visualizations }: MarkdownSetupDeps
+    { embeddable, visualizations, contentManagement }: MarkdownSetupDeps
   ) {
     embeddable.registerReactEmbeddableFactory(MARKDOWN_EMBEDDABLE_TYPE, async () => {
       const { markdownEmbeddableFactory } = await import('./async_services');

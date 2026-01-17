@@ -8,12 +8,14 @@
  */
 
 import { schema } from '@kbn/config-schema';
+import { referenceSchema } from '@kbn/content-management-utils';
 import { markdownByValueEmbeddableSchema } from '../../schemas';
 import { baseMetaSchema, updatedMetaSchema } from '../meta_schemas';
 
 export function getUpdateRequestBodySchema() {
   return schema.object({
     data: markdownByValueEmbeddableSchema,
+    references: schema.maybe(schema.arrayOf(referenceSchema)),
   });
 }
 
@@ -23,5 +25,6 @@ export function getUpdateResponseBodySchema() {
     data: markdownByValueEmbeddableSchema,
     meta: schema.allOf([baseMetaSchema, updatedMetaSchema]),
     spaces: schema.maybe(schema.arrayOf(schema.string())),
+    references: schema.maybe(schema.arrayOf(referenceSchema)),
   });
 }

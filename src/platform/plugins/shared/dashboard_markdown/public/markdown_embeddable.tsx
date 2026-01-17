@@ -163,7 +163,7 @@ export const markdownEmbeddableFactory: EmbeddableFactory<
             title: newTitle,
             description: defaultDescription$.getValue(),
           },
-          [] // no supported references yet
+          []
         );
         return id;
       },
