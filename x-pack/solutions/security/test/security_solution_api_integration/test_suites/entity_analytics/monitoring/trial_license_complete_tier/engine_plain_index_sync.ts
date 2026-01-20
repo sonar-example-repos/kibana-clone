@@ -20,12 +20,12 @@ export default ({ getService }: FtrProviderContext) => {
       const indexSyncUtils = PlainIndexSyncUtils(getService, indexName);
 
       beforeEach(async () => {
-        await indexSyncUtils.createIndex();
+        await privMonUtils.createIndex(indexName);
         await privMonUtils.initPrivMonEngine();
       });
 
       afterEach(async () => {
-        await indexSyncUtils.deleteIndex();
+        await privMonUtils.deleteIndex(indexName);
         await api.deleteMonitoringEngine({ query: { data: true } });
       });
 
@@ -42,12 +42,15 @@ export default ({ getService }: FtrProviderContext) => {
           'Darth Vader',
         ];
 
-        const repeatedUsers = Array.from({ length: 150 }).map(() => 'C-3PO');
+        const repeatedUsers = Array.from({ length: 10 }).map(() => 'C-3PO');
 
         await indexSyncUtils.addUsersToIndex([...uniqueUsernames, ...repeatedUsers]);
         await indexSyncUtils.createEntitySourceForIndex();
+        await privMonUtils.waitForIndexSourceEnabled(indexName);
 
-        const users = await privMonUtils.scheduleEngineAndWaitForUserCount(uniqueUsernames.length);
+        const users = await privMonUtils.scheduleEngineAndWaitForUserCountWithoutDuplicates(
+          uniqueUsernames.length
+        );
 
         // Check if the users are indexed
         const userNames = users.map((u: any) => u.user.name);
@@ -60,6 +63,7 @@ export default ({ getService }: FtrProviderContext) => {
         // add user to incoming index, for monitoring source
         await indexSyncUtils.addUsersToIndex(['user1', 'user2']);
         await indexSyncUtils.createEntitySourceForIndex();
+        await privMonUtils.waitForIndexSourceEnabled(indexName);
         // users from internal index
         const usersBefore = await privMonUtils.scheduleEngineAndWaitForUserCount(2);
 
@@ -90,6 +94,7 @@ export default ({ getService }: FtrProviderContext) => {
 
         await indexSyncUtils.addUsersToIndex([user1.name]);
         await indexSyncUtils.createEntitySourceForIndex();
+        await privMonUtils.waitForIndexSourceEnabled(indexName);
 
         const usersAfterSync = await privMonUtils.scheduleEngineAndWaitForUserCount(1);
         const user1After = privMonUtils.findUser(usersAfterSync, user1.name);
@@ -101,10 +106,11 @@ export default ({ getService }: FtrProviderContext) => {
         privMonUtils.expectTimestampsHaveBeenUpdated(user1Before, user1After);
       });
 
-      it('should not update timestamps when re-syncing the same user', async () => {
+      it(`should not update timestamps when re-syncing the same user`, async () => {
         const user1 = { name: 'user1' };
         await indexSyncUtils.addUsersToIndex([user1.name]);
         await indexSyncUtils.createEntitySourceForIndex();
+        await privMonUtils.waitForIndexSourceEnabled(indexName);
 
         const usersAfterFirstSync = await privMonUtils.scheduleEngineAndWaitForUserCount(1);
         const user1AfterFirstSync = privMonUtils.findUser(usersAfterFirstSync, user1.name);

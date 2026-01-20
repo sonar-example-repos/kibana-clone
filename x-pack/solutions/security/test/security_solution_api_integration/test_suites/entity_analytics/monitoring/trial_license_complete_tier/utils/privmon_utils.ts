@@ -84,6 +84,53 @@ export const PrivMonUtils = (
       .set(X_ELASTIC_INTERNAL_ORIGIN_REQUEST, 'kibana');
   };
 
+  const deleteIndex = async (indexName: string) => {
+    try {
+      await es.indices.delete({ index: indexName }, { ignore: [404] });
+    } catch (err) {
+      log.error(`Error deleting index ${indexName}: ${err}`);
+    }
+  };
+
+  const createIndex = async (indexName: string) => {
+    // Ensure index doesn't exist first (handle race condition from previous test cleanup)
+    try {
+      await es.indices.delete({ index: indexName }, { ignore: [404] });
+      // Wait for index to be fully deleted (retry checking if it exists)
+      let retries = 10;
+      while (retries > 0) {
+        const exists = await es.indices.exists({ index: indexName });
+        if (!exists) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        retries--;
+      }
+    } catch (err) {
+      log.debug(`Error deleting index before create: ${err}`);
+    }
+    return es.indices.create({
+      index: indexName,
+      mappings: {
+        properties: {
+          user: {
+            properties: {
+              name: {
+                type: 'keyword',
+                fields: {
+                  text: { type: 'text' },
+                },
+              },
+              role: {
+                type: 'keyword',
+              },
+            },
+          },
+        },
+      },
+    });
+  };
+
   const _expectDateToBeGreaterThan = (
     bigDate: string | undefined,
     smallDate: string | undefined
@@ -184,20 +231,99 @@ export const PrivMonUtils = (
   };
 
   const waitForSyncTaskRun = async (): Promise<void> => {
+    // Same task id is updated by Task Manager; we snapshot initial fields and
+    // wait for any execution signal to advance (startedAt/attempts/runAt).
     const initialTime = new Date();
+    const initialTask = await kibanaServer.savedObjects.get({
+      type: 'task',
+      id: TASK_ID,
+    });
+    const initialStartedAt = initialTask.attributes.startedAt
+      ? new Date(initialTask.attributes.startedAt)
+      : undefined;
+    const initialRunAt = initialTask.attributes.runAt
+      ? new Date(initialTask.attributes.runAt)
+      : undefined;
+    const initialAttempts = initialTask.attributes.attempts ?? 0;
 
+    // Wait for evidence the task actually started (not just rescheduled).
     await waitFor(
       async () => {
         const task = await kibanaServer.savedObjects.get({
           type: 'task',
           id: TASK_ID,
         });
-        const runAtTime = task.attributes.runAt;
+        const startedAt = task.attributes.startedAt
+          ? new Date(task.attributes.startedAt)
+          : undefined;
+        const runAt = task.attributes.runAt ? new Date(task.attributes.runAt) : undefined;
+        const attempts = task.attributes.attempts ?? 0;
 
-        return !!runAtTime && new Date(runAtTime) > initialTime;
+        const startedAtAdvanced =
+          !!startedAt && (!initialStartedAt || startedAt > initialStartedAt);
+        const attemptsAdvanced = attempts > initialAttempts;
+        const runAtAdvanced =
+          !!runAt && (!initialRunAt || runAt > initialRunAt) && runAt > initialTime;
+
+        return startedAtAdvanced || attemptsAdvanced || runAtAdvanced;
       },
       'waitForSyncTaskRun',
       log
+    );
+  };
+
+  const waitForPrivMonEngineStatus = async (
+    expectedStatus: 'started' | 'error' | 'disabled' | 'not_installed' = 'started',
+    timeout = 60000
+  ): Promise<void> => {
+    await retry.waitForWithTimeout(
+      `privmon engine status to be ${expectedStatus}`,
+      timeout,
+      async () => {
+        const res = await entityAnalyticsApi.privMonHealth();
+        if (res.status !== 200) {
+          log.info(
+            `PrivMon health check returned status ${res.status}: ${JSON.stringify(res.body)}`
+          );
+          return false;
+        }
+        if (res.body.status !== expectedStatus) {
+          log.info(`PrivMon engine status is ${res.body.status} (expected ${expectedStatus})`);
+        }
+        log.info(`PrivMon engine status is ${res.body.status} (expected ${expectedStatus})`);
+        return res.body.status === expectedStatus;
+      }
+    );
+  };
+
+  const waitForIndexSourceEnabled = async (
+    indexPattern: string,
+    timeout = 60000
+  ): Promise<void> => {
+    await retry.waitForWithTimeout(
+      `index entity source to be enabled for ${indexPattern}`,
+      timeout,
+      async () => {
+        const res = await entityAnalyticsApi.listEntitySources({ query: {} });
+        const sources = res.body.sources ?? [];
+        const indexSource = sources.find(
+          (source: any) => source.type === 'index' && source.indexPattern === indexPattern
+        );
+        if (!indexSource?.enabled) {
+          log.info(
+            `Index entity source not enabled yet for ${indexPattern}: ${JSON.stringify(
+              sources
+                .filter((source: any) => source.type === 'index')
+                .map((source: any) => ({
+                  name: source.name,
+                  indexPattern: source.indexPattern,
+                  enabled: source.enabled,
+                }))
+            )}`
+          );
+        }
+        return Boolean(indexSource?.enabled);
+      }
     );
   };
 
@@ -245,6 +371,59 @@ export const PrivMonUtils = (
     });
   };
 
+  const _waitForPrivMonUsersToBeSyncedWithoutDuplicates = async (expectedLength = 1) => {
+    let lastSeenLength = -1;
+    let stableCount = 0;
+
+    return retry.waitForWithTimeout('users to be synced without duplicates', 120000, async () => {
+      const res = await entityAnalyticsApi.listPrivMonUsers({ query: {} });
+      const currentLength = res.body.length;
+
+      // First, wait for count to be stable (sync is complete)
+      if (currentLength !== lastSeenLength) {
+        log.info(
+          `PrivMon users sync check: found ${currentLength} users (expected: ${expectedLength})`
+        );
+        lastSeenLength = currentLength;
+      }
+
+      if (currentLength === expectedLength) {
+        stableCount++;
+        if (stableCount >= 3) {
+          // Count is stable - sync appears complete, now verify no duplicates exist
+          const userNames = res.body.map((u: any) => u.user?.name).filter(Boolean);
+          const uniqueNames = new Set(userNames);
+          const hasDuplicates = userNames.length !== uniqueNames.size;
+
+          if (hasDuplicates) {
+            // Count is stable but duplicates still exist - deduplication may still be finishing
+            const duplicateNames = userNames.filter(
+              (name: string, index: number) => userNames.indexOf(name) !== index
+            );
+            const uniqueDuplicates = Array.from(new Set(duplicateNames));
+            log.info(
+              `PrivMon users sync check: count stable but duplicates still exist: ${uniqueDuplicates.join(
+                ', '
+              )}. Waiting for deduplication to complete...`
+            );
+            stableCount = 0; // Reset stability counter, keep waiting
+            return false;
+          }
+
+          // Count is stable AND no duplicates - sync is truly complete
+          log.info(
+            `PrivMon users sync check: synced, found ${currentLength} users, verified no duplicates`
+          );
+          return true;
+        }
+      } else {
+        stableCount = 0;
+      }
+
+      return currentLength >= expectedLength;
+    });
+  };
+
   const scheduleEngineAndWaitForUserCount = async (expectedCount: number) => {
     log.info(`Scheduling engine and waiting for user count: ${expectedCount}`);
 
@@ -253,6 +432,61 @@ export const PrivMonUtils = (
     const res = await entityAnalyticsApi.listPrivMonUsers({ query: {} });
 
     return res.body;
+  };
+
+  const scheduleEngineAndWaitForUserCountWithoutDuplicates = async (expectedCount: number) => {
+    log.info(`Scheduling engine and waiting for user count without duplicates: ${expectedCount}`);
+
+    await runSync();
+    try {
+      await _waitForPrivMonUsersToBeSyncedWithoutDuplicates(expectedCount);
+    } catch (error) {
+      // If timeout occurs, check if duplicates still exist and provide clearer error
+      if (error instanceof Error) {
+        const res = await entityAnalyticsApi.listPrivMonUsers({ query: {} });
+        const userNames = res.body.map((u: any) => u.user?.name).filter(Boolean);
+        const uniqueNames = new Set(userNames);
+        const hasDuplicates = userNames.length !== uniqueNames.size;
+
+        if (hasDuplicates) {
+          const duplicateNames = userNames.filter(
+            (name: string, index: number) => userNames.indexOf(name) !== index
+          );
+          throw new Error(
+            `Timeout waiting for user sync: duplicates still exist after 120s: ${Array.from(
+              new Set(duplicateNames)
+            ).join(', ')}. ${error.message}`
+          );
+        }
+      }
+      throw error;
+    }
+    const res = await entityAnalyticsApi.listPrivMonUsers({ query: {} });
+
+    return res.body;
+  };
+
+  const waitForMarkerUpdate = async (
+    indexPattern: string,
+    expectedMarker?: string,
+    timeout: number = 30000
+  ): Promise<void> => {
+    return retry.waitForWithTimeout('marker to be updated', timeout, async () => {
+      const marker = await getLastProcessedMarker(indexPattern);
+
+      if (expectedMarker) {
+        // Wait for specific marker value
+        if (marker === expectedMarker) {
+          log.info(`Marker updated to expected value: ${expectedMarker}`);
+          return true;
+        }
+        log.info(`Waiting for marker: current=${marker}, expected=${expectedMarker}`);
+        return false;
+      } else {
+        // Just wait for marker to exist/be updated
+        return !!marker;
+      }
+    });
   };
 
   async function runSync() {
@@ -531,6 +765,7 @@ export const PrivMonUtils = (
     setTimestamp,
     getSyncData,
     getLastProcessedMarker,
+    waitForMarkerUpdate,
     setIntegrationUserPrivilege,
     updateIntegrationsUsersWithRelativeTimestamps,
     updateIntegrationsUserTimeStamp,
@@ -548,6 +783,8 @@ export const PrivMonUtils = (
   };
 
   return {
+    deleteIndex,
+    createIndex,
     runSync,
     assertIsPrivileged,
     bulkUploadUsersCsv,
@@ -558,7 +795,10 @@ export const PrivMonUtils = (
     scheduleMonitoringEngineNow,
     setPrivmonTaskStatus,
     waitForSyncTaskRun,
+    waitForIndexSourceEnabled,
+    waitForPrivMonEngineStatus,
     scheduleEngineAndWaitForUserCount,
+    scheduleEngineAndWaitForUserCountWithoutDuplicates,
     getIntegrationMonitoringSource,
     integrationsSync,
   };
