@@ -5,25 +5,27 @@
  * 2.0.
  */
 
-import type { FindRulesResponseV1 } from '../../../../../../../common/routes/rule/apis/find';
+import { isEmpty } from 'lodash';
+import type { FindRulesResponseV1 } from '../../../../../../../../common/routes/rule/apis/find/external';
 import type {
   RuleResponseV1,
   RuleParamsV1,
-} from '../../../../../../../common/routes/rule/response';
-import type { FindResult } from '../../../../../../application/rule/methods/find';
-import type { Rule, RuleParams } from '../../../../../../application/rule/types';
+} from '../../../../../../../../common/routes/rule/response';
+import type { FindResult } from '../../../../../../../application/rule/methods/find';
 import {
   transformRuleActionsV1,
   transformMonitoringV1,
   transformRuleLastRunV1,
   transformFlappingV1,
-} from '../../../../transforms';
+} from '../../../../../transforms';
 
-export const transformPartialRule = <Params extends RuleParams = never>(
-  rule: Partial<Rule<Params>>,
-  fields?: string[],
-  includeArtifacts: boolean = false
-): Partial<RuleResponseV1<RuleParamsV1>> => {
+type RuleDomainResponse = FindResult<{}>['data'][number];
+type Artifacts = RuleDomainResponse['artifacts'];
+
+export const transformPartialRule = (
+  rule: RuleDomainResponse,
+  fields?: string[]
+): FindRulesResponseV1['data'][number] => {
   const ruleResponse = {
     ...(rule.id !== undefined ? { id: rule.id } : {}),
     ...(rule.enabled !== undefined ? { enabled: rule.enabled } : {}),
@@ -65,7 +67,7 @@ export const transformPartialRule = <Params extends RuleParams = never>(
         }
       : {}),
     ...(rule.monitoring ? { monitoring: transformMonitoringV1(rule.monitoring) } : {}),
-    ...(rule.snoozeSchedule ? { snooze_schedule: rule.snoozeSchedule } : {}),
+    ...(!isEmpty(rule.snoozeSchedule) ? { snooze_schedule: rule.snoozeSchedule } : {}),
     ...(rule.activeSnoozes ? { active_snoozes: rule.activeSnoozes } : {}),
     ...(rule.isSnoozedUntil !== undefined
       ? { is_snoozed_until: rule.isSnoozedUntil?.toISOString() || null }
@@ -81,36 +83,45 @@ export const transformPartialRule = <Params extends RuleParams = never>(
       : {}),
     ...(rule.alertDelay !== undefined ? { alert_delay: rule.alertDelay } : {}),
     ...(rule.flapping !== undefined ? { flapping: transformFlappingV1(rule.flapping) } : {}),
-    ...(includeArtifacts && rule.artifacts !== undefined ? { artifacts: rule.artifacts } : {}),
+    ...(areArtifactsEmpty(rule.artifacts) ? { artifacts: rule.artifacts } : {}),
   };
 
   type RuleKeys = keyof RuleResponseV1<RuleParamsV1>;
+
   for (const key in ruleResponse) {
     if (ruleResponse[key as RuleKeys] !== undefined) {
       continue;
     }
+
     if (!fields) {
       continue;
     }
+
     if (fields.includes(key)) {
       continue;
     }
+
     delete ruleResponse[key as RuleKeys];
   }
-  return ruleResponse;
+
+  return ruleResponse as FindRulesResponseV1['data'][number];
 };
 
-export const transformFindRulesResponse = <Params extends RuleParams = never>(
-  result: FindResult<Params>,
-  fields?: string[],
-  includeArtifacts: boolean = false
-): FindRulesResponseV1<RuleParamsV1>['body'] => {
+const areArtifactsEmpty = (artifacts?: Artifacts): boolean => {
+  return (
+    isEmpty(artifacts) ||
+    (isEmpty(artifacts?.dashboards) && isEmpty(artifacts?.investigation_guide))
+  );
+};
+
+export const transformFindRulesResponse = (
+  result: FindResult<{}>,
+  fields?: string[]
+): FindRulesResponseV1 => {
   return {
     page: result.page,
     per_page: result.perPage,
     total: result.total,
-    data: result.data.map((rule) =>
-      transformPartialRule<RuleParamsV1>(rule as Partial<Rule<Params>>, fields, includeArtifacts)
-    ),
+    data: result.data.map((rule) => transformPartialRule(rule, fields)),
   };
 };

@@ -6,9 +6,12 @@
  */
 import path from 'node:path';
 import { schema } from '@kbn/config-schema';
-import { stringOrStringArraySchema } from '../../../../../schemas';
+import { stringOrStringArraySchema } from '../../../../../../schemas';
+import { ruleResponseSchemaV1 } from '../../../../response';
 
 export const findRuleParamsExamples = () => path.join(__dirname, 'examples_find_rules.yaml');
+
+const unsupportedFields = ['monitoring', 'mapped_params', 'snoozeSchedule', 'activeSnoozes'];
 
 export const findRulesRequestQuerySchema = schema.object({
   per_page: schema.number({
@@ -44,6 +47,8 @@ export const findRulesRequestQuerySchema = schema.object({
       meta: {
         description: 'The fields to perform the simple_query_string parsed query against.',
       },
+      validate: (value) =>
+        validateUnsupportedFields(value, (field) => `Search field ${field} is not supported`),
     })
   ),
   sort_field: schema.maybe(
@@ -52,6 +57,8 @@ export const findRulesRequestQuerySchema = schema.object({
         description:
           'Determines which field is used to sort the results. The field must exist in the `attributes` key of the response.',
       },
+      validate: (value) =>
+        validateUnsupportedFields(value, (field) => `Sort is not supported on this field ${field}`),
     })
   ),
   sort_order: schema.maybe(
@@ -92,6 +99,11 @@ export const findRulesRequestQuerySchema = schema.object({
         description:
           'A KQL string that you filter with an attribute from your saved object. It should look like `savedObjectType.attributes.title: "myTitle"`. However, if you used a direct attribute of a saved object, such as `updatedAt`, you must define your filter, for example, `savedObjectType.updatedAt > 2018-12-22`.',
       },
+      validate: (value) =>
+        validateUnsupportedFields(
+          value,
+          (field) => `Filter is not supported on this field ${field}`
+        ),
     })
   ),
   filter_consumers: schema.maybe(
@@ -105,34 +117,32 @@ export const findRulesRequestQuerySchema = schema.object({
   ),
 });
 
-export const findRulesInternalRequestBodySchema = schema.object({
-  per_page: schema.number({
-    defaultValue: 10,
-    min: 0,
-  }),
-  page: schema.number({
-    defaultValue: 1,
-    min: 1,
-  }),
-  search: schema.maybe(schema.string()),
-  default_search_operator: schema.oneOf([schema.literal('OR'), schema.literal('AND')], {
-    defaultValue: 'OR',
-  }),
-  search_fields: schema.maybe(stringOrStringArraySchema()),
-  sort_field: schema.maybe(schema.string()),
-  sort_order: schema.maybe(schema.oneOf([schema.literal('asc'), schema.literal('desc')])),
-  has_reference: schema.maybe(
-    // use nullable as maybe is currently broken
-    // in config-schema
-    schema.nullable(
-      schema.object({
-        type: schema.string(),
-        id: schema.string(),
-      })
-    )
-  ),
-  fields: schema.maybe(schema.arrayOf(schema.string())),
-  filter: schema.maybe(schema.string()),
-  rule_type_ids: schema.maybe(schema.arrayOf(schema.string())),
-  consumers: schema.maybe(schema.arrayOf(schema.string())),
+const findRulesResponseDataSchema = schema.arrayOf(ruleResponseSchemaV1.extends({}));
+
+export const findRulesResponseSchema = schema.object({
+  page: schema.number(),
+  per_page: schema.number(),
+  total: schema.number(),
+  data: findRulesResponseDataSchema,
 });
+
+const validateUnsupportedFields = (
+  value?: string | string[],
+  getErrorMessage: (field: string) => string
+) => {
+  const includesInValue = (val: string, search: string) => {
+    return val.includes(search);
+  };
+
+  if (!value) {
+    return;
+  }
+
+  const valueArray = Array.isArray(value) ? value : [value];
+
+  const unsupportedFieldValue = valueArray.find((field) =>
+    unsupportedFields.some((unsupportedField) => includesInValue(field, unsupportedField))
+  );
+
+  return unsupportedFieldValue ? getErrorMessage(unsupportedFieldValue) : undefined;
+};
