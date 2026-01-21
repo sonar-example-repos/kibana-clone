@@ -21,10 +21,9 @@ import { i18n } from '@kbn/i18n';
 import type { DocViewRenderProps } from '@kbn/unified-doc-viewer/types';
 import React, { useCallback, useState } from 'react';
 import type { TraceOverviewSections } from '../../doc_viewer_overview/overview';
-import type { spanFlyoutId as spanFlyoutIdType } from './waterfall_flyout/span_flyout';
-import { SpanFlyout, spanFlyoutId } from './waterfall_flyout/span_flyout';
-import type { logsFlyoutId as logsFlyoutIdType } from './waterfall_flyout/logs_flyout';
-import { LogsFlyout, logsFlyoutId } from './waterfall_flyout/logs_flyout';
+import { spanFlyoutId } from './waterfall_flyout/span_flyout';
+import { logsFlyoutId } from './waterfall_flyout/logs_flyout';
+import { DocumentDetailFlyout, type DocumentType } from './waterfall_flyout/document_detail_flyout';
 
 export const EUI_FLYOUT_BODY_OVERFLOW_CLASS = 'euiFlyoutBody__overflow';
 
@@ -48,9 +47,7 @@ export const FullScreenWaterfall = ({
   const { euiTheme } = useEuiTheme();
   const [docId, setDocId] = useState<string | null>(null);
   const [docIndex, setDocIndex] = useState<string | undefined>(undefined);
-  const [activeFlyoutId, setActiveFlyoutId] = useState<
-    typeof spanFlyoutIdType | typeof logsFlyoutIdType | null
-  >(null);
+  const [activeFlyoutType, setActiveFlyoutType] = useState<DocumentType | null>(null);
   const [activeSection, setActiveSection] = useState<TraceOverviewSections | undefined>();
   const [scrollElement, setScrollElement] = useState<Element | null>(null);
 
@@ -101,12 +98,12 @@ export const FullScreenWaterfall = ({
           docIndex?: string;
         }) => {
           if (params.errorCount > 1) {
-            setActiveFlyoutId(spanFlyoutId);
+            setActiveFlyoutType(spanFlyoutId);
             setActiveSection('errors-table');
             setDocId(params.docId);
             setDocIndex(undefined);
           } else if (params.errorDocId) {
-            setActiveFlyoutId(logsFlyoutId);
+            setActiveFlyoutType(logsFlyoutId);
             setDocId(params.errorDocId);
             setDocIndex(params.docIndex);
           }
@@ -115,7 +112,7 @@ export const FullScreenWaterfall = ({
           setActiveSection(undefined);
           setDocId(nodeSpanId);
           setDocIndex(undefined);
-          setActiveFlyoutId(spanFlyoutId);
+          setActiveFlyoutType(spanFlyoutId);
         },
         mode: 'full',
       }),
@@ -123,7 +120,7 @@ export const FullScreenWaterfall = ({
   }, [traceId, rangeFrom, rangeTo, serviceName, scrollElement]);
 
   function handleCloseFlyout() {
-    setActiveFlyoutId(null);
+    setActiveFlyoutType(null);
     setActiveSection(undefined);
     setDocId(null);
     setDocIndex(undefined);
@@ -172,23 +169,16 @@ export const FullScreenWaterfall = ({
         </div>
       </EuiFlyoutBody>
 
-      {docId && activeFlyoutId ? (
-        activeFlyoutId === spanFlyoutId ? (
-          <SpanFlyout
-            traceId={traceId}
-            spanId={docId}
-            dataView={dataView}
-            onCloseFlyout={handleCloseFlyout}
-            activeSection={activeSection}
-          />
-        ) : (
-          <LogsFlyout
-            onCloseFlyout={handleCloseFlyout}
-            id={docId}
-            index={docIndex}
-            dataView={dataView}
-          />
-        )
+      {docId && activeFlyoutType ? (
+        <DocumentDetailFlyout
+          type={activeFlyoutType}
+          docId={docId}
+          docIndex={docIndex}
+          traceId={traceId}
+          dataView={dataView}
+          onCloseFlyout={handleCloseFlyout}
+          activeSection={activeSection}
+        />
       ) : null}
     </EuiFlyout>
   );
