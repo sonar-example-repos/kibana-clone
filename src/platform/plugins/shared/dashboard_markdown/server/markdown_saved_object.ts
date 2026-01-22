@@ -8,8 +8,40 @@
  */
 
 import type { TypeOf } from '@kbn/config-schema';
+import type { SavedObjectsType } from '@kbn/core/server';
+import { ANALYTICS_SAVED_OBJECT_INDEX } from '@kbn/core-saved-objects-server';
 import type { markdownByValueEmbeddableSchema } from './schemas';
+import { APP_ICON, MARKDOWN_SAVED_OBJECT_TYPE } from '../common/constants';
 
 export type MarkdownSavedObjectAttributes = TypeOf<typeof markdownByValueEmbeddableSchema> & {
   projectRouting?: string;
+};
+
+export const markdownSavedObjectType: SavedObjectsType = {
+  name: MARKDOWN_SAVED_OBJECT_TYPE,
+  indexPattern: ANALYTICS_SAVED_OBJECT_INDEX,
+  hidden: false,
+  namespaceType: 'multiple-isolated',
+  management: {
+    icon: APP_ICON,
+    defaultSearchField: 'title',
+    importableAndExportable: true,
+    getTitle(obj) {
+      return obj.attributes.title;
+    },
+  },
+  mappings: {
+    dynamic: false,
+    properties: {
+      title: { type: 'text' },
+      description: { type: 'text' },
+      links: {
+        dynamic: false,
+        properties: {},
+      },
+    },
+  },
+  migrations: () => {
+    return {};
+  },
 };
