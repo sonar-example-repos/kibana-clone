@@ -152,6 +152,8 @@ import { HealthDiagnosticServiceImpl } from './lib/telemetry/diagnostic/health_d
 import type { HealthDiagnosticService } from './lib/telemetry/diagnostic/health_diagnostic_service.types';
 import { ENTITY_RISK_SCORE_TOOL_ID } from './assistant/tools/entity_risk_score/entity_risk_score';
 import type { TelemetryQueryConfiguration } from './lib/telemetry/types';
+import { registerEntityStoreESQLExecuteTask } from './lib/entity_analytics/entity_store/esql_poc/kibana_task_run_cycle';
+import { EntityStoreESQLSOType } from './lib/entity_analytics/entity_store/esql_poc/entity_store_state_manager';
 import { AIValueReportLocatorDefinition } from '../common/locators/ai_value_report/locator';
 
 export type { SetupPlugins, StartPlugins, PluginSetup, PluginStart } from './plugin_contract';
@@ -343,6 +345,14 @@ export class Plugin implements ISecuritySolutionPlugin {
         kibanaVersion: pluginContext.env.packageInfo.version,
         isServerless: this.isServerless,
       });
+
+      core.savedObjects.registerType(EntityStoreESQLSOType);
+      registerEntityStoreESQLExecuteTask(
+        core.getStartServices,
+        appClientFactory,
+        this.logger,
+        plugins.taskManager
+      );
     }
 
     registerPrivilegeMonitoringTask({

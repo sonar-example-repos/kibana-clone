@@ -20361,6 +20361,12 @@ paths:
           required: false
           schema:
             type: boolean
+        - description: delete esql poc instead of regular entity store.
+          in: query
+          name: esqlPoc
+          required: false
+          schema:
+            type: boolean
       responses:
         '200':
           content:
@@ -20426,6 +20432,12 @@ paths:
           required: true
           schema:
             $ref: '#/components/schemas/Security_Entity_Analytics_API_EntityType'
+        - description: init esql poc instead of regular entity store.
+          in: query
+          name: esqlPoc
+          required: false
+          schema:
+            type: boolean
       requestBody:
         content:
           application/json:

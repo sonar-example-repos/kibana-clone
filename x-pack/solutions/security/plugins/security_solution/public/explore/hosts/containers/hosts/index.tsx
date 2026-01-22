@@ -22,6 +22,7 @@ import type { ESTermQuery } from '../../../../../common/typed_json';
 import * as i18n from './translations';
 import type { InspectResponse } from '../../../../types';
 import { useSearchStrategy } from '../../../../common/containers/use_search_strategy';
+import { useSpaceId } from '../../../../common/hooks/use_space_id';
 
 export const ID = 'hostsAllQuery';
 
@@ -42,7 +43,6 @@ export interface HostsArgs {
 interface UseAllHost {
   endDate: string;
   filterQuery?: ESTermQuery | string;
-  indexNames: string[];
   skip?: boolean;
   startDate: string;
   type: hostsModel.HostsType;
@@ -51,11 +51,17 @@ interface UseAllHost {
 export const useAllHost = ({
   endDate,
   filterQuery,
-  indexNames,
   skip = false,
   startDate,
   type,
 }: UseAllHost): [boolean, HostsArgs] => {
+  const spaceId = useSpaceId();
+  const namespace = spaceId || 'default';
+  const entityStoreIndexPattern = useMemo(
+    () => [`.entities.v1.latest.security_host_${namespace}`],
+    [namespace]
+  );
+
   const getHostsSelector = useMemo(() => hostsSelectors.hostsSelector(), []);
   const { activePage, direction, limit, sortField } = useDeepEqualSelector((state: State) =>
     getHostsSelector(state, type)
@@ -126,10 +132,13 @@ export const useAllHost = ({
   );
 
   useEffect(() => {
+    if (!namespace) {
+      return;
+    }
     setHostRequest((prevRequest) => {
       const myRequest: HostsRequestOptionsInput = {
         ...(prevRequest ?? {}),
-        defaultIndex: indexNames,
+        defaultIndex: entityStoreIndexPattern,
         factoryQueryType: HostsQueries.hosts,
         filterQuery: createFilter(filterQuery),
         pagination: generateTablePaginationOptions(activePage, limit),
@@ -148,7 +157,17 @@ export const useAllHost = ({
       }
       return prevRequest;
     });
-  }, [activePage, direction, endDate, filterQuery, indexNames, limit, startDate, sortField]);
+  }, [
+    activePage,
+    direction,
+    endDate,
+    filterQuery,
+    entityStoreIndexPattern,
+    limit,
+    startDate,
+    sortField,
+    namespace,
+  ]);
 
   useEffect(() => {
     if (!skip && hostsRequest) {
