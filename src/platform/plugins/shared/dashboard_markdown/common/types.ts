@@ -7,13 +7,14 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { ContentManagementServerSetup } from '@kbn/content-management-plugin/server';
-import type { EmbeddableSetup } from '@kbn/embeddable-plugin/server';
+import type { SavedObjectsResolveResponse } from '@kbn/core-saved-objects-api-server';
+import type { MARKDOWN_SAVED_OBJECT_TYPE } from './constants';
 
-export interface SetupDeps {
-  embeddable: EmbeddableSetup;
-  contentManagement: ContentManagementServerSetup;
+export type MarkdownContentType = typeof MARKDOWN_SAVED_OBJECT_TYPE;
+
+export interface SharingSavedObjectProps {
+  outcome: SavedObjectsResolveResponse['outcome'];
+  aliasTargetId?: SavedObjectsResolveResponse['alias_target_id'];
+  aliasPurpose?: SavedObjectsResolveResponse['alias_purpose'];
+  sourceId?: string;
 }
-
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface StartDeps {}

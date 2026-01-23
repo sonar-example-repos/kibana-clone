@@ -7,13 +7,16 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { ContentManagementServerSetup } from '@kbn/content-management-plugin/server';
-import type { EmbeddableSetup } from '@kbn/embeddable-plugin/server';
+import type {
+  ContentManagementServicesDefinition as ServicesDefinition,
+  Version,
+} from '@kbn/object-versioning';
 
-export interface SetupDeps {
-  embeddable: EmbeddableSetup;
-  contentManagement: ContentManagementServerSetup;
-}
+// We export the versioned service definition from this file and not the index file to avoid adding
+// the schemas in the "public" js bundle
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface StartDeps {}
+import { serviceDefinition as v1 } from './v1/cm_services';
+
+export const cmServicesDefinition: { [version: Version]: ServicesDefinition } = {
+  1: v1,
+};

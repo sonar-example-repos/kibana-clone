@@ -16,23 +16,17 @@ import { ADD_PANEL_TRIGGER } from '@kbn/ui-actions-plugin/public';
 import type { UsageCollectionStart } from '@kbn/usage-collection-plugin/public';
 import type { VisualizationsSetup } from '@kbn/visualizations-plugin/public';
 
-import type {
-  ContentManagementPublicSetup,
-  CrudClient,
-} from '@kbn/content-management-plugin/public';
+import type { ContentManagementPublicSetup } from '@kbn/content-management-plugin/public';
 import { ADD_MARKDOWN_ACTION_ID, CONVERT_LEGACY_MARKDOWN_ACTION_ID } from './constants';
 import {
   APP_ICON,
   APP_NAME,
   MARKDOWN_EMBEDDABLE_TYPE,
   MARKDOWN_SAVED_OBJECT_TYPE,
-  LATEST_VERSION,
-  MARKDOWN_CONTENT_ID,
 } from '../common/constants';
 import { setKibanaServices } from './services/kibana_services';
 import { getMarkdownClient } from './content_management/markdown_content_management_client';
 import type { MarkdownEmbeddableState } from '../server';
-import { markdownClient } from './markdown_client/markdown_client';
 
 export interface MarkdownSetupDeps {
   embeddable: EmbeddableSetup;
@@ -62,26 +56,6 @@ export class DashboardMarkdownPlugin
         id: MARKDOWN_SAVED_OBJECT_TYPE,
         name: 'Markdown',
         version: { latest: 1 },
-        crud: {
-          get: () => {
-            throw new Error('Get not implemented');
-          },
-          create: () => {
-            throw new Error('Create not implemented');
-          },
-          update: () => {
-            throw new Error('Update not implemented');
-          },
-          delete: () => {
-            throw new Error('Delete not implemented');
-          },
-          search: () => {
-            throw new Error('Search not implemented');
-          },
-          mSearch: () => {
-            throw new Error('MSearch not implemented');
-          },
-        } as unknown as CrudClient,
       });
 
       embeddable.registerAddFromLibraryType({
@@ -114,6 +88,7 @@ export class DashboardMarkdownPlugin
           defaultMessage: 'Use markdown to add rich text content to your dashboards.',
         }),
         stage: 'production',
+        disableEdit: true, // do not allow editing through visualization listing page
         appExtensions: {
           visualizations: {
             docTypes: [MARKDOWN_EMBEDDABLE_TYPE],
