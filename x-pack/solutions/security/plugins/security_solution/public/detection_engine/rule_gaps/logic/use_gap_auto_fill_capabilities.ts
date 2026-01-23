@@ -22,10 +22,10 @@ export const useGapAutoFillCapabilities = () => {
     'gapAutoFillSchedulerEnabled'
   );
   const hasEnterpriseLicense = license.isEnterprise();
+  const { edit: canEditRules, read: canReadRules } = useUserPrivileges().rulesPrivileges.rules;
   const hasRuleGapsAutoFillFeature = productFeatureKeys.has(
     ProductFeatureSecurityKey.ruleGapsAutoFill
   );
-  const { edit: canEditRules, read: canReadRules } = useUserPrivileges().rulesPrivileges;
 
   return useMemo(
     () => ({

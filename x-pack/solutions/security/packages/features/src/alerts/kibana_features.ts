@@ -22,23 +22,15 @@ import {
   ALERTS_API_ALL,
   ALERTS_API_READ,
   APP_ID,
-  EXCEPTIONS_API_ALL,
-  EXCEPTIONS_API_READ,
-  INITIALIZE_SECURITY_SOLUTION,
   LEGACY_NOTIFICATIONS_ID,
-  LISTS_API_ALL,
-  LISTS_API_READ,
-  LISTS_API_SUMMARY,
-  RULES_API_ALL,
-  RULES_API_READ,
-  RULES_FEATURE_ID,
-  RULES_UI_EDIT,
-  RULES_UI_READ,
+  ALERTS_FEATURE_ID,
   SERVER_APP_ID,
+  ALERTS_UI_READ,
+  ALERTS_UI_EDIT,
+  INITIALIZE_SECURITY_SOLUTION,
   USERS_API_READ,
 } from '../constants';
 import { type BaseKibanaFeatureConfig } from '../types';
-import type { SecurityFeatureParams } from '../security/types';
 
 const SECURITY_RULE_TYPES = [
   LEGACY_NOTIFICATIONS_ID,
@@ -57,79 +49,62 @@ const alertingFeatures = SECURITY_RULE_TYPES.map((ruleTypeId) => ({
   consumers: [SERVER_APP_ID],
 }));
 
-export const getRulesBaseKibanaFeature = (
-  params: SecurityFeatureParams
-): BaseKibanaFeatureConfig => ({
-  id: RULES_FEATURE_ID,
+export const getAlertsBaseKibanaFeature = (): BaseKibanaFeatureConfig => ({
+  id: ALERTS_FEATURE_ID,
   name: i18n.translate(
-    'securitySolutionPackages.features.featureRegistry.linkSecuritySolutionRolesTitle',
+    'securitySolutionPackages.features.featureRegistry.linkSecuritySolutionRolesAlertsTitle',
     {
-      defaultMessage: 'Rules, Alerts, and Exceptions',
+      defaultMessage: 'Alerts',
     }
   ),
   order: 1100,
   category: DEFAULT_APP_CATEGORIES.security,
-  app: [RULES_FEATURE_ID, 'kibana'],
+  app: [ALERTS_FEATURE_ID, 'kibana', 'securitySolution'],
   catalogue: [APP_ID],
   alerting: alertingFeatures,
   management: {
-    insightsAndAlerting: ['triggersActions'], // Access to the stack rules management UI
+    insightsAndAlerting: ['triggersActions'], // Access to the stack alerts management UI
   },
   privileges: {
     all: {
-      app: [RULES_FEATURE_ID, 'kibana'],
-      catalogue: [APP_ID],
-      savedObject: {
-        all: params.savedObjects,
-        read: params.savedObjects,
-      },
-      alerting: {
-        rule: { all: alertingFeatures },
-        alert: { all: alertingFeatures },
-      },
-      management: {
-        insightsAndAlerting: ['triggersActions'], // Access to the stack rules management UI
-      },
-      ui: [RULES_UI_READ, RULES_UI_EDIT],
-      api: [
-        RULES_API_ALL,
-        RULES_API_READ,
-        ALERTS_API_ALL,
-        ALERTS_API_READ,
-        EXCEPTIONS_API_ALL,
-        EXCEPTIONS_API_READ,
-        LISTS_API_ALL,
-        LISTS_API_READ,
-        LISTS_API_SUMMARY,
-        USERS_API_READ,
-        INITIALIZE_SECURITY_SOLUTION,
-        'rac',
-      ],
-    },
-    read: {
-      app: [RULES_FEATURE_ID, 'kibana'],
+      app: ['securitySolution', ALERTS_FEATURE_ID, 'kibana'],
       catalogue: [APP_ID],
       savedObject: {
         all: [],
-        read: params.savedObjects,
+        read: [],
       },
       alerting: {
-        rule: { read: alertingFeatures },
         alert: { all: alertingFeatures },
       },
+      // TODO: figure out if this should be here
       management: {
-        insightsAndAlerting: ['triggersActions'], // Access to the stack rules management UI
+        insightsAndAlerting: ['triggersActions'], // Access to the stack alerts management UI
       },
-      ui: [RULES_UI_READ],
+      ui: [ALERTS_UI_READ, ALERTS_UI_EDIT],
       api: [
-        RULES_API_READ,
-        ALERTS_API_READ,
-        EXCEPTIONS_API_READ,
-        LISTS_API_READ,
-        USERS_API_READ,
-        INITIALIZE_SECURITY_SOLUTION,
         'rac',
+        // TODO: should it be able to initialize the security solution
+        INITIALIZE_SECURITY_SOLUTION,
+        ALERTS_API_ALL,
+        ALERTS_API_READ,
+        USERS_API_READ,
       ],
+    },
+    read: {
+      app: [ALERTS_FEATURE_ID, 'kibana', 'securitySolution'],
+      catalogue: [APP_ID],
+      savedObject: {
+        all: [],
+        read: [],
+      },
+      alerting: {
+        alert: { read: alertingFeatures },
+      },
+      management: {
+        insightsAndAlerting: ['triggersActions'], // Access to the stack alerts management UI
+      },
+      ui: [ALERTS_UI_READ],
+      api: ['rac', INITIALIZE_SECURITY_SOLUTION, ALERTS_API_READ, USERS_API_READ],
     },
   },
 });
