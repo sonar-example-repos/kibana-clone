@@ -12,7 +12,7 @@ import type { GroupingBucket, ParsedGroupingAggregation } from '@kbn/grouping/sr
 import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
 
 import { TestProviders } from '../../../../common/mock';
-import type { DataView, DataViewSpec } from '@kbn/data-views-plugin/common';
+import type { DataView } from '@kbn/data-views-plugin/common';
 import { EXPAND_ATTACK_BUTTON_TEST_ID, TABLE_SECTION_TEST_ID, TableSection } from './table_section';
 import { useUserData } from '../../user_info';
 import { useListsConfig } from '../../../containers/detection_engine/lists/use_lists_config';
@@ -38,8 +38,9 @@ jest.mock('./empty_results_prompt', () => ({
   EmptyResultsPrompt: jest.fn(() => <div data-test-subj="mock-empty-results-prompt" />),
 }));
 
-const dataViewSpec: DataViewSpec = { title: '.alerts-security.alerts-default' };
-const dataView: DataView = createStubDataView({ spec: dataViewSpec });
+const dataView: DataView = createStubDataView({
+  spec: { title: '.alerts-security.alerts-default' },
+});
 
 const mockUseGetDefaultGroupTitleRenderers = useGetDefaultGroupTitleRenderers as jest.Mock;
 const mockUseAttackGroupHandler = useAttackGroupHandler as jest.Mock;

@@ -10,8 +10,8 @@ import { EuiButtonIcon, EuiSwitch } from '@elastic/eui';
 import type { Filter } from '@kbn/es-query';
 import { TableId } from '@kbn/securitysolution-data-table';
 import type { DataView } from '@kbn/data-views-plugin/common';
-import { isGroupingBucket } from '@kbn/grouping/src';
 import type { ParsedGroupingAggregation, RawBucket } from '@kbn/grouping/src';
+import { isGroupingBucket } from '@kbn/grouping/src';
 import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
 
 import { AttackDetailsRightPanelKey } from '../../../../flyout/attack_details/constants/panel_keys';
@@ -223,10 +223,6 @@ export const TableSection = React.memo(
       []
     );
 
-    const dataViewSpec = useMemo(() => {
-      return dataView.toSpec(true);
-    }, [dataView]);
-
     const { openFlyout } = useExpandableFlyoutApi();
     const openAttackDetailsFlyout = useCallback(
       (selectedGroup: string, bucket: RawBucket<AlertsGroupingAggregation>) => {
@@ -276,7 +272,6 @@ export const TableSection = React.memo(
           accordionButtonContent={defaultGroupTitleRenderers}
           accordionExtraActionGroupStats={accordionExtraActionGroupStats}
           dataView={dataView}
-          dataViewSpec={dataViewSpec}
           defaultFilters={defaultFilters}
           defaultGroupingOptions={groupingOptions}
           from={from}
