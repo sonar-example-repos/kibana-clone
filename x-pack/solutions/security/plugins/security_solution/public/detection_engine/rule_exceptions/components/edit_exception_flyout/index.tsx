@@ -68,6 +68,7 @@ import { CONFIRM_WARNING_MODAL_LABELS } from '../../../../management/common/tran
 import { ArtifactConfirmModal } from '../../../../management/components/artifact_list_page/components/artifact_confirm_modal';
 import { ExceptionFlyoutFooter } from '../flyout_components/footer';
 import { ExceptionFlyoutHeader } from '../flyout_components/header';
+import { useAlertsPrivileges } from '../../../../detections/containers/detection_engine/alerts/use_alerts_privileges';
 
 interface EditExceptionFlyoutProps {
   list: ExceptionListSchema;
@@ -109,7 +110,8 @@ const EditExceptionFlyoutComponent: React.FC<EditExceptionFlyoutProps> = ({
   const { isLoading, indexPatterns, getExtendedFields } = useFetchIndexPatterns(rules);
   const [isSubmitting, submitEditExceptionItems] = useEditExceptionItems();
   const [isClosingAlerts, closeAlerts] = useCloseAlertsFromExceptions();
-  const { read: canReadRules } = useUserPrivileges().rulesPrivileges;
+  const { read: canReadExceptions } = useUserPrivileges().rulesPrivileges.exceptions;
+  const { hasAlertsAll } = useAlertsPrivileges();
 
   const [
     {
@@ -160,7 +162,7 @@ const EditExceptionFlyoutComponent: React.FC<EditExceptionFlyoutProps> = ({
     useFindExceptionListReferences();
 
   useEffect(() => {
-    if (fetchReferences != null && canReadRules) {
+    if (fetchReferences != null && canReadExceptions) {
       fetchReferences([
         {
           id: list.id,
@@ -169,7 +171,7 @@ const EditExceptionFlyoutComponent: React.FC<EditExceptionFlyoutProps> = ({
         },
       ]);
     }
-  }, [list, fetchReferences, canReadRules]);
+  }, [list, fetchReferences, canReadExceptions]);
 
   /**
    * Reducer action dispatchers
@@ -473,7 +475,7 @@ const EditExceptionFlyoutComponent: React.FC<EditExceptionFlyoutProps> = ({
             />
           </>
         )}
-        {showAlertCloseOptions && (
+        {hasAlertsAll && showAlertCloseOptions && (
           <>
             <EuiHorizontalRule />
             <ExceptionItemsFlyoutAlertsActions
