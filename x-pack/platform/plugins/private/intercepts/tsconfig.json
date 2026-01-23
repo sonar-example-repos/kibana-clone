@@ -28,7 +28,11 @@
     "@kbn/core-notifications-browser",
     "@kbn/core-http-browser",
     "@kbn/logging-mocks",
-    "@kbn/core-notifications-browser-internal"
+    "@kbn/core-notifications-browser-internal",
+    "@kbn/react-kibana-mount",
+    "@kbn/i18n-react",
+    "@kbn/licensing-plugin",
+    "@kbn/test-jest-helpers",
   ],
   "exclude": ["target/**/*"]
 }
