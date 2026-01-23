@@ -19,7 +19,6 @@ import type { FunctionParameterContext } from './types';
 import { getValidSignaturesAndTypesToSuggestNext } from '../helpers';
 import type { ESQLFunction } from '../../../../../types';
 import type { ICommandContext } from '../../../../registry/types';
-import { acceptsArbitraryExpressions } from './utils';
 import type { FunctionDefinition } from '../../../types';
 
 // Parses mapParams format: {name='paramName', values=[val1, val2]}
@@ -314,7 +313,19 @@ export class SignatureAnalyzer {
    * Example: CASE(condition1, value1, condition2, value2, ..., default)
    */
   public get acceptsArbitraryExpressions(): boolean {
-    return acceptsArbitraryExpressions(this.signatures);
+    if (!this.signatures || this.signatures.length === 0) {
+      return false;
+    }
+
+    return this.signatures.some((sig) => {
+      const isVariadicWithMultipleParams = sig.minParams != null && sig.minParams >= 2;
+      const hasUnknownReturn = sig.returnType === 'unknown';
+      const hasMixedBooleanAndAny =
+        sig.params.some(({ type }) => type === 'boolean') &&
+        sig.params.some((param) => param.type === 'any');
+
+      return isVariadicWithMultipleParams && hasUnknownReturn && hasMixedBooleanAndAny;
+    });
   }
 
   /**
