@@ -5,17 +5,14 @@
  * 2.0.
  */
 
-import type { IScopedSearchClient } from '@kbn/data-plugin/server';
-import { ESQL_SEARCH_STRATEGY, isRunningResponse } from '@kbn/data-plugin/common';
 import type { ESQLSearchParams, ESQLSearchResponse } from '@kbn/es-types';
-import type { IKibanaSearchRequest, IKibanaSearchResponse } from '@kbn/search-types';
-import { catchError, filter as rxFilter, lastValueFrom, map, throwError } from 'rxjs';
 import { inject, injectable } from 'inversify';
-import type { LoggerServiceContract } from '../logger_service/logger_service';
-import { LoggerServiceToken } from '../logger_service/logger_service';
+import { LoggerServiceToken, type LoggerServiceContract } from '../logger_service/logger_service';
+import type { IEsqlExecutor } from './esql_executor';
 
 interface ExecuteQueryParams {
   query: ESQLSearchParams['query'];
+  dropNullColumns?: boolean;
   filter?: ESQLSearchParams['filter'];
   params?: ESQLSearchParams['params'];
   abortSignal?: AbortSignal;
@@ -29,12 +26,13 @@ export interface QueryServiceContract {
 @injectable()
 export class QueryService implements QueryServiceContract {
   constructor(
-    private readonly searchClient: IScopedSearchClient,
+    private readonly executor: IEsqlExecutor,
     @inject(LoggerServiceToken) private readonly logger: LoggerServiceContract
   ) {}
 
   async executeQuery({
     query,
+    dropNullColumns = false,
     filter,
     params,
     abortSignal,
@@ -42,40 +40,21 @@ export class QueryService implements QueryServiceContract {
     try {
       this.logger.debug({
         message: () =>
-          `QueryService: Executing query - ${JSON.stringify({ query, filter, params })}`,
+          `QueryService: Executing query - ${JSON.stringify({
+            query,
+            dropNullColumns,
+            filter,
+            params,
+          })}`,
       });
 
-      const request: IKibanaSearchRequest<ESQLSearchParams> = {
-        params: {
-          query,
-          dropNullColumns: false,
-          filter,
-          params,
-        },
-      };
-
-      const searchResponse = await lastValueFrom(
-        this.searchClient
-          .search<
-            IKibanaSearchRequest<ESQLSearchParams>,
-            IKibanaSearchResponse<ESQLSearchResponse>
-          >(request, {
-            strategy: ESQL_SEARCH_STRATEGY,
-            ...(abortSignal ? { abortSignal } : {}),
-          })
-          .pipe(
-            catchError((error) => {
-              this.logger.error({
-                error,
-                code: 'ESQL_QUERY_ERROR',
-                type: 'QueryServiceError',
-              });
-              return throwError(() => error);
-            }),
-            rxFilter((resp) => !isRunningResponse(resp)),
-            map((resp) => resp.rawResponse)
-          )
-      );
+      const searchResponse = await this.executor.execute({
+        query,
+        dropNullColumns,
+        filter,
+        params,
+        abortSignal,
+      });
 
       this.logger.debug({
         message: `QueryService: Query executed successfully, returned ${searchResponse.values.length} rows`,

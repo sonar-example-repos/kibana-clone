@@ -13,10 +13,14 @@ import { registerFeaturePrivileges } from '../lib/security/privileges';
 import { registerSavedObjects } from '../saved_objects';
 import { TaskRunnerFactoryToken } from '../lib/services/task_run_scope_service/create_task_runner';
 import type { AlertingServerSetupDependencies } from '../types';
+import { registerDirectorTask } from '../lib/director';
 
 export function bindOnSetup({ bind }: ContainerModuleLoadOptions) {
   bind(OnSetup).toConstantValue((container) => {
     const logger = container.get(Logger);
+    const taskManager = container.get(
+      PluginSetup<AlertingServerSetupDependencies['taskManager']>('taskManager')
+    );
 
     registerFeaturePrivileges(container.get(PluginSetup('features')));
 
@@ -26,10 +30,10 @@ export function bindOnSetup({ bind }: ContainerModuleLoadOptions) {
     });
 
     registerRuleExecutorTaskDefinition({
-      taskManager: container.get(
-        PluginSetup<AlertingServerSetupDependencies['taskManager']>('taskManager')
-      ),
+      taskManager,
       taskRunnerFactory: container.get(TaskRunnerFactoryToken),
     });
+
+    registerDirectorTask(taskManager, container);
   });
 }

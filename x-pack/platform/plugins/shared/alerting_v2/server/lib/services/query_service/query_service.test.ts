@@ -12,6 +12,7 @@ import type { ESQLSearchResponse } from '@kbn/es-types';
 import { loggerMock } from '@kbn/logging-mocks';
 import { dataPluginMock } from '@kbn/data-plugin/server/mocks';
 import { QueryService } from './query_service';
+import { ScopedEsqlExecutor } from './scoped_esql_executor';
 import { LoggerService } from '../logger_service/logger_service';
 import { httpServerMock } from '@kbn/core/server/mocks';
 
@@ -19,7 +20,7 @@ describe('QueryService', () => {
   let mockSearchClient: jest.Mocked<IScopedSearchClient>;
   let mockLogger: jest.Mocked<Logger>;
   let mockLoggerService: LoggerService;
-  let esqlService: QueryService;
+  let queryService: QueryService;
 
   beforeEach(() => {
     // @ts-expect-error - dataPluginMock is not typed correctly
@@ -29,7 +30,7 @@ describe('QueryService', () => {
 
     mockLogger = loggerMock.create();
     mockLoggerService = new LoggerService(mockLogger);
-    esqlService = new QueryService(mockSearchClient, mockLoggerService);
+    queryService = new QueryService(new ScopedEsqlExecutor(mockSearchClient), mockLoggerService);
   });
 
   afterEach(() => {
@@ -77,7 +78,7 @@ describe('QueryService', () => {
         })
       );
 
-      const result = await esqlService.executeQuery({
+      const result = await queryService.executeQuery({
         query: mockQuery,
         filter: mockFilter,
         params: mockParams,
@@ -106,7 +107,7 @@ describe('QueryService', () => {
       const error = new Error('ES|QL syntax error');
       mockSearchClient.search.mockReturnValue(throwError(() => error));
 
-      await expect(esqlService.executeQuery({ query: mockQuery })).rejects.toThrow(
+      await expect(queryService.executeQuery({ query: mockQuery })).rejects.toThrow(
         'ES|QL syntax error'
       );
 
@@ -128,7 +129,7 @@ describe('QueryService', () => {
         ],
       };
 
-      const result = esqlService.queryResponseToRecords(mockResponse);
+      const result = queryService.queryResponseToRecords(mockResponse);
 
       expect(result).toHaveLength(2);
       expect(result).toEqual([
@@ -157,7 +158,7 @@ describe('QueryService', () => {
         ],
       };
 
-      const result = esqlService.queryResponseToRecords(mockResponse);
+      const result = queryService.queryResponseToRecords(mockResponse);
 
       expect(result).toHaveLength(2);
       expect(result).toEqual([
@@ -178,7 +179,7 @@ describe('QueryService', () => {
         values: [],
       };
 
-      const result = esqlService.queryResponseToRecords<{ field: string }>(mockResponse);
+      const result = queryService.queryResponseToRecords<{ field: string }>(mockResponse);
 
       expect(result).toHaveLength(0);
       expect(result).toEqual([]);
@@ -190,7 +191,7 @@ describe('QueryService', () => {
         values: [['value']],
       };
 
-      const result = esqlService.queryResponseToRecords<{ field: string }>(mockResponse);
+      const result = queryService.queryResponseToRecords<{ field: string }>(mockResponse);
 
       expect(result).toHaveLength(0);
       expect(result).toEqual([]);
