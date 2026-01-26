@@ -176,13 +176,7 @@ module.exports = (_, argv) => {
       ignored: /[\\/]node_modules[\\/](?!@elastic[\\/]eui)/,
     },
 
-    // snapshot: {
-    //  managedPaths: [/^(.+?[\\/]node_modules[\\/])(?!@elastic[\\/]eui)/],
-    // },
-
-    // so far only disabling cache worked but we should re-enable it for better performance
-    // and make `node_modules/@elastic/eui` work at the same time
-    cache: false,
+    cache: true,
 
     plugins: [
       new NodeLibsBrowserPlugin(),
