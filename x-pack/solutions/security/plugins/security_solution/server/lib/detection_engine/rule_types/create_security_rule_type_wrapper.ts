@@ -9,7 +9,6 @@ import { isEmpty, partition } from 'lodash';
 import agent from 'elastic-apm-node';
 
 import type { estypes } from '@elastic/elasticsearch';
-import { IndexPatternsFetcher } from '@kbn/data-views-plugin/server';
 import { TIMESTAMP } from '@kbn/rule-data-utils';
 import { createPersistenceRuleTypeWrapper } from '@kbn/rule-registry-plugin/server';
 import { buildExceptionFilter } from '@kbn/lists-plugin/server/services/exception_lists';
@@ -20,15 +19,13 @@ import { getIndexListFromEsqlQuery } from '@kbn/securitysolution-utils';
 import type { FormatAlert } from '@kbn/alerting-plugin/server/types';
 import { SavedObjectsErrorHelpers } from '@kbn/core/server';
 import {
-  checkPrivilegesFromEsClient,
   getExceptions,
   getRuleRangeTuples,
-  hasReadIndexPrivileges,
-  hasTimestampFields,
   isMachineLearningParams,
   isEsqlParams,
   getDisabledActionsWarningText,
   checkForFrozenIndices,
+  getIndexPatternMetrics,
 } from './utils/utils';
 import { DEFAULT_MAX_SIGNALS, DEFAULT_SEARCH_AFTER_PAGE_SIZE } from '../../../../common/constants';
 import type { CreateSecurityRuleTypeWrapper } from './types';
@@ -304,55 +301,29 @@ export const createSecurityRuleTypeWrapper: CreateSecurityRuleTypeWrapper =
 
           if (!isMachineLearningParams(params)) {
             try {
-              const indexPatterns = new IndexPatternsFetcher(scopedClusterClient.asInternalUser);
-              const existingIndices = await indexPatterns.getExistingIndices(inputIndex);
+              const { perPatternReadableCounts, emptyPatternCount } = await getIndexPatternMetrics({
+                inputIndices: inputIndex,
+                currentUserEsClient: esClient,
+                primaryTimestamp,
+              });
 
-              if (existingIndices.length > 0) {
-                const privileges = await checkPrivilegesFromEsClient(esClient, existingIndices);
-                const readIndexWarningMessage = await hasReadIndexPrivileges({
-                  privileges,
-                  ruleExecutionLogger,
-                  uiSettingsClient,
-                  docLinks,
-                });
-
-                if (readIndexWarningMessage != null) {
-                  wrapperWarnings.push(readIndexWarningMessage);
-                }
+              // If there are no matching indices, we skip the execution and warn the user.
+              const noMatchingIndices = emptyPatternCount === inputIndex.length;
+              skipExecution = noMatchingIndices;
+              if (noMatchingIndices) {
+                wrapperWarnings.push(`No indices matching the provided index patterns were found`);
               }
-            } catch (exc) {
-              wrapperWarnings.push(`Check privileges failed to execute ${exc}`);
-            }
 
-            try {
-              const timestampFieldCaps = await withSecuritySpan('fieldCaps', () =>
-                services.scopedClusterClient.asCurrentUser.fieldCaps(
-                  {
-                    index: inputIndex,
-                    fields: secondaryTimestamp
-                      ? [primaryTimestamp, secondaryTimestamp]
-                      : [primaryTimestamp],
-                    include_unmapped: true,
-                    runtime_mappings: runtimeMappings,
-                    ignore_unavailable: true,
-                  },
-                  { meta: true }
-                )
-              );
-
-              const { foundNoIndices, warningMessage: warningMissingTimestampFieldsMessage } =
-                await hasTimestampFields({
-                  timestampField: primaryTimestamp,
-                  timestampFieldCapsResponse: timestampFieldCaps,
-                  inputIndices: inputIndex,
-                  ruleExecutionLogger,
-                });
-              if (warningMissingTimestampFieldsMessage != null) {
-                wrapperWarnings.push(warningMissingTimestampFieldsMessage);
+              // Log the per pattern metrics.
+              for (const [pattern, count] of Object.entries(perPatternReadableCounts)) {
+                ruleExecutionLogger.info(
+                  `Index pattern "${pattern}" has ${count} readable indices`
+                );
               }
-              skipExecution = foundNoIndices;
+              ruleExecutionLogger.info(`Total empty index patterns: ${emptyPatternCount}`);
+              ruleExecutionLogger.info(`Total index patterns: ${inputIndex.length}`);
             } catch (exc) {
-              wrapperWarnings.push(`Timestamp fields check failed to execute ${exc}`);
+              wrapperWarnings.push(`Index pattern metrics check failed to execute ${exc}`);
             }
 
             if (!isServerless) {

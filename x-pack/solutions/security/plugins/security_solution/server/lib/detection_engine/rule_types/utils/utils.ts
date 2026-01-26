@@ -192,6 +192,51 @@ export const hasTimestampFields = async (args: {
 };
 
 /**
+ * For each provided index pattern, checks whether it matches any indices by querying field capabilities
+ * for the primary timestamp field. Tracks how many patterns match zero indices ("empty") versus patterns
+ * that match one or more readable indices.
+ *
+ * @param {Object} args - The function arguments.
+ * @param {string[]} args.inputIndices - Array of index patterns to check.
+ * @param {ElasticsearchClient} args.currentUserEsClient - Elasticsearch current user client.
+ * @param {string} args.primaryTimestamp - The timestamp field to query for existence.
+ * @returns {Promise<{ perPatternReadableCounts: Record<string, number>, emptyPatternCount: number }>}
+ *   An object containing, for each pattern, the number of matched indices, and the total count of patterns
+ *   that matched no indices.
+ */
+export const getIndexPatternMetrics = async (args: {
+  inputIndices: string[];
+  currentUserEsClient: ElasticsearchClient;
+  primaryTimestamp: string;
+}): Promise<{ perPatternReadableCounts: Record<string, number>; emptyPatternCount: number }> => {
+  const { inputIndices, currentUserEsClient, primaryTimestamp } = args;
+
+  const perPatternReadableCounts: Record<string, number> = {};
+  let emptyPatternCount = 0;
+
+  for (const pattern of inputIndices) {
+    const response = await withSecuritySpan('fieldCaps', () =>
+      currentUserEsClient.fieldCaps({
+        index: [pattern],
+        fields: [primaryTimestamp],
+        ignore_unavailable: true,
+      })
+    );
+
+    if (response.indices.length === 0) {
+      emptyPatternCount++;
+    } else {
+      perPatternReadableCounts[pattern] = response.indices.length;
+    }
+  }
+
+  return {
+    perPatternReadableCounts,
+    emptyPatternCount,
+  };
+};
+
+/**
  * Identifies frozen indices from the provided input indices.
  * If any of the input indices resolve to frozen indices within the specified time range, they are returned by this function.
  * @param {string[]} params.inputIndices - The list of input index patterns or indices to check.
