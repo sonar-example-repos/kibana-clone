@@ -12,7 +12,7 @@
     "configPath": ["xpack", "dataSources"],
     "requiredPlugins": ["actions", "dataCatalog", "agentBuilder", "workflowsManagement", "triggersActionsUi"],
     "optionalPlugins": [],
-    "requiredBundles": ["kibanaReact"],
+    "requiredBundles": ["kibanaReact", "esUiShared"],
     "extraPublicDirs": [
       "common"
     ]

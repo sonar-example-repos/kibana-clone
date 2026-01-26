@@ -22,3 +22,7 @@ export const STACK_CONNECTOR_API_ROUTE = '/api/actions/connector';
 // Pagination constants
 export const DEFAULT_ITEMS_PER_PAGE = 10;
 export const PAGINATION_ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
+
+// Data source specific constants
+export const GITHUB_MCP_SERVER_URL = 'https://api.githubcopilot.com/mcp/';
+export const GITHUB_MCP_AUTH_TYPE = 'bearer';
