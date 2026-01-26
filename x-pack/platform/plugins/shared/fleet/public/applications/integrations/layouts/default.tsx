@@ -5,12 +5,21 @@
  * 2.0.
  */
 import React, { memo } from 'react';
-import { EuiFlexGroup, EuiFlexItem, EuiSpacer, EuiText, EuiNotificationBadge } from '@elastic/eui';
+import {
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiSpacer,
+  EuiText,
+  EuiNotificationBadge,
+  EuiLink,
+  useEuiTheme,
+} from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 
 import { ExperimentalFeaturesService } from '../../../services';
 import { useLink, useStartServices } from '../../../hooks';
 import type { Section } from '../sections';
+import { INTEGRATIONS_OVERVIEW_FEEDBACK_LINK } from '../../../constants';
 
 import { WithHeaderLayout } from '.';
 
@@ -25,6 +34,9 @@ export const DefaultLayout: React.FC<Props> = memo(
   ({ section, children, notificationsBySection, noSpacerInContent }) => {
     const { automaticImport } = useStartServices();
     const { getHref } = useLink();
+    const { euiTheme } = useEuiTheme();
+    // Hide feedback links in development mode
+    const isDevMode = process.env.NODE_ENV === 'development';
     const tabs = [
       {
         name: (
@@ -55,14 +67,30 @@ export const DefaultLayout: React.FC<Props> = memo(
         noSpacerInContent={noSpacerInContent}
         leftColumn={
           <EuiFlexGroup direction="column" gutterSize="none" justifyContent="center">
-            <EuiText>
-              <h1>
-                <FormattedMessage
-                  id="xpack.fleet.integrationsHeaderTitle"
-                  defaultMessage="Integrations"
-                />
-              </h1>
-            </EuiText>
+            <EuiFlexGroup gutterSize="s" alignItems="flexEnd">
+              <EuiFlexItem grow={false}>
+                <EuiText>
+                  <h1>
+                    <FormattedMessage
+                      id="xpack.fleet.integrationsHeaderTitle"
+                      defaultMessage="Integrations"
+                    />
+                  </h1>
+                </EuiText>
+              </EuiFlexItem>
+              {!isDevMode && (
+                <EuiFlexItem grow={false} style={{ paddingBottom: euiTheme.size.xs }}>
+                  <EuiText size="s" style={{ whiteSpace: 'nowrap' }}>
+                    <EuiLink href={INTEGRATIONS_OVERVIEW_FEEDBACK_LINK} external target="_blank">
+                      <FormattedMessage
+                        id="xpack.fleet.integrationsHeaderFeedbackLink"
+                        defaultMessage="Give feedback"
+                      />
+                    </EuiLink>
+                  </EuiText>
+                </EuiFlexItem>
+              )}
+            </EuiFlexGroup>
 
             <EuiSpacer size="s" />
 
