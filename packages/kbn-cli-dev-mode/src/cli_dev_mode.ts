@@ -246,7 +246,8 @@ export class CliDevMode {
 
     this.subscription.add(
       // the same pattern as: `kibana/packages/kbn-cli-dev-mode/src/dev_server.ts`
-      Rx.concat([undefined], this.watcher.optimizerShouldRestart$())
+      this.watcher
+        .optimizerShouldRestart$()
         .pipe(
           switchMap(() => this.optimizer.run$),
           // stop the optimizer as soon as we get an exit signal
