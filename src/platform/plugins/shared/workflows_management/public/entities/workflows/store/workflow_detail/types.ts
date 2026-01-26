@@ -41,6 +41,14 @@ export interface WorkflowDetailState {
   schema: WorkflowZodSchemaType;
   /** Loading states for async operations */
   loading: LoadingStates;
+  /** Connector flyout state */
+  connectorFlyout: {
+    isOpen: boolean;
+    connectorType?: string;
+    connectorIdToEdit?: string;
+    /** Position in Monaco editor where the flyout was opened from (for inserting connector ID) */
+    insertPosition?: MonacoInsertPosition;
+  };
 }
 
 export type ActiveTab = 'workflow' | 'executions';
@@ -51,4 +59,9 @@ export interface ComputedData {
   workflowLookup?: WorkflowLookup;
   workflowGraph?: WorkflowGraph; // This will be handled specially for serialization
   workflowDefinition?: WorkflowYaml | null;
+}
+
+export interface MonacoInsertPosition {
+  lineNumber: number;
+  column: number;
 }
