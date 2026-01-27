@@ -14,6 +14,8 @@ import type {
   SavedObject,
 } from '@kbn/core/server';
 import type { LegacyUrlAliasTarget } from '@kbn/core-saved-objects-common';
+import type { CPSServerSetup } from '@kbn/cps/server';
+import type { INpreClient } from '@kbn/cps/server/npre';
 import type { KibanaFeature } from '@kbn/features-plugin/common';
 import type { FeaturesPluginStart } from '@kbn/features-plugin/server';
 
@@ -21,6 +23,7 @@ import { isReservedSpace } from '../../common';
 import type { spaceV1 as v1 } from '../../common';
 import type { ConfigType } from '../config';
 import { withSpaceSolutionDisabledFeatures } from '../lib/utils/space_solution_disabled_features';
+import { getSpaceDefaultNpreName } from '../npre/get_space_default_npre_name';
 
 const SUPPORTED_GET_SPACE_PURPOSES: v1.GetAllSpacesPurpose[] = [
   'any',
@@ -98,7 +101,9 @@ export class SpacesClient implements ISpacesClient {
     private readonly repository: ISavedObjectsRepository,
     private readonly nonGlobalTypeNames: string[],
     private readonly buildFlavour: BuildFlavor,
-    private readonly features: FeaturesPluginStart
+    private readonly features: FeaturesPluginStart,
+    private readonly cpsSetup: CPSServerSetup | undefined,
+    private readonly npreClient: INpreClient
   ) {
     this.isServerless = this.buildFlavour === 'serverless';
     this.deprecatedFeaturesReferences = this.collectDeprecatedFeaturesReferences(
@@ -128,7 +133,13 @@ export class SpacesClient implements ISpacesClient {
 
   public async get(id: string) {
     const savedObject = await this.repository.get('space', id);
-    return this.transformSavedObjectToSpace(savedObject);
+    const space = this.transformSavedObjectToSpace(savedObject);
+
+    if (this.cpsSetup?.getCpsEnabled()) {
+      space.projectRouting = await this.npreClient.getNpre(getSpaceDefaultNpreName(id));
+    }
+
+    return space;
   }
 
   public async create(space: v1.Space) {
@@ -163,6 +174,23 @@ export class SpacesClient implements ISpacesClient {
       throw Boom.badRequest('Unable to create Space, solution property cannot be empty');
     }
 
+    let projectRoutingExpression: string | undefined;
+    if (Object.hasOwn(space, 'projectRouting')) {
+      if (!this.cpsSetup?.getCpsEnabled()) {
+        throw Boom.badRequest(
+          'Unable to update Space, projectRouting property is only allowed when CPS is enabled'
+        );
+      } else if (!(await this.npreClient.canPutNpre())) {
+        throw Boom.forbidden(
+          'Unable to update Space, user is not authorized to update projectRouting'
+        );
+      } else {
+        projectRoutingExpression = space.projectRouting;
+        // Remove projectRouting from space so it is not saved as part of the saved object
+        delete space.projectRouting;
+      }
+    }
+
     this.debugLogger(`SpacesClient.create(), using RBAC. Attempting to create space`);
 
     const id = space.id;
@@ -170,9 +198,19 @@ export class SpacesClient implements ISpacesClient {
 
     const createdSavedObject = await this.repository.create('space', attributes, { id });
 
+    if (projectRoutingExpression) {
+      await this.npreClient.putNpre(getSpaceDefaultNpreName(id), projectRoutingExpression);
+    }
+
     this.debugLogger(`SpacesClient.create(), created space object`);
 
-    return this.transformSavedObjectToSpace(createdSavedObject);
+    const savedSpace = this.transformSavedObjectToSpace(createdSavedObject);
+
+    if (projectRoutingExpression) {
+      savedSpace.projectRouting = await this.npreClient.getNpre(getSpaceDefaultNpreName(id));
+    }
+
+    return savedSpace;
   }
 
   public async update(id: string, space: v1.Space) {
@@ -196,10 +234,38 @@ export class SpacesClient implements ISpacesClient {
       throw Boom.badRequest('Unable to update Space, solution property cannot be empty');
     }
 
+    let projectRoutingUpdated = false;
+    if (Object.hasOwn(space, 'projectRouting')) {
+      if (!this.cpsSetup?.getCpsEnabled()) {
+        throw Boom.badRequest(
+          'Unable to update Space, projectRouting property is only allowed when CPS is enabled'
+        );
+      } else if (!(await this.npreClient.canPutNpre())) {
+        throw Boom.forbidden('Unable to update Space, unauthorized to update projectRouting');
+      } else {
+        projectRoutingUpdated = true;
+
+        if (space.projectRouting === undefined) {
+          await this.npreClient.deleteNpre(getSpaceDefaultNpreName(id));
+        } else {
+          await this.npreClient.putNpre(getSpaceDefaultNpreName(id), space.projectRouting);
+        }
+
+        // Remove projectRouting from space so it is not saved as part of the saved object
+        delete space.projectRouting;
+      }
+    }
+
     const attributes = this.generateSpaceAttributes(space);
     await this.repository.update('space', id, attributes);
     const updatedSavedObject = await this.repository.get('space', id);
-    return this.transformSavedObjectToSpace(updatedSavedObject);
+    const updatedSpace = this.transformSavedObjectToSpace(updatedSavedObject);
+
+    if (projectRoutingUpdated) {
+      updatedSpace.projectRouting = await this.npreClient.getNpre(getSpaceDefaultNpreName(id));
+    }
+
+    return updatedSpace;
   }
 
   public createSavedObjectFinder(id: string) {
@@ -211,13 +277,33 @@ export class SpacesClient implements ISpacesClient {
 
   public async delete(id: string) {
     const existingSavedObject = await this.repository.get('space', id);
+
     if (isReservedSpace(this.transformSavedObjectToSpace(existingSavedObject))) {
       throw Boom.badRequest(`The ${id} space cannot be deleted because it is reserved.`);
+    }
+
+    if (
+      this.cpsSetup?.getCpsEnabled() &&
+      !(await this.npreClient.canDeleteNpre()) &&
+      (await this.npreClient.getNpre(getSpaceDefaultNpreName(id)))
+    ) {
+      // CPS is enabled and the user is not authorized to delete an existing npre
+      throw Boom.forbidden(
+        'Unable to delete Space, unauthorized to delete default projectRouting expression.'
+      );
     }
 
     await this.repository.deleteByNamespace(id);
 
     await this.repository.delete('space', id);
+
+    if (this.cpsSetup?.getCpsEnabled()) {
+      const spaceNpreName = getSpaceDefaultNpreName(id);
+
+      if (await this.npreClient.getNpre(spaceNpreName)) {
+        await this.npreClient.deleteNpre(spaceNpreName);
+      }
+    }
   }
 
   public async disableLegacyUrlAliases(aliases: LegacyUrlAliasTarget[]) {

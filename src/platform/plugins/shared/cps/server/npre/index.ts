@@ -7,12 +7,4 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { PluginInitializerContext } from '@kbn/core/server';
-
-export type { CPSServerSetup, CPSServerStart } from './types';
-export { config } from './config';
-
-export const plugin = async (initContext: PluginInitializerContext) => {
-  const { CPSServerPlugin } = await import('./plugin');
-  return new CPSServerPlugin(initContext);
-};
+export type { INpreClient } from './npre_client';

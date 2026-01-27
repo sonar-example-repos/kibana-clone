@@ -55546,6 +55546,10 @@
                     "minLength": 1,
                     "type": "string"
                   },
+                  "projectRouting": {
+                    "description": "Cross-project search project routing configuration for this space. Controls whether searches are scoped to a single project or span multiple projects in serverless environments.",
+                    "type": "string"
+                  },
                   "solution": {
                     "enum": [
                       "security",
@@ -55701,6 +55705,10 @@
                   "name": {
                     "description": "The display name for the space. ",
                     "minLength": 1,
+                    "type": "string"
+                  },
+                  "projectRouting": {
+                    "description": "Cross-project search project routing configuration for this space. Controls whether searches are scoped to a single project or span multiple projects in serverless environments.",
                     "type": "string"
                   },
                   "solution": {
