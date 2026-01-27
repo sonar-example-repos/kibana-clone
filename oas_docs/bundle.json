@@ -54479,6 +54479,7 @@
                           "description": "Cluster privileges that define the cluster level actions that users can perform.",
                           "type": "string"
                         },
+                        "maxItems": 100,
                         "type": "array"
                       },
                       "indices": {
@@ -54495,6 +54496,7 @@
                                   "description": "The document fields that the role members have read access to.",
                                   "type": "string"
                                 },
+                                "maxItems": 1000,
                                 "type": "array"
                               },
                               "type": "object"
@@ -54504,6 +54506,7 @@
                                 "description": "The data streams, indices, and aliases to which the permissions in this entry apply. It supports wildcards (*).",
                                 "type": "string"
                               },
+                              "maxItems": 100,
                               "minItems": 1,
                               "type": "array"
                             },
@@ -54512,6 +54515,7 @@
                                 "description": "The index level privileges that the role members have for the data streams and indices.",
                                 "type": "string"
                               },
+                              "maxItems": 100,
                               "minItems": 1,
                               "type": "array"
                             },
@@ -54526,6 +54530,7 @@
                           ],
                           "type": "object"
                         },
+                        "maxItems": 1000,
                         "type": "array"
                       },
                       "remote_cluster": {
@@ -54537,6 +54542,7 @@
                                 "description": "A list of remote cluster aliases. It supports literal strings as well as wildcards and regular expressions.",
                                 "type": "string"
                               },
+                              "maxItems": 100,
                               "minItems": 1,
                               "type": "array"
                             },
@@ -54545,6 +54551,7 @@
                                 "description": "The cluster level privileges for the remote cluster. The allowed values are a subset of the cluster privileges.",
                                 "type": "string"
                               },
+                              "maxItems": 100,
                               "minItems": 1,
                               "type": "array"
                             }
@@ -54555,6 +54562,7 @@
                           ],
                           "type": "object"
                         },
+                        "maxItems": 100,
                         "type": "array"
                       },
                       "remote_indices": {
@@ -54570,6 +54578,7 @@
                                 "description": "A list of remote cluster aliases. It supports literal strings as well as wildcards and regular expressions.",
                                 "type": "string"
                               },
+                              "maxItems": 100,
                               "minItems": 1,
                               "type": "array"
                             },
@@ -54579,6 +54588,7 @@
                                   "description": "The document fields that the role members have read access to.",
                                   "type": "string"
                                 },
+                                "maxItems": 1000,
                                 "type": "array"
                               },
                               "type": "object"
@@ -54588,6 +54598,7 @@
                                 "description": "A list of remote aliases, data streams, or indices to which the permissions apply. It supports wildcards (*).",
                                 "type": "string"
                               },
+                              "maxItems": 100,
                               "minItems": 1,
                               "type": "array"
                             },
@@ -54596,6 +54607,7 @@
                                 "description": "The index level privileges that role members have for the specified indices.",
                                 "type": "string"
                               },
+                              "maxItems": 100,
                               "minItems": 1,
                               "type": "array"
                             },
@@ -54611,6 +54623,7 @@
                           ],
                           "type": "object"
                         },
+                        "maxItems": 1000,
                         "type": "array"
                       },
                       "run_as": {
@@ -54618,6 +54631,7 @@
                           "description": "A user name that the role member can impersonate.",
                           "type": "string"
                         },
+                        "maxItems": 100,
                         "type": "array"
                       }
                     },
@@ -54653,6 +54667,7 @@
                                 "description": "A base privilege that grants applies to all spaces.",
                                 "type": "string"
                               },
+                              "maxItems": 50,
                               "type": "array"
                             },
                             {
@@ -54660,6 +54675,7 @@
                                 "description": "A base privilege that applies to specific spaces.",
                                 "type": "string"
                               },
+                              "maxItems": 50,
                               "type": "array"
                             }
                           ]
@@ -54670,6 +54686,7 @@
                               "description": "The privileges that the role member has for the feature.",
                               "type": "string"
                             },
+                            "maxItems": 100,
                             "type": "array"
                           },
                           "type": "object"
@@ -54692,6 +54709,7 @@
                                 "description": "A space that the privilege applies to.",
                                 "type": "string"
                               },
+                              "maxItems": 1000,
                               "type": "array"
                             }
                           ],
@@ -54769,6 +54787,7 @@
                                 "description": "Cluster privileges that define the cluster level actions that users can perform.",
                                 "type": "string"
                               },
+                              "maxItems": 100,
                               "type": "array"
                             },
                             "indices": {
@@ -54785,6 +54804,7 @@
                                         "description": "The document fields that the role members have read access to.",
                                         "type": "string"
                                       },
+                                      "maxItems": 1000,
                                       "type": "array"
                                     },
                                     "type": "object"
@@ -54794,6 +54814,7 @@
                                       "description": "The data streams, indices, and aliases to which the permissions in this entry apply. It supports wildcards (*).",
                                       "type": "string"
                                     },
+                                    "maxItems": 100,
                                     "minItems": 1,
                                     "type": "array"
                                   },
@@ -54802,6 +54823,7 @@
                                       "description": "The index level privileges that the role members have for the data streams and indices.",
                                       "type": "string"
                                     },
+                                    "maxItems": 100,
                                     "minItems": 1,
                                     "type": "array"
                                   },
@@ -54816,6 +54838,7 @@
                                 ],
                                 "type": "object"
                               },
+                              "maxItems": 1000,
                               "type": "array"
                             },
                             "remote_cluster": {
@@ -54827,6 +54850,7 @@
                                       "description": "A list of remote cluster aliases. It supports literal strings as well as wildcards and regular expressions.",
                                       "type": "string"
                                     },
+                                    "maxItems": 100,
                                     "minItems": 1,
                                     "type": "array"
                                   },
@@ -54835,6 +54859,7 @@
                                       "description": "The cluster level privileges for the remote cluster. The allowed values are a subset of the cluster privileges.",
                                       "type": "string"
                                     },
+                                    "maxItems": 100,
                                     "minItems": 1,
                                     "type": "array"
                                   }
@@ -54845,6 +54870,7 @@
                                 ],
                                 "type": "object"
                               },
+                              "maxItems": 100,
                               "type": "array"
                             },
                             "remote_indices": {
@@ -54860,6 +54886,7 @@
                                       "description": "A list of remote cluster aliases. It supports literal strings as well as wildcards and regular expressions.",
                                       "type": "string"
                                     },
+                                    "maxItems": 100,
                                     "minItems": 1,
                                     "type": "array"
                                   },
@@ -54869,6 +54896,7 @@
                                         "description": "The document fields that the role members have read access to.",
                                         "type": "string"
                                       },
+                                      "maxItems": 1000,
                                       "type": "array"
                                     },
                                     "type": "object"
@@ -54878,6 +54906,7 @@
                                       "description": "A list of remote aliases, data streams, or indices to which the permissions apply. It supports wildcards (*).",
                                       "type": "string"
                                     },
+                                    "maxItems": 100,
                                     "minItems": 1,
                                     "type": "array"
                                   },
@@ -54886,6 +54915,7 @@
                                       "description": "The index level privileges that role members have for the specified indices.",
                                       "type": "string"
                                     },
+                                    "maxItems": 100,
                                     "minItems": 1,
                                     "type": "array"
                                   },
@@ -54901,6 +54931,7 @@
                                 ],
                                 "type": "object"
                               },
+                              "maxItems": 1000,
                               "type": "array"
                             },
                             "run_as": {
@@ -54908,6 +54939,7 @@
                                 "description": "A user name that the role member can impersonate.",
                                 "type": "string"
                               },
+                              "maxItems": 100,
                               "type": "array"
                             }
                           },
@@ -54943,6 +54975,7 @@
                                       "description": "A base privilege that grants applies to all spaces.",
                                       "type": "string"
                                     },
+                                    "maxItems": 50,
                                     "type": "array"
                                   },
                                   {
@@ -54950,6 +54983,7 @@
                                       "description": "A base privilege that applies to specific spaces.",
                                       "type": "string"
                                     },
+                                    "maxItems": 50,
                                     "type": "array"
                                   }
                                 ]
@@ -54960,6 +54994,7 @@
                                     "description": "The privileges that the role member has for the feature.",
                                     "type": "string"
                                   },
+                                  "maxItems": 100,
                                   "type": "array"
                                 },
                                 "type": "object"
@@ -54982,6 +55017,7 @@
                                       "description": "A space that the privilege applies to.",
                                       "type": "string"
                                     },
+                                    "maxItems": 1000,
                                     "type": "array"
                                   }
                                 ],
@@ -55085,6 +55121,7 @@
                       ],
                       "type": "object"
                     },
+                    "maxItems": 1000,
                     "type": "array"
                   },
                   "overwrite": {
@@ -55097,6 +55134,7 @@
                       "description": "The identifiers of the spaces where you want to copy the specified objects.",
                       "type": "string"
                     },
+                    "maxItems": 100,
                     "type": "array"
                   }
                 },
@@ -55161,6 +55199,7 @@
                       ],
                       "type": "object"
                     },
+                    "maxItems": 1000,
                     "type": "array"
                   }
                 },
@@ -55218,6 +55257,7 @@
                       ],
                       "type": "object"
                     },
+                    "maxItems": 1000,
                     "type": "array"
                   }
                 },
@@ -55287,6 +55327,7 @@
                       ],
                       "type": "object"
                     },
+                    "maxItems": 1000,
                     "type": "array"
                   },
                   "retries": {
@@ -55326,6 +55367,7 @@
                         ],
                         "type": "object"
                       },
+                      "maxItems": 1000,
                       "type": "array"
                     },
                     "type": "object"
@@ -55386,6 +55428,7 @@
                       ],
                       "type": "object"
                     },
+                    "maxItems": 1000,
                     "type": "array"
                   },
                   "spacesToAdd": {
@@ -55393,6 +55436,7 @@
                       "description": "The identifiers of the spaces the saved objects should be added to or removed from.",
                       "type": "string"
                     },
+                    "maxItems": 1000,
                     "type": "array"
                   },
                   "spacesToRemove": {
@@ -55400,6 +55444,7 @@
                       "description": "The identifiers of the spaces the saved objects should be added to or removed from.",
                       "type": "string"
                     },
+                    "maxItems": 1000,
                     "type": "array"
                   }
                 },
@@ -55526,6 +55571,7 @@
                       "description": "The list of features that are turned off in the space.",
                       "type": "string"
                     },
+                    "maxItems": 100,
                     "type": "array"
                   },
                   "id": {
@@ -55683,6 +55729,7 @@
                       "description": "The list of features that are turned off in the space.",
                       "type": "string"
                     },
+                    "maxItems": 100,
                     "type": "array"
                   },
                   "id": {

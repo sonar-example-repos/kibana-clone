@@ -56977,6 +56977,7 @@ paths:
                       items:
                         description: Cluster privileges that define the cluster level actions that users can perform.
                         type: string
+                      maxItems: 100
                       type: array
                     indices:
                       items:
@@ -56991,18 +56992,21 @@ paths:
                               items:
                                 description: The document fields that the role members have read access to.
                                 type: string
+                              maxItems: 1000
                               type: array
                             type: object
                           names:
                             items:
                               description: The data streams, indices, and aliases to which the permissions in this entry apply. It supports wildcards (*).
                               type: string
+                            maxItems: 100
                             minItems: 1
                             type: array
                           privileges:
                             items:
                               description: The index level privileges that the role members have for the data streams and indices.
                               type: string
+                            maxItems: 100
                             minItems: 1
                             type: array
                           query:
@@ -57011,6 +57015,7 @@ paths:
                         required:
                           - names
                           - privileges
+                      maxItems: 1000
                       type: array
                     remote_cluster:
                       items:
@@ -57021,17 +57026,20 @@ paths:
                             items:
                               description: A list of remote cluster aliases. It supports literal strings as well as wildcards and regular expressions.
                               type: string
+                            maxItems: 100
                             minItems: 1
                             type: array
                           privileges:
                             items:
                               description: The cluster level privileges for the remote cluster. The allowed values are a subset of the cluster privileges.
                               type: string
+                            maxItems: 100
                             minItems: 1
                             type: array
                         required:
                           - privileges
                           - clusters
+                      maxItems: 100
                       type: array
                     remote_indices:
                       items:
@@ -57045,6 +57053,7 @@ paths:
                             items:
                               description: A list of remote cluster aliases. It supports literal strings as well as wildcards and regular expressions.
                               type: string
+                            maxItems: 100
                             minItems: 1
                             type: array
                           field_security:
@@ -57052,18 +57061,21 @@ paths:
                               items:
                                 description: The document fields that the role members have read access to.
                                 type: string
+                              maxItems: 1000
                               type: array
                             type: object
                           names:
                             items:
                               description: A list of remote aliases, data streams, or indices to which the permissions apply. It supports wildcards (*).
                               type: string
+                            maxItems: 100
                             minItems: 1
                             type: array
                           privileges:
                             items:
                               description: The index level privileges that role members have for the specified indices.
                               type: string
+                            maxItems: 100
                             minItems: 1
                             type: array
                           query:
@@ -57073,11 +57085,13 @@ paths:
                           - clusters
                           - names
                           - privileges
+                      maxItems: 1000
                       type: array
                     run_as:
                       items:
                         description: A user name that the role member can impersonate.
                         type: string
+                      maxItems: 100
                       type: array
                 kibana:
                   items:
@@ -57097,16 +57111,19 @@ paths:
                           - items:
                               description: A base privilege that grants applies to all spaces.
                               type: string
+                            maxItems: 50
                             type: array
                           - items:
                               description: A base privilege that applies to specific spaces.
                               type: string
+                            maxItems: 50
                             type: array
                       feature:
                         additionalProperties:
                           items:
                             description: The privileges that the role member has for the feature.
                             type: string
+                          maxItems: 100
                           type: array
                         type: object
                       spaces:
@@ -57121,6 +57138,7 @@ paths:
                           - items:
                               description: A space that the privilege applies to.
                               type: string
+                            maxItems: 1000
                             type: array
                         default:
                           - '*'
@@ -57176,6 +57194,7 @@ paths:
                             items:
                               description: Cluster privileges that define the cluster level actions that users can perform.
                               type: string
+                            maxItems: 100
                             type: array
                           indices:
                             items:
@@ -57190,18 +57209,21 @@ paths:
                                     items:
                                       description: The document fields that the role members have read access to.
                                       type: string
+                                    maxItems: 1000
                                     type: array
                                   type: object
                                 names:
                                   items:
                                     description: The data streams, indices, and aliases to which the permissions in this entry apply. It supports wildcards (*).
                                     type: string
+                                  maxItems: 100
                                   minItems: 1
                                   type: array
                                 privileges:
                                   items:
                                     description: The index level privileges that the role members have for the data streams and indices.
                                     type: string
+                                  maxItems: 100
                                   minItems: 1
                                   type: array
                                 query:
@@ -57210,6 +57232,7 @@ paths:
                               required:
                                 - names
                                 - privileges
+                            maxItems: 1000
                             type: array
                           remote_cluster:
                             items:
@@ -57220,17 +57243,20 @@ paths:
                                   items:
                                     description: A list of remote cluster aliases. It supports literal strings as well as wildcards and regular expressions.
                                     type: string
+                                  maxItems: 100
                                   minItems: 1
                                   type: array
                                 privileges:
                                   items:
                                     description: The cluster level privileges for the remote cluster. The allowed values are a subset of the cluster privileges.
                                     type: string
+                                  maxItems: 100
                                   minItems: 1
                                   type: array
                               required:
                                 - privileges
                                 - clusters
+                            maxItems: 100
                             type: array
                           remote_indices:
                             items:
@@ -57244,6 +57270,7 @@ paths:
                                   items:
                                     description: A list of remote cluster aliases. It supports literal strings as well as wildcards and regular expressions.
                                     type: string
+                                  maxItems: 100
                                   minItems: 1
                                   type: array
                                 field_security:
@@ -57251,18 +57278,21 @@ paths:
                                     items:
                                       description: The document fields that the role members have read access to.
                                       type: string
+                                    maxItems: 1000
                                     type: array
                                   type: object
                                 names:
                                   items:
                                     description: A list of remote aliases, data streams, or indices to which the permissions apply. It supports wildcards (*).
                                     type: string
+                                  maxItems: 100
                                   minItems: 1
                                   type: array
                                 privileges:
                                   items:
                                     description: The index level privileges that role members have for the specified indices.
                                     type: string
+                                  maxItems: 100
                                   minItems: 1
                                   type: array
                                 query:
@@ -57272,11 +57302,13 @@ paths:
                                 - clusters
                                 - names
                                 - privileges
+                            maxItems: 1000
                             type: array
                           run_as:
                             items:
                               description: A user name that the role member can impersonate.
                               type: string
+                            maxItems: 100
                             type: array
                       kibana:
                         items:
@@ -57296,16 +57328,19 @@ paths:
                                 - items:
                                     description: A base privilege that grants applies to all spaces.
                                     type: string
+                                  maxItems: 50
                                   type: array
                                 - items:
                                     description: A base privilege that applies to specific spaces.
                                     type: string
+                                  maxItems: 50
                                   type: array
                             feature:
                               additionalProperties:
                                 items:
                                   description: The privileges that the role member has for the feature.
                                   type: string
+                                maxItems: 100
                                 type: array
                               type: object
                             spaces:
@@ -57320,6 +57355,7 @@ paths:
                                 - items:
                                     description: A space that the privilege applies to.
                                     type: string
+                                  maxItems: 1000
                                   type: array
                               default:
                                 - '*'
@@ -57423,6 +57459,7 @@ paths:
                   items:
                     description: The list of features that are turned off in the space.
                     type: string
+                  maxItems: 100
                   type: array
                 id:
                   description: The space ID that is part of the Kibana URL when inside the space. Space IDs are limited to lowercase alphanumeric, underscore, and hyphen characters (a-z, 0-9, _, and -). You are cannot change the ID with the update operation.
@@ -57541,6 +57578,7 @@ paths:
                   items:
                     description: The list of features that are turned off in the space.
                     type: string
+                  maxItems: 100
                   type: array
                 id:
                   description: The space ID that is part of the Kibana URL when inside the space. Space IDs are limited to lowercase alphanumeric, underscore, and hyphen characters (a-z, 0-9, _, and -). You are cannot change the ID with the update operation.
