@@ -20835,6 +20835,16 @@ paths:
                       additionalProperties: false
                       type: object
                       properties:
+                        auth:
+                          additionalProperties: false
+                          type: object
+                          properties:
+                            api_key:
+                              type: string
+                            password:
+                              type: string
+                            username:
+                              type: string
                         host:
                           format: uri
                           type: string
@@ -20853,6 +20863,30 @@ paths:
                           additionalProperties: false
                           type: object
                           properties:
+                            auth:
+                              additionalProperties: false
+                              type: object
+                              properties:
+                                api_key:
+                                  anyOf:
+                                    - additionalProperties: false
+                                      type: object
+                                      properties:
+                                        id:
+                                          type: string
+                                      required:
+                                        - id
+                                    - type: string
+                                password:
+                                  anyOf:
+                                    - additionalProperties: false
+                                      type: object
+                                      properties:
+                                        id:
+                                          type: string
+                                      required:
+                                        - id
+                                    - type: string
                             ssl:
                               additionalProperties: false
                               type: object
@@ -20950,6 +20984,16 @@ paths:
               additionalProperties: false
               type: object
               properties:
+                auth:
+                  additionalProperties: false
+                  type: object
+                  properties:
+                    api_key:
+                      type: string
+                    password:
+                      type: string
+                    username:
+                      type: string
                 host:
                   format: uri
                   type: string
@@ -20968,6 +21012,30 @@ paths:
                   additionalProperties: false
                   type: object
                   properties:
+                    auth:
+                      additionalProperties: false
+                      type: object
+                      properties:
+                        api_key:
+                          anyOf:
+                            - additionalProperties: false
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                              required:
+                                - id
+                            - type: string
+                        password:
+                          anyOf:
+                            - additionalProperties: false
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                              required:
+                                - id
+                            - type: string
                     ssl:
                       additionalProperties: false
                       type: object
@@ -21010,6 +21078,16 @@ paths:
                     additionalProperties: false
                     type: object
                     properties:
+                      auth:
+                        additionalProperties: false
+                        type: object
+                        properties:
+                          api_key:
+                            type: string
+                          password:
+                            type: string
+                          username:
+                            type: string
                       host:
                         format: uri
                         type: string
@@ -21028,6 +21106,30 @@ paths:
                         additionalProperties: false
                         type: object
                         properties:
+                          auth:
+                            additionalProperties: false
+                            type: object
+                            properties:
+                              api_key:
+                                anyOf:
+                                  - additionalProperties: false
+                                    type: object
+                                    properties:
+                                      id:
+                                        type: string
+                                    required:
+                                      - id
+                                  - type: string
+                              password:
+                                anyOf:
+                                  - additionalProperties: false
+                                    type: object
+                                    properties:
+                                      id:
+                                        type: string
+                                    required:
+                                      - id
+                                  - type: string
                           ssl:
                             additionalProperties: false
                             type: object
@@ -21181,6 +21283,16 @@ paths:
                     additionalProperties: false
                     type: object
                     properties:
+                      auth:
+                        additionalProperties: false
+                        type: object
+                        properties:
+                          api_key:
+                            type: string
+                          password:
+                            type: string
+                          username:
+                            type: string
                       host:
                         format: uri
                         type: string
@@ -21199,6 +21311,30 @@ paths:
                         additionalProperties: false
                         type: object
                         properties:
+                          auth:
+                            additionalProperties: false
+                            type: object
+                            properties:
+                              api_key:
+                                anyOf:
+                                  - additionalProperties: false
+                                    type: object
+                                    properties:
+                                      id:
+                                        type: string
+                                    required:
+                                      - id
+                                  - type: string
+                              password:
+                                anyOf:
+                                  - additionalProperties: false
+                                    type: object
+                                    properties:
+                                      id:
+                                        type: string
+                                    required:
+                                      - id
+                                  - type: string
                           ssl:
                             additionalProperties: false
                             type: object
@@ -21290,6 +21426,16 @@ paths:
               additionalProperties: false
               type: object
               properties:
+                auth:
+                  additionalProperties: false
+                  type: object
+                  properties:
+                    api_key:
+                      type: string
+                    password:
+                      type: string
+                    username:
+                      type: string
                 host:
                   format: uri
                   type: string
@@ -21308,6 +21454,30 @@ paths:
                   additionalProperties: false
                   type: object
                   properties:
+                    auth:
+                      additionalProperties: false
+                      type: object
+                      properties:
+                        api_key:
+                          anyOf:
+                            - additionalProperties: false
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                              required:
+                                - id
+                            - type: string
+                        password:
+                          anyOf:
+                            - additionalProperties: false
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                              required:
+                                - id
+                            - type: string
                     ssl:
                       additionalProperties: false
                       type: object
@@ -21350,6 +21520,16 @@ paths:
                     additionalProperties: false
                     type: object
                     properties:
+                      auth:
+                        additionalProperties: false
+                        type: object
+                        properties:
+                          api_key:
+                            type: string
+                          password:
+                            type: string
+                          username:
+                            type: string
                       host:
                         format: uri
                         type: string
@@ -21368,6 +21548,30 @@ paths:
                         additionalProperties: false
                         type: object
                         properties:
+                          auth:
+                            additionalProperties: false
+                            type: object
+                            properties:
+                              api_key:
+                                anyOf:
+                                  - additionalProperties: false
+                                    type: object
+                                    properties:
+                                      id:
+                                        type: string
+                                    required:
+                                      - id
+                                  - type: string
+                              password:
+                                anyOf:
+                                  - additionalProperties: false
+                                    type: object
+                                    properties:
+                                      id:
+                                        type: string
+                                    required:
+                                      - id
+                                  - type: string
                           ssl:
                             additionalProperties: false
                             type: object
@@ -49438,6 +49642,8 @@ paths:
                         required:
                           - enabled
                           - is_preconfigured
+                      download_source_auth_secret_storage_requirements_met:
+                        type: boolean
                       has_seen_add_data_notice:
                         type: boolean
                       id:
@@ -49612,6 +49818,8 @@ paths:
                         required:
                           - enabled
                           - is_preconfigured
+                      download_source_auth_secret_storage_requirements_met:
+                        type: boolean
                       has_seen_add_data_notice:
                         type: boolean
                       id:

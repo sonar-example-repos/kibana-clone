@@ -10223,6 +10223,21 @@
                       "items": {
                         "additionalProperties": false,
                         "properties": {
+                          "auth": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "api_key": {
+                                "type": "string"
+                              },
+                              "password": {
+                                "type": "string"
+                              },
+                              "username": {
+                                "type": "string"
+                              }
+                            },
+                            "type": "object"
+                          },
                           "host": {
                             "format": "uri",
                             "type": "string"
@@ -10245,6 +10260,50 @@
                           "secrets": {
                             "additionalProperties": false,
                             "properties": {
+                              "auth": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "api_key": {
+                                    "anyOf": [
+                                      {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id"
+                                        ],
+                                        "type": "object"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "password": {
+                                    "anyOf": [
+                                      {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id"
+                                        ],
+                                        "type": "object"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "type": "object"
+                              },
                               "ssl": {
                                 "additionalProperties": false,
                                 "properties": {
@@ -10383,6 +10442,21 @@
               "schema": {
                 "additionalProperties": false,
                 "properties": {
+                  "auth": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "api_key": {
+                        "type": "string"
+                      },
+                      "password": {
+                        "type": "string"
+                      },
+                      "username": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
                   "host": {
                     "format": "uri",
                     "type": "string"
@@ -10405,6 +10479,50 @@
                   "secrets": {
                     "additionalProperties": false,
                     "properties": {
+                      "auth": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "api_key": {
+                            "anyOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id"
+                                ],
+                                "type": "object"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "password": {
+                            "anyOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id"
+                                ],
+                                "type": "object"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "type": "object"
+                      },
                       "ssl": {
                         "additionalProperties": false,
                         "properties": {
@@ -10472,6 +10590,21 @@
                     "item": {
                       "additionalProperties": false,
                       "properties": {
+                        "auth": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "api_key": {
+                              "type": "string"
+                            },
+                            "password": {
+                              "type": "string"
+                            },
+                            "username": {
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        },
                         "host": {
                           "format": "uri",
                           "type": "string"
@@ -10494,6 +10627,50 @@
                         "secrets": {
                           "additionalProperties": false,
                           "properties": {
+                            "auth": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "api_key": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id"
+                                      ],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "password": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id"
+                                      ],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                }
+                              },
+                              "type": "object"
+                            },
                             "ssl": {
                               "additionalProperties": false,
                               "properties": {
@@ -10701,6 +10878,21 @@
                     "item": {
                       "additionalProperties": false,
                       "properties": {
+                        "auth": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "api_key": {
+                              "type": "string"
+                            },
+                            "password": {
+                              "type": "string"
+                            },
+                            "username": {
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        },
                         "host": {
                           "format": "uri",
                           "type": "string"
@@ -10723,6 +10915,50 @@
                         "secrets": {
                           "additionalProperties": false,
                           "properties": {
+                            "auth": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "api_key": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id"
+                                      ],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "password": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id"
+                                      ],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                }
+                              },
+                              "type": "object"
+                            },
                             "ssl": {
                               "additionalProperties": false,
                               "properties": {
@@ -10854,6 +11090,21 @@
               "schema": {
                 "additionalProperties": false,
                 "properties": {
+                  "auth": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "api_key": {
+                        "type": "string"
+                      },
+                      "password": {
+                        "type": "string"
+                      },
+                      "username": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
                   "host": {
                     "format": "uri",
                     "type": "string"
@@ -10876,6 +11127,50 @@
                   "secrets": {
                     "additionalProperties": false,
                     "properties": {
+                      "auth": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "api_key": {
+                            "anyOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id"
+                                ],
+                                "type": "object"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "password": {
+                            "anyOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id"
+                                ],
+                                "type": "object"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "type": "object"
+                      },
                       "ssl": {
                         "additionalProperties": false,
                         "properties": {
@@ -10943,6 +11238,21 @@
                     "item": {
                       "additionalProperties": false,
                       "properties": {
+                        "auth": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "api_key": {
+                              "type": "string"
+                            },
+                            "password": {
+                              "type": "string"
+                            },
+                            "username": {
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        },
                         "host": {
                           "format": "uri",
                           "type": "string"
@@ -10965,6 +11275,50 @@
                         "secrets": {
                           "additionalProperties": false,
                           "properties": {
+                            "auth": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "api_key": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id"
+                                      ],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "password": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id"
+                                      ],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                }
+                              },
+                              "type": "object"
+                            },
                             "ssl": {
                               "additionalProperties": false,
                               "properties": {
@@ -51371,6 +51725,9 @@
                           ],
                           "type": "object"
                         },
+                        "download_source_auth_secret_storage_requirements_met": {
+                          "type": "boolean"
+                        },
                         "has_seen_add_data_notice": {
                           "type": "boolean"
                         },
@@ -51611,6 +51968,9 @@
                             "is_preconfigured"
                           ],
                           "type": "object"
+                        },
+                        "download_source_auth_secret_storage_requirements_met": {
+                          "type": "boolean"
                         },
                         "has_seen_add_data_notice": {
                           "type": "boolean"
