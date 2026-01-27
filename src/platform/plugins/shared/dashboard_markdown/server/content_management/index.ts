@@ -9,3 +9,4 @@
 
 export type { MarkdownState, StoredMarkdownState } from './schema/v1';
 export { MarkdownStorage } from './markdown_storage';
+export * from './transform_utils';

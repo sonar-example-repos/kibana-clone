@@ -18,7 +18,7 @@ import { MARKDOWN_SAVED_OBJECT_TYPE } from '../../common/constants';
 import type { MarkdownState } from '.';
 import type { MarkdownItem } from '../../common/content_management';
 import type { StoredMarkdownState } from '.';
-import { savedObjectToItem } from './schema/v1';
+import { savedObjectToItem } from '.';
 
 export class MarkdownStorage implements ContentStorage<MarkdownState> {
   public async get(id: string): Promise<MarkdownState> {
@@ -40,12 +40,13 @@ export class MarkdownStorage implements ContentStorage<MarkdownState> {
     throw new Error('Search not implemented.');
   }
 
-  // TODO: Remove in the future, only required for populating SavedObjectFinder in AddFromLibrary flyout
+  // TODO: Remove in the future at part of content management clean up
+  // only required for populating SavedObjectFinder in AddFromLibrary flyout
   mSearch: MSearchConfig<MarkdownState> = {
     savedObjectType: MARKDOWN_SAVED_OBJECT_TYPE,
     toItemResult: (
       ctx: StorageContext,
       savedObject: SavedObject<StoredMarkdownState>
-    ): MarkdownItem => savedObjectToItem(savedObject),
+    ): MarkdownItem => savedObjectToItem(savedObject) as MarkdownItem,
   };
 }
