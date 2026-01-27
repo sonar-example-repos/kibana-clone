@@ -6,7 +6,6 @@
  */
 
 import React from 'react';
-import type { FieldArrayWithId } from 'react-hook-form';
 import { useFormContext, useFieldArray } from 'react-hook-form';
 import type { DragDropContextProps, EuiButtonEmptyProps } from '@elastic/eui';
 import {
@@ -21,15 +20,12 @@ import {
   useEuiTheme,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import type { GrokCollection } from '@kbn/grok-ui';
-import { DraftGrokExpression } from '@kbn/grok-ui';
-import { Expression } from '@kbn/grok-ui';
+import { Expression, type DraftGrokExpression, type GrokCollection } from '@kbn/grok-ui';
 import { dynamic } from '@kbn/shared-ux-utility';
 import { css } from '@emotion/react';
 import { isEmpty } from 'lodash';
-import { useStreamEnrichmentSelector } from '../../../../state_management/stream_enrichment_state_machine';
+import { useGrokCollection, useGrokExpressions } from '@kbn/grok-ui';
 import { SortableList } from '../../../../sortable_list';
-import type { GrokFormState } from '../../../../types';
 import { useAIFeatures } from '../../../../../../../hooks/use_ai_features';
 
 const GrokPatternAISuggestions = dynamic(() =>
@@ -40,31 +36,51 @@ export const GrokPatternsEditor = () => {
   const {
     formState: { errors },
     setValue,
+    watch,
   } = useFormContext();
 
   const { euiTheme } = useEuiTheme();
 
   const aiFeatures = useAIFeatures();
 
-  const grokCollection = useStreamEnrichmentSelector(
-    (machineState) => machineState.context.grokCollection
-  );
+  const { grokCollection } = useGrokCollection();
 
-  const { fields, append, remove, move } = useFieldArray<Pick<GrokFormState, 'patterns'>>({
-    name: 'patterns',
+  const { fields, append, remove, move } = useFieldArray({
+    name: 'patterns' as 'patterns',
     rules: {
       minLength: 1,
-      validate: (expressions) => {
-        if (expressions.every((expression) => isEmpty(expression.getExpression()))) {
+      validate: (patterns) => {
+        // Ensure patterns is an array of strings
+        if (!Array.isArray(patterns) || patterns.length === 0) {
           return i18n.translate(
             'xpack.streams.streamDetailView.managementTab.enrichment.processor.grokEditorRequiredError',
             { defaultMessage: 'Empty patterns are not allowed.' }
           );
         }
+
+        // Check if all patterns are empty strings
+        const allEmpty = patterns.every((pattern) => {
+          const patternStr = typeof pattern === 'string' ? pattern : '';
+          return isEmpty(patternStr.trim());
+        });
+
+        if (allEmpty) {
+          return i18n.translate(
+            'xpack.streams.streamDetailView.managementTab.enrichment.processor.grokEditorRequiredError',
+            { defaultMessage: 'Empty patterns are not allowed.' }
+          );
+        }
+
         return true;
       },
     },
   });
+
+  // Watch the patterns array to get current string values
+  const patternStrings = watch('patterns') as string[];
+
+  // Convert string patterns to DraftGrokExpression instances
+  const draftExpressions = useGrokExpressions(patternStrings || []);
 
   const handlePatternDrag: DragDropContextProps['onDragEnd'] = ({ source, destination }) => {
     if (source && destination) {
@@ -73,13 +89,13 @@ export const GrokPatternsEditor = () => {
   };
 
   const handleAddPattern = () => {
-    append(new DraftGrokExpression(grokCollection, ''));
+    append('');
   };
 
   const getRemovePatternHandler = (id: number) => (fields.length > 1 ? () => remove(id) : null);
 
-  const handlePatternChange = (expression: DraftGrokExpression, idx: number) => {
-    setValue(`patterns.${idx}`, expression, {
+  const handlePatternChange = (newPattern: string, idx: number) => {
+    setValue(`patterns.${idx}`, newPattern, {
       shouldValidate: true,
     });
   };
@@ -99,23 +115,27 @@ export const GrokPatternsEditor = () => {
       >
         <EuiPanel color="subdued" paddingSize="none">
           <SortableList onDragItem={handlePatternDrag}>
-            {fields.map((field, idx) => (
-              <DraggablePatternInput
-                key={field.id}
-                draftGrokExpression={field}
-                idx={idx}
-                onRemove={getRemovePatternHandler(idx)}
-                grokCollection={grokCollection}
-                onChange={(expression) => handlePatternChange(expression, idx)}
-              />
-            ))}
+            {fields.map(
+              (field, idx) =>
+                draftExpressions[idx] && (
+                  <DraggablePatternInput
+                    key={field.id}
+                    draggableId={field.id}
+                    draftGrokExpression={draftExpressions[idx]}
+                    idx={idx}
+                    onRemove={getRemovePatternHandler(idx)}
+                    grokCollection={grokCollection!}
+                    onChange={(newPattern) => handlePatternChange(newPattern, idx)}
+                  />
+                )
+            )}
           </SortableList>
         </EuiPanel>
       </EuiFormRow>
       {aiFeatures ? (
         <GrokPatternAISuggestions
           aiFeatures={aiFeatures}
-          grokCollection={grokCollection}
+          grokCollection={grokCollection!}
           setValue={setValue}
           onAddPattern={handleAddPattern}
         />
@@ -143,14 +163,16 @@ const AddPatternButton = (props: EuiButtonEmptyProps) => {
 };
 
 interface DraggablePatternInputProps {
-  draftGrokExpression: FieldArrayWithId<Pick<GrokFormState, 'patterns'>, 'patterns', 'id'>;
+  draggableId: string;
+  draftGrokExpression: DraftGrokExpression;
   idx: number;
   grokCollection: GrokCollection;
-  onChange: (expression: DraftGrokExpression) => void;
+  onChange: (pattern: string) => void;
   onRemove: ((idx: number) => void) | null;
 }
 
 const DraggablePatternInput = ({
+  draggableId,
   draftGrokExpression,
   idx,
   grokCollection,
@@ -161,7 +183,7 @@ const DraggablePatternInput = ({
     <EuiDraggable
       index={idx}
       spacing="m"
-      draggableId={draftGrokExpression.id}
+      draggableId={draggableId}
       hasInteractiveChildren
       customDragHandle
     >

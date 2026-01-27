@@ -19,7 +19,6 @@ import {
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import type { GrokCollection } from '@kbn/grok-ui';
-import { DraftGrokExpression } from '@kbn/grok-ui';
 import type { UseFormSetValue, FieldValues } from 'react-hook-form';
 import { useWatch } from 'react-hook-form';
 import type { GrokProcessorResult } from '@kbn/grok-heuristics';
@@ -148,13 +147,9 @@ export const GrokPatternAISuggestions = ({
         simulationResult={suggestionsState.value.simulationResult}
         onAccept={() => {
           if (suggestionsState.value) {
-            setValue(
-              'patterns',
-              suggestionsState.value.grokProcessor.patterns.map(
-                (value) => new DraftGrokExpression(grokCollection, value)
-              ),
-              { shouldValidate: true }
-            );
+            setValue('patterns', suggestionsState.value.grokProcessor.patterns, {
+              shouldValidate: true,
+            });
             setValue(
               'pattern_definitions',
               suggestionsState.value.grokProcessor.pattern_definitions,

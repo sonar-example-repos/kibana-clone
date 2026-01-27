@@ -23,7 +23,7 @@ export const Expression = ({
 }: {
   grokCollection: GrokCollection;
   draftGrokExpression: DraftGrokExpression;
-  onChange?: (expression: DraftGrokExpression) => void;
+  onChange?: (pattern: string) => void;
   height?: CodeEditorProps['height'];
   dataTestSubj?: string;
 }) => {
@@ -49,7 +49,7 @@ export const Expression = ({
 
   const onGrokEditorChange: CodeEditorProps['onChange'] = (value) => {
     draftGrokExpression.updateExpression(value);
-    onChange?.(draftGrokExpression);
+    onChange?.(value);
   };
 
   return (
