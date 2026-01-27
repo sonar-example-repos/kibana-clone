@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import type { DraftGrokExpression } from '@kbn/grok-ui';
 import type {
   ConvertProcessor,
   DateProcessor,
@@ -30,9 +29,9 @@ import type { ConfigDrivenProcessorFormState } from './steps/blocks/action/confi
  * Processors' types
  */
 
-export type GrokFormState = Omit<GrokProcessor, 'patterns'> & {
-  patterns: DraftGrokExpression[];
-};
+// GrokFormState now uses plain strings for patterns instead of DraftGrokExpression instances.
+// The conversion to DraftGrokExpression is handled by useGrokExpressions hook in the UI.
+export type GrokFormState = GrokProcessor;
 
 export type DissectFormState = DissectProcessor;
 export type DateFormState = DateProcessor;

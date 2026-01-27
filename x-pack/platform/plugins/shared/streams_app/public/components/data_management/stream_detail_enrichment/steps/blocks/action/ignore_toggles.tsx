@@ -10,6 +10,7 @@ import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import React from 'react';
 import { useWatch } from 'react-hook-form';
+import type { ExtractBooleanFields, ProcessorFormState } from '../../../types';
 import { ToggleField } from './toggle_field';
 
 export const IgnoreFailureToggle = () => {
@@ -17,7 +18,7 @@ export const IgnoreFailureToggle = () => {
 
   return (
     <ToggleField
-      name="ignore_failure"
+      name={'ignore_failure' as ExtractBooleanFields<ProcessorFormState>}
       label={i18n.translate(
         'xpack.streams.streamDetailView.managementTab.enrichment.processor.ignoreFailuresLabel',
         { defaultMessage: 'Ignore failures for this processor' }
@@ -42,7 +43,7 @@ export const IgnoreFailureToggle = () => {
 export const IgnoreMissingToggle = () => {
   return (
     <ToggleField
-      name="ignore_missing"
+      name={'ignore_missing' as ExtractBooleanFields<ProcessorFormState>}
       label={i18n.translate(
         'xpack.streams.streamDetailView.managementTab.enrichment.processor.ignoreMissingLabel',
         { defaultMessage: 'Ignore missing' }
