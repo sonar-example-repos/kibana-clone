@@ -5,6 +5,6 @@
  * 2.0.
  */
 
-export { registerInstall } from './install';
+export { registerStart } from './start';
 export { registerStop } from './stop';
 export { registerForceLogExtraction } from './force_log_extraction';

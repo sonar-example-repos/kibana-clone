@@ -7,6 +7,8 @@
 
 import { EntityStorePlugin } from './plugin';
 
+export { useRegisterEntityStoreV2 } from './useRegisterEntityStoreV2';
+
 export function plugin() {
   return new EntityStorePlugin();
 }
