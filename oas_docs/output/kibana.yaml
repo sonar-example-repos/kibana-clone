@@ -109994,9 +109994,15 @@ components:
       format: nonempty
       minLength: 1
       type: string
+    Security_Endpoint_Exceptions_API_ExceptionListItemOsType:
+      enum:
+        - linux
+        - macos
+        - windows
+      type: string
     Security_Endpoint_Exceptions_API_ExceptionListItemOsTypeArray:
       items:
-        $ref: '#/components/schemas/Security_Endpoint_Exceptions_API_ExceptionListOsType'
+        $ref: '#/components/schemas/Security_Endpoint_Exceptions_API_ExceptionListItemOsType'
       type: array
     Security_Endpoint_Exceptions_API_ExceptionListItemTags:
       items:
@@ -113957,9 +113963,15 @@ components:
       format: nonempty
       minLength: 1
       type: string
+    Security_Exceptions_API_ExceptionListItemOsType:
+      enum:
+        - linux
+        - macos
+        - windows
+      type: string
     Security_Exceptions_API_ExceptionListItemOsTypeArray:
       items:
-        $ref: '#/components/schemas/Security_Exceptions_API_ExceptionListOsType'
+        $ref: '#/components/schemas/Security_Exceptions_API_ExceptionListItemOsType'
       type: array
     Security_Exceptions_API_ExceptionListItemTags:
       items:
