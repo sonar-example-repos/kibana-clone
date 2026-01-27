@@ -220,9 +220,20 @@ export const markdownEmbeddableFactory: EmbeddableFactory<
               }
               resetEditingState();
             }}
-            onSave={(value: string) => {
+            onSave={async (value: string) => {
               resetEditingState();
               markdownStateManager.api.setContent(value);
+              if (savedObjectId) {
+                await markdownClient.update(
+                  savedObjectId!,
+                  {
+                    content: value,
+                    title: titleManager.api.title$!.getValue(),
+                    description: defaultDescription$.getValue(),
+                  },
+                  []
+                );
+              }
               if (isNewPanel$.getValue()) {
                 isNewPanel$.next(false);
               }

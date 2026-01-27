@@ -25,7 +25,7 @@ import {
   MARKDOWN_SAVED_OBJECT_TYPE,
 } from '../common/constants';
 import { setKibanaServices } from './services/kibana_services';
-import { getMarkdownClient } from './content_management/markdown_content_management_client';
+import { getMarkdownClient } from './markdown_client/markdown_client';
 import type { MarkdownEmbeddableState } from '../server';
 
 export interface MarkdownSetupDeps {
