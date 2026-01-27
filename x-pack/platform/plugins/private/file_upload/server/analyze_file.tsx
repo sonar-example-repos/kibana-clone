@@ -41,6 +41,8 @@ export async function analyzeFile(
     {
       body: data,
       ecs_compatibility: 'v1',
+      // @ts-expect-error not in types yet
+      parse_recursively: true,
       ...overrides,
     },
     { maxRetries: 0, signal: abortSignal }
