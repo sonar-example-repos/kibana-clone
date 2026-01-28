@@ -157,10 +157,10 @@ Key files:
 - [x] Update mocks and fixture "Expected issues" blocks
 
 ### Phase 4.5: Add Param Doc Mismatch Checks
-- [ ] Add `paramDocMismatches` field to `ApiStats` in [packages/kbn-docs-utils/src/types.ts](packages/kbn-docs-utils/src/types.ts)
-- [ ] Add `trackParamDocMismatches` function in [packages/kbn-docs-utils/src/stats.ts](packages/kbn-docs-utils/src/stats.ts)
-- [ ] Extend `hasCommentIssues` to include `paramDocMismatches`
-- [ ] Update mocks and fixture "Expected issues" blocks
+- [x] Add `paramDocMismatches` field to `ApiStats` in [packages/kbn-docs-utils/src/types.ts](packages/kbn-docs-utils/src/types.ts)
+- [x] Add `trackParamDocMismatches` function in [packages/kbn-docs-utils/src/stats.ts](packages/kbn-docs-utils/src/stats.ts)
+- [x] Extend `hasCommentIssues` to include `paramDocMismatches`
+- [x] Update mocks and fixture "Expected issues" blocks
 
 ### Phase 4.6: Add Complex Type Info Checks
 - [ ] Add `missingComplexTypeInfo` field to `ApiStats` in [packages/kbn-docs-utils/src/types.ts](packages/kbn-docs-utils/src/types.ts)

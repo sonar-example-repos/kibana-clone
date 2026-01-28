@@ -189,6 +189,8 @@ export class PluginA implements PluginMock<Setup, Start> {
 //   missing returns (2):
 //     line 104 - getSearchService2
 //     line 135 - fn
+//   param doc mismatches (1):
+//     line 135 - fn
 //   no references (23):
 //     line 19 - SearchSpec
 //     line 24 - username

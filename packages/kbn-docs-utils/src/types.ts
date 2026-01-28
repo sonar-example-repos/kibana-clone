@@ -294,6 +294,7 @@ export interface ApiStats {
   isAnyType: ApiDeclaration[];
   noReferences: ApiDeclaration[];
   missingReturns: ApiDeclaration[];
+  paramDocMismatches: ApiDeclaration[];
   apiCount: number;
   missingExports: number;
   deprecatedAPIsReferencedCount: number;

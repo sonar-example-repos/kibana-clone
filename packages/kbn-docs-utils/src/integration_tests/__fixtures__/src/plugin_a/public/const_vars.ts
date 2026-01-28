@@ -92,6 +92,10 @@ export const literalString = 'HI';
 //     line 24 - aPropertyMisdirection
 //     line 29 - aPropertyInlineFn
 //     line 59 - aUnionProperty
+//   param doc mismatches (3):
+//     line 19 - notAnArrowFn
+//     line 24 - aPropertyMisdirection
+//     line 29 - aPropertyInlineFn
 //   no references (14):
 //     line 18 - aPretendNamespaceObj
 //     line 19 - notAnArrowFn

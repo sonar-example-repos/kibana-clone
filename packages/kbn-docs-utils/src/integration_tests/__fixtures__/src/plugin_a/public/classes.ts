@@ -136,6 +136,10 @@ export interface IReturnAReactComponent {
 //     line 91 - anOptionalFn
 //     line 101 - fnTypeWithGeneric
 //     line 107 - fnTypeWithGenericThatIsOptional
+//   param doc mismatches (3):
+//     line 52 - Constructor
+//     line 91 - anOptionalFn
+//     line 101 - fnTypeWithGeneric
 //   no references (23):
 //     line 28 - WithGen
 //     line 32 - t

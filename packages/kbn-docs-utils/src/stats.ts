@@ -20,7 +20,9 @@ import {
  * Returns true if the stats contain any comment-related issues.
  */
 export const hasCommentIssues = (stats: ApiStats): boolean =>
-  stats.missingComments.length > 0 || stats.missingReturns.length > 0;
+  stats.missingComments.length > 0 ||
+  stats.missingReturns.length > 0 ||
+  stats.paramDocMismatches.length > 0;
 
 /**
  * Collects API stats for a single plugin.
@@ -33,6 +35,7 @@ export function collectApiStatsForPlugin(doc: PluginApi, issues: IssuesByPlugin)
     isAnyType: [],
     noReferences: [],
     missingReturns: [],
+    paramDocMismatches: [],
     deprecatedAPIsReferencedCount: 0,
     unreferencedDeprecatedApisCount: 0,
     adoptionTrackedAPIs: [],
@@ -85,6 +88,7 @@ function collectStatsForApi(doc: ApiDeclaration, stats: ApiStats, pluginApi: Plu
   }
 
   trackMissingReturns(doc, stats);
+  trackParamDocMismatches(doc, stats);
 
   if (doc.type === TypeKind.AnyKind) {
     stats.isAnyType.push(doc);
@@ -142,6 +146,20 @@ const trackMissingReturns = (doc: ApiDeclaration, stats: ApiStats): void => {
   const hasReturnComment = doc.returnComment !== undefined && doc.returnComment.length > 0;
   if (!hasReturnComment) {
     stats.missingReturns.push(doc);
+  }
+};
+
+/**
+ * Tracks functions where not all parameters have documentation.
+ */
+const trackParamDocMismatches = (doc: ApiDeclaration, stats: ApiStats): void => {
+  if (!isFunctionLike(doc)) return;
+  if (!doc.children || doc.children.length === 0) return;
+  const describedParams = doc.children.filter(
+    (param) => param.description && param.description.length > 0
+  ).length;
+  if (describedParams !== doc.children.length) {
+    stats.paramDocMismatches.push(doc);
   }
 };
 
