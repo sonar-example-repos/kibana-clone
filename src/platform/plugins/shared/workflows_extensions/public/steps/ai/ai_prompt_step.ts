@@ -9,11 +9,38 @@
 
 import React from 'react';
 import { i18n } from '@kbn/i18n';
-import { AiPromptStepCommonDefinition, AiPromptStepTypeId } from '../../../common/steps/ai';
+import type { z } from '@kbn/zod/v4';
+import { fromJSONSchema } from '@kbn/zod/v4/from_json_schema';
+import type { InputSchema } from '../../../common/steps/ai';
+import {
+  AiPromptOutputSchema,
+  AiPromptStepCommonDefinition,
+  AiPromptStepTypeId,
+  getStructuredOutputSchema,
+} from '../../../common/steps/ai';
 import { ActionsMenuGroup, type PublicStepDefinition } from '../../step_registry/types';
 
 export const AiPromptStepDefinition: PublicStepDefinition = {
   ...AiPromptStepCommonDefinition,
+  editorHandlers: {
+    dynamicSchema: {
+      getOutputSchema: ({ input }) => {
+        const typedInput = input as z.infer<typeof InputSchema>;
+
+        if (!typedInput.schema) {
+          return AiPromptOutputSchema;
+        }
+
+        const zodSchema = fromJSONSchema(typedInput.schema);
+
+        if (!zodSchema) {
+          return AiPromptOutputSchema;
+        }
+
+        return getStructuredOutputSchema(zodSchema);
+      },
+    },
+  },
   icon: React.lazy(() =>
     import('@elastic/eui/es/components/icon/assets/sparkles').then(({ icon }) => ({
       default: icon,
@@ -44,8 +71,8 @@ The default AI connector configured for the workflow will be used.`,
 \`\`\`yaml
 - name: analyze_data
   type: ${AiPromptStepTypeId}
+  connector-id: ai_connector
   with:
-    connectorId: ai_connector
     prompt: "Analyze this data: {{ steps.previous_step.output }}"
 \`\`\``,
 
@@ -55,10 +82,10 @@ See this [JSON Schema reference](https://json-schema.org/learn/getting-started-s
 \`\`\`yaml
 - name: extract_info
   type: ${AiPromptStepTypeId}
+  connector-id: my-ai-connector
   with:
-    connectorId: my-ai-connector
     prompt: "Extract key information from this text: {{ workflow.input }}"
-    outputSchema:
+    schema:
       type: "object"
       properties:
         summary:
@@ -74,10 +101,10 @@ See this [JSON Schema reference](https://json-schema.org/learn/getting-started-s
 \`\`\`yaml
 - name: extract_info
   type: ${AiPromptStepTypeId}
+  connector-id: my-ai-connector
   with:
-    connectorId: my-ai-connector
     prompt: "Extract key information from this text: {{ workflow.input }}"
-    outputSchema: {
+    schema: {
       "type":"object",
       "properties":{
         "summary":{
@@ -96,8 +123,8 @@ See this [JSON Schema reference](https://json-schema.org/learn/getting-started-s
 \`\`\`yaml
 - name: get_recommendation
   type: ${AiPromptStepTypeId}
+  connector-id: "my-ai-connector"
   with:
-    connectorId: "my-ai-connector"
     prompt: "Provide a recommendation based on this data"
 - name: process_recommendation
   type: http
