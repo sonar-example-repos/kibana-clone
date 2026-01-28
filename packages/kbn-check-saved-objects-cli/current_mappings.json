@@ -4506,6 +4506,26 @@
       }
     }
   },
+  "watchlist-config": {
+    "dynamic": false,
+    "properties": {
+      "createdAt": {
+        "type": "date"
+      },
+      "description": {
+        "type": "text"
+      },
+      "modifiedAt": {
+        "type": "date"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "riskModifier": {
+        "type": "float"
+      }
+    }
+  },
   "workplace_search_telemetry": {
     "dynamic": false,
     "properties": {}

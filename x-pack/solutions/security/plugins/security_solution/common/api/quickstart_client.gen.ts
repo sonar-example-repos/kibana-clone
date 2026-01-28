@@ -365,6 +365,15 @@ import type {
   PreviewRiskScoreResponse,
 } from './entity_analytics/risk_engine/preview_route.gen';
 import type {
+  CreateWatchlistRequestBodyInput,
+  CreateWatchlistResponse,
+} from './entity_analytics/watchlists/management/create.gen';
+import type {
+  GetWatchlistRequestParamsInput,
+  GetWatchlistResponse,
+} from './entity_analytics/watchlists/management/get.gen';
+import type { ListWatchlistsResponse } from './entity_analytics/watchlists/management/list.gen';
+import type {
   CleanDraftTimelinesRequestBodyInput,
   CleanDraftTimelinesResponse,
 } from './timeline/clean_draft_timelines/clean_draft_timelines_route.gen';
@@ -960,6 +969,19 @@ For detailed information on Kibana actions and alerting, and additional API call
         ),
         headers: {
           [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
+        },
+        method: 'POST',
+        body: props.body,
+      })
+      .catch(catchAxiosErrorFormatAndThrow);
+  }
+  async createWatchlist(props: CreateWatchlistProps) {
+    this.log.info(`${new Date().toISOString()} Calling API CreateWatchlist`);
+    return this.kbnClient
+      .request<CreateWatchlistResponse>({
+        path: '/api/entity_analytics/watchlists/management',
+        headers: {
+          [ELASTIC_HTTP_VERSION_HEADER]: '2026-01-28',
         },
         method: 'POST',
         body: props.body,
@@ -2130,6 +2152,18 @@ finalize it.
       })
       .catch(catchAxiosErrorFormatAndThrow);
   }
+  async getWatchlist(props: GetWatchlistProps) {
+    this.log.info(`${new Date().toISOString()} Calling API GetWatchlist`);
+    return this.kbnClient
+      .request<GetWatchlistResponse>({
+        path: replaceParams('/api/entity_analytics/watchlists/management/{name}', props.params),
+        headers: {
+          [ELASTIC_HTTP_VERSION_HEADER]: '2026-01-28',
+        },
+        method: 'GET',
+      })
+      .catch(catchAxiosErrorFormatAndThrow);
+  }
   async getWorkflowInsights(props: GetWorkflowInsightsProps) {
     this.log.info(`${new Date().toISOString()} Calling API GetWorkflowInsights`);
     return this.kbnClient
@@ -2404,6 +2438,18 @@ providing you with the most current and effective threat detection capabilities.
         method: 'GET',
 
         query: props.query,
+      })
+      .catch(catchAxiosErrorFormatAndThrow);
+  }
+  async listWatchlists() {
+    this.log.info(`${new Date().toISOString()} Calling API ListWatchlists`);
+    return this.kbnClient
+      .request<ListWatchlistsResponse>({
+        path: '/api/entity_analytics/watchlists/management/list',
+        headers: {
+          [ELASTIC_HTTP_VERSION_HEADER]: '2026-01-28',
+        },
+        method: 'GET',
       })
       .catch(catchAxiosErrorFormatAndThrow);
   }
@@ -3370,6 +3416,9 @@ export interface CreateUpdateProtectionUpdatesNoteProps {
   params: CreateUpdateProtectionUpdatesNoteRequestParamsInput;
   body: CreateUpdateProtectionUpdatesNoteRequestBodyInput;
 }
+export interface CreateWatchlistProps {
+  body: CreateWatchlistRequestBodyInput;
+}
 export interface DeleteAssetCriticalityRecordProps {
   query: DeleteAssetCriticalityRecordRequestQueryInput;
 }
@@ -3557,6 +3606,9 @@ export interface GetTimelineProps {
 }
 export interface GetTimelinesProps {
   query: GetTimelinesRequestQueryInput;
+}
+export interface GetWatchlistProps {
+  params: GetWatchlistRequestParamsInput;
 }
 export interface GetWorkflowInsightsProps {
   query: GetWorkflowInsightsRequestQueryInput;
