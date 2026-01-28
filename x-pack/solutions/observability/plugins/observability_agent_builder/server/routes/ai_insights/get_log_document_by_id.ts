@@ -9,9 +9,26 @@ import type { ElasticsearchClient } from '@kbn/core/server';
 
 export interface LogDocument {
   '@timestamp'?: string;
+  message?: string;
+  'log.level'?: string;
   service?: {
     name?: string;
+    namespace?: string;
+    version?: string;
     environment?: string;
+    node?: { name?: string };
+  };
+  resource?: {
+    attributes?: Record<string, unknown>;
+  };
+  host?: { name?: string };
+  container?: { id?: string };
+  trace?: { id?: string };
+  span?: { id?: string };
+  error?: {
+    message?: string;
+    type?: string;
+    stack_trace?: string;
   };
   [key: string]: unknown;
 }
@@ -25,10 +42,26 @@ export const getLogDocumentById = async ({
   index: string;
   id: string;
 }): Promise<LogDocument | undefined> => {
-  const result = await esClient.get<LogDocument>({
+  const result = await esClient.search({
     index,
-    id,
+    size: 1,
+    _source: false,
+    fields: ['*'],
+    query: {
+      ids: { values: [id] },
+    },
   });
 
-  return result._source;
+  const hit = result.hits.hits[0];
+
+  if (!hit?.fields) {
+    return undefined;
+  }
+
+  return Object.fromEntries(
+    Object.entries(hit.fields).map(([key, value]) => [
+      key,
+      Array.isArray(value) && value.length === 1 ? value[0] : value,
+    ])
+  ) as LogDocument;
 };
