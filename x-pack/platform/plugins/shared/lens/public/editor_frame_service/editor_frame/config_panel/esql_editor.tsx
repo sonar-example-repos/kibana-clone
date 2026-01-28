@@ -54,6 +54,7 @@ export type ESQLEditorProps = Simplify<
     | 'updateSuggestion'
     | 'dataLoading$'
     | 'parentApi'
+    | 'onTextBasedQueryStateChange'
   >
 >;
 
@@ -81,6 +82,7 @@ export function ESQLEditor({
   dataLoading$,
   setCurrentAttributes,
   updateSuggestion,
+  onTextBasedQueryStateChange,
 }: ESQLEditorProps) {
   const prevQuery = useRef<AggregateQuery | Query>(attributes?.state.query || { esql: '' });
   const [query, setQuery] = useState<AggregateQuery | Query>(
@@ -91,6 +93,9 @@ export function ESQLEditor({
   const { visualization } = useLensSelector((state) => state.lens);
 
   const [errors, setErrors] = useState<Error[]>([]);
+  const [submittedQuery, setSubmittedQuery] = useState<AggregateQuery | Query>(
+    attributes?.state.query || { esql: '' }
+  );
   const [isLayerAccordionOpen, setIsLayerAccordionOpen] = useState(true);
   const [suggestsLimitedColumns, setSuggestsLimitedColumns] = useState(false);
   const [isVisualizationLoading, setIsVisualizationLoading] = useState(false);
@@ -163,6 +168,7 @@ export function ESQLEditor({
         updateSuggestion?.(attrs);
       }
       prevQuery.current = q;
+      setSubmittedQuery(q);
       setIsVisualizationLoading(false);
     },
     [
@@ -190,6 +196,14 @@ export function ESQLEditor({
     setErrors,
     setIsInitialized,
   });
+
+  // Track and report query state to parent
+  useEffect(() => {
+    onTextBasedQueryStateChange?.({
+      hasErrors: errors.length > 0,
+      isQueryPendingSubmit: !isEqual(query, submittedQuery),
+    });
+  }, [query, submittedQuery, errors.length, onTextBasedQueryStateChange]);
 
   // Early exit if it's not in TextBased mode
   if (!isTextBasedLanguage || !canEditTextBasedQuery || !isOfAggregateQueryType(query)) {

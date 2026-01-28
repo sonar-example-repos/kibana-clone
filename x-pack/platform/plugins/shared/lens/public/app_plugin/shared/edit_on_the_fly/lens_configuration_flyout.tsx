@@ -24,6 +24,7 @@ import {
 import { isOfAggregateQueryType } from '@kbn/es-query';
 import type { TypedLensSerializedState } from '@kbn/lens-common';
 import { useIsDevMode } from '@kbn/react-env';
+import type { TextBasedQueryState } from '../../../editor_frame_service/editor_frame/config_panel/types';
 import { buildExpression } from '../../../editor_frame_service/editor_frame/expression_helpers';
 import { useLensSelector, selectFramePublicAPI, useLensDispatch } from '../../../state_management';
 import { EXPRESSION_BUILD_ERROR_ID, getAbsoluteDateRange } from '../../../utils';
@@ -77,6 +78,7 @@ export function LensEditConfigurationFlyout({
   const [isLayerAccordionOpen, setIsLayerAccordionOpen] = useState(true);
   const [isSuggestionsAccordionOpen, setIsSuggestionsAccordionOpen] = useState(false);
   const [isESQLResultsAccordionOpen, setIsESQLResultsAccordionOpen] = useState(false);
+  const [esqlQueryState, setESQLQueryState] = useState<TextBasedQueryState | null>(null);
 
   const { datasourceStates, visualization, isLoading, annotationGroups, searchSessionId } =
     useLensSelector((state) => state.lens);
@@ -183,6 +185,10 @@ export function LensEditConfigurationFlyout({
     initialAttributes: attributes,
   });
 
+  const onTextBasedQueryStateChange = useCallback((state: TextBasedQueryState) => {
+    setESQLQueryState(state);
+  }, []);
+
   const onApply = useCallback(() => {
     if (visualization.activeId == null || !currentAttributes) {
       return;
@@ -242,6 +248,12 @@ export function LensEditConfigurationFlyout({
     if (!visualization.state || !visualization.activeId) {
       return false;
     }
+    // For text-based mode, check if query has been successfully concluded (no runtime errors, and not pending)
+    if (textBasedMode && esqlQueryState) {
+      if (esqlQueryState.hasErrors || esqlQueryState.isQueryPendingSubmit) {
+        return false;
+      }
+    }
     const visualizationErrors = getUserMessages(['visualization'], {
       severity: 'error',
     });
@@ -275,7 +287,19 @@ export function LensEditConfigurationFlyout({
     visualization.activeId,
     visualization.state,
     getUserMessages,
+    textBasedMode,
+    esqlQueryState,
   ]);
+
+  // Tooltip message when Apply button is disabled due to an unrun ES|QL query
+  const applyButtonDisabledTooltip = useMemo(() => {
+    if (textBasedMode && esqlQueryState?.isQueryPendingSubmit) {
+      return i18n.translate('xpack.lens.config.applyFlyoutRunQueryTooltip', {
+        defaultMessage: 'Run the ES|QL query to apply changes',
+      });
+    }
+    return undefined;
+  }, [textBasedMode, esqlQueryState?.isQueryPendingSubmit]);
 
   const addLayerButton = useAddLayerButton(
     framePublicAPI,
@@ -370,10 +394,10 @@ export function LensEditConfigurationFlyout({
           navigateToLensEditor={navigateToLensEditor}
           onApply={onApply}
           isScrollable
-          isNewPanel={isNewPanel}
           isSaveable={isSaveable}
           isReadOnly={isReadOnly}
           applyButtonLabel={applyButtonLabel}
+          applyButtonDisabledTooltip={applyButtonDisabledTooltip}
           toolbar={toolbar}
           layerTabs={layerTabs}
         >
@@ -394,6 +418,7 @@ export function LensEditConfigurationFlyout({
             parentApi={parentApi}
             panelId={panelId}
             canEditTextBasedQuery={canEditTextBasedQuery}
+            onTextBasedQueryStateChange={onTextBasedQueryStateChange}
           />
         </FlyoutWrapper>
       </>
@@ -411,9 +436,9 @@ export function LensEditConfigurationFlyout({
         onApply={onApply}
         isSaveable={isSaveable}
         isScrollable
-        isNewPanel={isNewPanel}
         isReadOnly={isReadOnly}
         applyButtonLabel={applyButtonLabel}
+        applyButtonDisabledTooltip={applyButtonDisabledTooltip}
         toolbar={toolbar}
         layerTabs={layerTabs}
       >
@@ -530,6 +555,7 @@ export function LensEditConfigurationFlyout({
                     panelId={panelId}
                     canEditTextBasedQuery={canEditTextBasedQuery}
                     editorContainer={editorContainer.current || undefined}
+                    onTextBasedQueryStateChange={onTextBasedQueryStateChange}
                   />
                 </>
               </EuiAccordion>
