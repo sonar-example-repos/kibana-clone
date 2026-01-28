@@ -6,6 +6,7 @@
  * your election, the "Elastic License 2.0", the "GNU Affero General Public
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
+
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import type {
   EuiContextMenuPanelDescriptor,
@@ -28,7 +29,6 @@ import {
 import { NumberBadge, type DataCascadeRowProps } from '@kbn/shared-ux-document-data-cascade';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { i18n } from '@kbn/i18n';
-import type { UnifiedDataTableProps } from '@kbn/unified-data-table';
 import {
   type ESQLStatsQueryMeta,
   type SupportedStatsFunction,
@@ -41,13 +41,8 @@ import type { StatsCommandSummary } from '@kbn/esql-language/src/ast/mutate/comm
 import type { DataTableRecord } from '@kbn/discover-utils';
 import { type UpdateESQLQueryFn } from '../../../../../../context_awareness';
 import { getPatternCellRenderer } from '../../../../../../context_awareness/profile_providers/common/patterns_data_source_profile/pattern_cell_renderer';
-
 import type { ESQLDataGroupNode } from './types';
-import {
-  type TabStateGlobalState,
-  internalStateActions,
-  useInternalStateDispatch,
-} from '../../../../state_management/redux';
+import type { internalStateActions } from '../../../../state_management/redux';
 
 interface RowContext {
   groupId: string;
@@ -60,9 +55,7 @@ interface RowClickActionContext {
   statsFieldSummary: StatsCommandSummary['grouping'] | undefined;
   esqlVariables: ESQLControlVariable[] | undefined;
   rowContext: RowContext;
-  services: UnifiedDataTableProps['services'];
   closeActionMenu: () => void;
-  globalState: TabStateGlobalState;
   openInNewTab: (...args: Parameters<typeof internalStateActions.openInNewTab>) => void;
   updateESQLQuery: UpdateESQLQueryFn;
 }
@@ -173,7 +166,6 @@ interface ContextMenuProps
   extends Pick<
     RowClickActionContext,
     | 'editorQuery'
-    | 'globalState'
     | 'openInNewTab'
     | 'dataView'
     | 'esqlVariables'
@@ -181,20 +173,17 @@ interface ContextMenuProps
     | 'updateESQLQuery'
   > {
   row: RowContext;
-  services: UnifiedDataTableProps['services'];
   close: RowClickActionContext['closeActionMenu'];
 }
 
 const ContextMenu = React.memo(
   ({
     row,
-    services,
     editorQuery,
     statsFieldSummary,
     esqlVariables,
     dataView,
     close,
-    globalState,
     openInNewTab,
     updateESQLQuery,
   }: ContextMenuProps) => {
@@ -239,12 +228,10 @@ const ContextMenu = React.memo(
                   !row.groupValue,
                 onClick: action.onClick?.bind({
                   rowContext: row,
-                  services,
                   editorQuery,
                   esqlVariables,
                   dataView,
                   closeActionMenu: close,
-                  globalState,
                   openInNewTab,
                   updateESQLQuery,
                 }),
@@ -255,16 +242,14 @@ const ContextMenu = React.memo(
         },
       ];
     }, [
-      row,
-      groupType,
-      rowDataViewField,
-      services,
+      close,
+      dataView,
       editorQuery,
       esqlVariables,
-      dataView,
-      close,
-      globalState,
+      groupType,
       openInNewTab,
+      row,
+      rowDataViewField,
       updateESQLQuery,
     ]);
 
@@ -283,30 +268,20 @@ export const useEsqlDataCascadeRowActionHelpers = ({
   esqlVariables,
   editorQuery,
   statsFieldSummary,
-  globalState,
-  services,
   updateESQLQuery,
+  openInNewTab,
 }: Pick<
   ContextMenuProps,
   | 'dataView'
   | 'esqlVariables'
   | 'editorQuery'
   | 'statsFieldSummary'
-  | 'globalState'
-  | 'services'
   | 'updateESQLQuery'
+  | 'openInNewTab'
 >) => {
   const popoverRef = useRef<HTMLButtonElement | null>(null);
   const [popoverRowData, setPopoverRowData] = useState<RowContext | null>(null);
-  const dispatch = useInternalStateDispatch();
   const closePopover = useCallback(() => setPopoverRowData(null), [setPopoverRowData]);
-
-  const openInNewTab = useCallback(
-    (...args: Parameters<typeof internalStateActions.openInNewTab>) => {
-      dispatch(internalStateActions.openInNewTab(...args));
-    },
-    [dispatch]
-  );
 
   /**
    * Helper function to toggle the popover for the row action (3 dots) button.
@@ -350,9 +325,7 @@ export const useEsqlDataCascadeRowActionHelpers = ({
             close={closePopover}
             editorQuery={editorQuery}
             esqlVariables={esqlVariables}
-            globalState={globalState}
             row={popoverRowData}
-            services={services}
             dataView={dataView}
             statsFieldSummary={statsFieldSummary}
             openInNewTab={openInNewTab}
@@ -362,15 +335,13 @@ export const useEsqlDataCascadeRowActionHelpers = ({
       ) : null;
     },
     [
-      popoverRowData,
       closePopover,
+      dataView,
       editorQuery,
       esqlVariables,
-      globalState,
-      services,
-      dataView,
-      statsFieldSummary,
       openInNewTab,
+      popoverRowData,
+      statsFieldSummary,
       updateESQLQuery,
     ]
   );
@@ -414,12 +385,7 @@ export function useEsqlDataCascadeRowHeaderComponents(
       if (type && /categorize/i.test(type)) {
         return (
           <div data-test-subj={`${rowData.id}-dscCascadeRowTitlePatternCellRenderer`}>
-            {getPatternCellRenderer(
-              // @ts-expect-error - necessary to match the data shape expectation
-              { flattened: rowData },
-              rowGroup,
-              false
-            )}
+            {getPatternCellRenderer(rowData.groupValue, false)}
           </div>
         );
       }
@@ -429,10 +395,10 @@ export function useEsqlDataCascadeRowHeaderComponents(
           <EuiTextTruncate
             truncation="end"
             text={
-              (rowData[rowGroup] ||
-                i18n.translate('discover.dataCascade.row.action.noValue', {
-                  defaultMessage: '(blank)',
-                })) as string
+              rowData.groupValue ||
+              i18n.translate('discover.dataCascade.row.action.noValue', {
+                defaultMessage: '(blank)',
+              })
             }
           >
             {(truncatedText) => {
@@ -466,7 +432,7 @@ export function useEsqlDataCascadeRowHeaderComponents(
                 defaultMessage="<bold>{selectedColumn}: </bold><badge>{selectedColumnValue}</badge>"
                 values={{
                   selectedColumn,
-                  selectedColumnValue: rowData[selectedColumn] as string,
+                  selectedColumnValue: rowData.aggregatedValues[selectedColumn],
                   bold: (chunks) => (
                     <EuiFlexItem grow={false} css={textSlotStyles.textWrapper}>
                       <span css={textSlotStyles.textInner}>{chunks}</span>
@@ -497,7 +463,7 @@ export function useEsqlDataCascadeRowHeaderComponents(
   >(
     ({ rowData, nodePath }) => {
       const groupId = nodePath[nodePath.length - 1];
-      const groupValue = rowData[groupId] as string;
+      const groupValue = rowData.groupValue;
 
       return [
         {
