@@ -5,5 +5,12 @@
  * 2.0.
  */
 
-export type { PromptFactoryParams, PromptFactory } from './types';
-export { createPromptFactory } from './prompt_factory';
+export {
+  FileEntryType,
+  type FileEntry,
+  type FsEntry,
+  type FileEntryContent,
+  type FileEntryMetadata,
+  type DirEntry,
+} from './fs';
+export type { IFileSystemStore, LsEntry, DirEntryWithChildren, GrepMatch } from './store';

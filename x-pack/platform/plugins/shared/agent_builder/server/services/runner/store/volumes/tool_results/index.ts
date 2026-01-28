@@ -5,5 +5,5 @@
  * 2.0.
  */
 
-export type { PromptFactoryParams, PromptFactory } from './types';
-export { createPromptFactory } from './prompt_factory';
+export { createResultStore } from './tool_result_store';
+export type { ToolCallFileEntry, ToolCallEntryMeta } from './types';

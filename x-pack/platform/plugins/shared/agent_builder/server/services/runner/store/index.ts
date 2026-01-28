@@ -5,5 +5,6 @@
  * 2.0.
  */
 
-export type { PromptFactoryParams, PromptFactory } from './types';
-export { createPromptFactory } from './prompt_factory';
+export { createStore } from './create_store';
+export { getStoreTools } from './tools';
+export { getFileSystemInstructions } from './prompts';
