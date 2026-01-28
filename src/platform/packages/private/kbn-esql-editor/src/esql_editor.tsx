@@ -101,6 +101,8 @@ import {
   addEditorKeyBindings,
   addTabKeybindingRules,
 } from './custom_editor_commands';
+import { DataSourceBrowser, FieldsBrowser, useResourcesBadge } from './resource_browser';
+import { useResourceBrowser } from './resource_browser/use_resource_browser';
 
 // for editor width smaller than this value we want to start hiding some text
 const BREAKPOINT_WIDTH = 540;
@@ -138,6 +140,7 @@ const ESQLEditorInternal = function ESQLEditor({
   mergeExternalMessages,
   hideQuickSearch,
   openVisorOnSourceCommands,
+  enableResourceBrowser = false,
 }: ESQLEditorPropsInternal) {
   const popoverRef = useRef<HTMLDivElement>(null);
   const editorModel = useRef<monaco.editor.ITextModel>();
@@ -754,6 +757,7 @@ const ESQLEditorInternal = function ESQLEditor({
           }) ?? []
         );
       },
+      isResourceBrowserEnabled: enableResourceBrowser,
     };
     return callbacks;
   }, [
@@ -763,22 +767,42 @@ const ESQLEditorInternal = function ESQLEditor({
     kibana.services?.esql,
     kql?.autocomplete,
     dataSourcesCache,
+    esqlFieldsCache,
     memoizedSources,
     core,
-    esqlFieldsCache,
     data.query.timefilter.timefilter,
+    enableResourceBrowser,
     data.search.search,
     data.dataViews,
     memoizedFieldsFromESQL,
     abortController.signal,
     variablesService?.esqlVariables,
     variablesService?.isCreateControlSuggestionEnabled,
+    memoizedHistoryStarredItems,
     histogramBarTarget,
     activeSolutionId,
-    historyStarredItemsCache,
-    memoizedHistoryStarredItems,
     favoritesClient,
+    getHistoryItems,
   ]);
+
+  const {
+    isDataSourceBrowserOpen,
+    setIsDataSourceBrowserOpen,
+    isFieldsBrowserOpen,
+    setIsFieldsBrowserOpen,
+    browserPopoverPosition,
+    fieldsBrowserGetColumnMapRef,
+    fieldsBrowserQueryStringRef,
+    suggestedFieldNamesRef,
+    isTSCommandRef,
+    handleResourceBrowserSelect,
+    openIndicesBrowser,
+    openFieldsBrowser,
+  } = useResourceBrowser({
+    editorRef,
+    editorModel,
+    esqlCallbacks,
+  });
 
   const queryRunButtonProperties = useMemo(() => {
     if (allowQueryCancellation && isLoading) {
@@ -980,8 +1004,19 @@ const ESQLEditorInternal = function ESQLEditor({
     [serverErrors, serverWarning, code, queryValidation]
   );
 
+  const {
+    resourcesBadgeStyle,
+    resourcesLabelClickHandler,
+    resourcesLabelKeyDownHandler,
+    addResourcesDecorator,
+  } = useResourcesBadge(editorRef, editorModel, query, openIndicesBrowser);
+
   const suggestionProvider = useMemo(
-    () => ESQLLang.getSuggestionProvider?.({ ...esqlCallbacks, telemetry: telemetryCallbacks }),
+    () =>
+      ESQLLang.getSuggestionProvider?.({
+        ...esqlCallbacks,
+        telemetry: telemetryCallbacks,
+      }),
     [esqlCallbacks, telemetryCallbacks]
   );
 
@@ -1115,7 +1150,7 @@ const ESQLEditorInternal = function ESQLEditor({
 
   const editorPanel = (
     <>
-      <Global styles={lookupIndexBadgeStyle} />
+      <Global styles={[resourcesBadgeStyle, lookupIndexBadgeStyle]} />
       {Boolean(editorIsInline) && (
         <EuiFlexGroup
           gutterSize="none"
@@ -1226,6 +1261,7 @@ const ESQLEditorInternal = function ESQLEditor({
                     if (model) {
                       editorModel.current = model;
                       await addLookupIndicesDecorator();
+                      addResourcesDecorator();
                     }
 
                     // Register custom commands
@@ -1242,6 +1278,8 @@ const ESQLEditorInternal = function ESQLEditor({
                       esqlVariables: esqlVariablesRef,
                       controlsContext: controlsContextRef,
                       openTimePickerPopover,
+                      openIndicesBrowser: enableResourceBrowser ? openIndicesBrowser : undefined,
+                      openFieldsBrowser: enableResourceBrowser ? openFieldsBrowser : undefined,
                     });
 
                     // Add editor key bindings
@@ -1258,10 +1296,12 @@ const ESQLEditorInternal = function ESQLEditor({
                     // Add Tab keybinding rules for inline suggestions
                     addTabKeybindingRules();
 
-                    editor.onMouseDown(() => {
-                      if (datePickerOpenStatusRef.current) {
-                        setPopoverPosition({});
-                      }
+                    editor.onMouseDown((e) => {
+                      resourcesLabelClickHandler(e);
+                    });
+
+                    editor.onKeyDown((e) => {
+                      resourcesLabelKeyDownHandler(e);
                     });
 
                     editor.onDidFocusEditorText(() => {
@@ -1449,6 +1489,28 @@ const ESQLEditorInternal = function ESQLEditor({
           </div>
         ),
         document.body
+      )}
+
+      {enableResourceBrowser && (
+        <>
+          <DataSourceBrowser
+            isOpen={isDataSourceBrowserOpen}
+            onClose={() => setIsDataSourceBrowserOpen(false)}
+            onSelect={handleResourceBrowserSelect}
+            position={browserPopoverPosition}
+            isTSCommand={isTSCommandRef.current}
+          />
+          <FieldsBrowser
+            isOpen={isFieldsBrowserOpen}
+            onClose={() => setIsFieldsBrowserOpen(false)}
+            onSelect={handleResourceBrowserSelect}
+            getColumnMap={fieldsBrowserGetColumnMapRef.current}
+            position={browserPopoverPosition}
+            queryString={fieldsBrowserQueryStringRef.current}
+            activeSolutionId={activeSolutionId ?? undefined}
+            suggestedFieldNames={suggestedFieldNamesRef.current}
+          />
+        </>
       )}
     </>
   );

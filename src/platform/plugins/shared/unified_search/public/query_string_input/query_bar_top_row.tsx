@@ -132,7 +132,8 @@ const SuperDatePicker = React.memo(
 ) as unknown as typeof EuiSuperDatePicker;
 
 // @internal
-export interface QueryBarTopRowProps<QT extends Query | AggregateQuery = Query> {
+export interface QueryBarTopRowProps<QT extends Query | AggregateQuery = Query>
+  extends Pick<ESQLEditorProps, 'onOpenQueryInNewTab' | 'enableResourceBrowser'> {
   customSubmitButton?: any;
   dataViewPickerOverride?: ReactNode;
   dataTestSubj?: string;
@@ -234,6 +235,10 @@ export interface QueryBarTopRowProps<QT extends Query | AggregateQuery = Query> 
    */
   onOpenQueryInNewTab?: ESQLEditorProps['onOpenQueryInNewTab'];
   useBackgroundSearchButton?: boolean;
+  /**
+   * Optional ES|QL prop - Enable resource browser in ESQL editor (for Discover context)
+   */
+  enableResourceBrowser?: ESQLEditorProps['enableResourceBrowser'];
 }
 
 export const SharingMetaFields = React.memo(function SharingMetaFields({
@@ -974,6 +979,7 @@ export const QueryBarTopRow = React.memo(
             }
             esqlVariables={props.esqlVariablesConfig?.esqlVariables ?? []}
             onOpenQueryInNewTab={props.onOpenQueryInNewTab}
+            enableResourceBrowser={props.enableResourceBrowser}
             openVisorOnSourceCommands
           />
         )

@@ -305,6 +305,7 @@ export function createSearchBar({
             esqlVariablesConfig={props.esqlVariablesConfig}
             onOpenQueryInNewTab={props.onOpenQueryInNewTab}
             useBackgroundSearchButton={props.useBackgroundSearchButton}
+            enableResourceBrowser={props.enableResourceBrowser}
           />
         </core.i18n.Context>
       </KibanaContextProvider>

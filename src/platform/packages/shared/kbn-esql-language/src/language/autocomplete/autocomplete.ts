@@ -20,7 +20,10 @@ import { esqlCommandRegistry } from '../../commands';
 import { isHeaderCommand, Walker } from '../../ast';
 import { parse } from '../../parser';
 import { SuggestionOrderingEngine } from '../../shared';
-import { getCommandAutocompleteDefinitions } from '../../commands/registry/complete_items';
+import {
+  getCommandAutocompleteDefinitions,
+  createIndicesBrowserSuggestion,
+} from '../../commands/registry/complete_items';
 import { ESQL_VARIABLES_PREFIX } from '../../commands/registry/constants';
 import { getRecommendedQueriesSuggestionsFromStaticTemplates } from '../../commands/registry/options/recommended_queries';
 import type {
@@ -196,6 +199,7 @@ export async function suggest(
       offset,
       hasMinimumLicenseRequired
     );
+
     return commandsSpecificSuggestions;
   }
   return [];
@@ -280,10 +284,22 @@ async function getSuggestionsWithinCommandExpression(
       getKqlSuggestions: callbacks?.getKqlSuggestions,
       canCreateLookupIndex: callbacks?.canCreateLookupIndex,
       isServerless: callbacks?.isServerless,
+      isResourceBrowserEnabled: callbacks?.isResourceBrowserEnabled,
     },
     context,
     offset
   );
+
+  // Determine if we're suggesting indices or fields based on the command context
+  // Indices are suggested in FROM/TS commands, fields are suggested in other commands
+  const commandName = astContext.command.name.toLowerCase();
+  const isSourceCommand = commandName === 'from' || commandName === 'ts';
+
+  // Add prepended resource browser suggestion if enabled
+  // Show indices browser when in FROM/TS commands (where indices are suggested)
+  if (isSourceCommand && callbacks?.isResourceBrowserEnabled) {
+    suggestions.unshift(createIndicesBrowserSuggestion());
+  }
 
   // Apply context-aware ordering
   const orderedSuggestions = orderingEngine.sort(suggestions, {

@@ -43,9 +43,12 @@ dependsOn:
   - '@kbn/react-hooks'
   - '@kbn/react-kibana-context-theme'
   - '@kbn/calculate-width-from-char-count'
+  - '@kbn/react-field'
   - '@kbn/kql'
   - '@kbn/ebt-tools'
   - '@kbn/shared-ux-utility'
+  - '@kbn/projects-solutions-groups'
+  - '@kbn/field-utils'
 tags:
   - shared-browser
   - package

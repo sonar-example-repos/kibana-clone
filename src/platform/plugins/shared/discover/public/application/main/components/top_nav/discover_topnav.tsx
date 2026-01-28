@@ -389,6 +389,7 @@ export const DiscoverTopNav = ({
         onDraftChange={onSearchDraftChange}
         esqlEditorInitialState={esqlEditorUiState}
         onEsqlEditorInitialStateChange={onEsqlEditorInitialStateChange}
+        enableResourceBrowser={isEsqlMode}
         esqlVariablesConfig={
           isEsqlMode
             ? {
