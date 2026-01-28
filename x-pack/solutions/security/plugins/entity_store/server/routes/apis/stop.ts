@@ -7,11 +7,11 @@
 
 import { buildRouteValidationWithZod } from '@kbn/zod-helpers';
 import { z } from '@kbn/zod';
-import type { IKibanaResponse } from '@kbn/core-http-server';
 import { API_VERSIONS, DEFAULT_ENTITY_STORE_PERMISSIONS } from '../constants';
 import type { EntityStorePluginRouter } from '../../types';
-import { wrapMiddlewares } from '../middleware';
 import { ALL_ENTITY_TYPES, EntityType } from '../../domain/definitions/entity_schema';
+import { wrapMiddlewares } from '../middleware';
+import { ENTITY_STORE_ROUTES } from '../../../common';
 
 const bodySchema = z.object({
   entityTypes: z.array(EntityType).optional().default(ALL_ENTITY_TYPES),
@@ -19,8 +19,8 @@ const bodySchema = z.object({
 
 export function registerStop(router: EntityStorePluginRouter) {
   router.versioned
-    .put({
-      path: '/internal/security/entity-store/stop',
+    .post({
+      path: ENTITY_STORE_ROUTES.STOP,
       access: 'internal',
       security: {
         authz: DEFAULT_ENTITY_STORE_PERMISSIONS,
@@ -36,14 +36,11 @@ export function registerStop(router: EntityStorePluginRouter) {
           },
         },
       },
-      wrapMiddlewares(async (ctx, req, res): Promise<IKibanaResponse> => {
-        const entityStoreCtx = await ctx.entityStore;
-        const { logger, assetManager } = entityStoreCtx;
-        const { entityTypes } = req.body;
+      wrapMiddlewares(async (ctx, req, res) => {
+        const { logger, assetManager } = await ctx.entityStore;
+        logger.debug(`Stopping entity store for: [${req.body.entityTypes.join(', ')}]`);
 
-        logger.debug('Stop API invoked');
-
-        await Promise.all(entityTypes.map((type) => assetManager.stop(type)));
+        await Promise.all(req.body.entityTypes.map((type) => assetManager.stop(type)));
 
         return res.ok({
           body: {

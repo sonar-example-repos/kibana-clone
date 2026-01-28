@@ -21,17 +21,16 @@ export class AssetManager {
     private namespace: string
   ) {}
 
-  public async initEntityType(
-    request: KibanaRequest,
-    type: EntityType,
-    logExtractionFrequency?: string
-  ) {
-    await this.install(type); // TODO: async
-    await this.start(request, type, logExtractionFrequency);
-  }
-
   public async start(request: KibanaRequest, type: EntityType, logExtractionFrequency?: string) {
-    this.logger.get(type).debug(`Scheduling extract entity task for type: ${type}`);
+    // TODO: return early if already started
+
+    // TODO: optionally return SO descriptor
+    await installElasticsearchAssets({
+      esClient: this.esClient,
+      logger: this.logger.get(type),
+      definition: getEntityDefinition(type, this.namespace),
+      namespace: this.namespace,
+    });
 
     // TODO: if this fails, set status to failed
     await scheduleExtractEntityTask({
@@ -45,41 +44,20 @@ export class AssetManager {
   }
 
   public async stop(type: EntityType) {
+    // TODO: return early if not installed+started
     await stopExtractEntityTask({
       taskManager: this.taskManager,
       logger: this.logger,
       type,
       namespace: this.namespace,
     });
-  }
 
-  public async install(type: EntityType) {
-    // TODO: return early if already installed
-    this.logger.get(type).debug(`Installing assets for entity type: ${type}`);
-
-    const definition = getEntityDefinition(type, this.namespace);
-
-    await installElasticsearchAssets({
-      esClient: this.esClient,
-      logger: this.logger.get(type),
-      definition,
-      namespace: this.namespace,
-    });
-    this.logger.debug(`Installed definition: ${type}`);
-
-    return definition;
-  }
-
-  public async uninstall(type: EntityType) {
-    const definition = getEntityDefinition(type, this.namespace);
-    await this.stop(type);
+    // TODO: add flag to delete data or not
     await uninstallElasticsearchAssets({
       esClient: this.esClient,
       logger: this.logger.get(type),
-      definition,
+      definition: getEntityDefinition(type, this.namespace),
       namespace: this.namespace,
     });
-
-    this.logger.get(type).debug(`Uninstalled definition: ${type}`);
   }
 }

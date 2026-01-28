@@ -7,19 +7,25 @@
 
 import { buildRouteValidationWithZod } from '@kbn/zod-helpers';
 import { z } from '@kbn/zod';
+import type { IKibanaResponse } from '@kbn/core-http-server';
 import { API_VERSIONS, DEFAULT_ENTITY_STORE_PERMISSIONS } from '../constants';
 import type { EntityStorePluginRouter } from '../../types';
-import { ALL_ENTITY_TYPES, EntityType } from '../../domain/definitions/entity_schema';
 import { wrapMiddlewares } from '../middleware';
+import { EntityType, ALL_ENTITY_TYPES } from '../../domain/definitions/entity_schema';
+import { ENTITY_STORE_ROUTES } from '../../../common';
 
 const bodySchema = z.object({
   entityTypes: z.array(EntityType).optional().default(ALL_ENTITY_TYPES),
+  logExtractionFrequency: z
+    .string()
+    .regex(/^\d+[smdh]$/)
+    .optional(),
 });
 
-export function registerUninstall(router: EntityStorePluginRouter) {
+export function registerStart(router: EntityStorePluginRouter) {
   router.versioned
     .post({
-      path: '/internal/security/entity-store/uninstall',
+      path: ENTITY_STORE_ROUTES.START,
       access: 'internal',
       security: {
         authz: DEFAULT_ENTITY_STORE_PERMISSIONS,
@@ -35,11 +41,14 @@ export function registerUninstall(router: EntityStorePluginRouter) {
           },
         },
       },
-      wrapMiddlewares(async (ctx, req, res) => {
+      wrapMiddlewares(async (ctx, req, res): Promise<IKibanaResponse> => {
         const { logger, assetManager } = await ctx.entityStore;
-        logger.debug(`uninstalling entities: [${req.body.entityTypes.join(', ')}]`);
+        const { entityTypes, logExtractionFrequency } = req.body;
+        logger.debug(`Starting entity store for: [${req.body.entityTypes.join(', ')}]`);
 
-        await Promise.all(req.body.entityTypes.map((type) => assetManager.uninstall(type)));
+        await Promise.all(
+          entityTypes.map((type) => assetManager.start(req, type, logExtractionFrequency))
+        );
 
         return res.ok({
           body: {
