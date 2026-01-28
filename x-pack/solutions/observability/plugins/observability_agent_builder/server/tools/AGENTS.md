@@ -14,13 +14,13 @@
 
 ## 1. Tool-to-Investigation Phase Mapping
 
-| Phase           | Example Tools                                                    |
-| --------------- | ---------------------------------------------------------------- |
-| **Detection**   | `get_alerts`, `get_services`                                     |
-| **Scope**       | `get_services`, `get_hosts`, `get_trace_metrics`                 |
-| **Timeline**    | `get_trace_metrics` (time series), `run_log_rate_analysis`       |
-| **Correlation** | `get_correlated_logs`, `get_downstream_dependencies`             |
-| **Root Cause**  | `get_log_categories`, `get_trace_metrics` (grouped by dimension) |
+| Phase           | Example Tools                                                |
+| --------------- | ------------------------------------------------------------ |
+| **Detection**   | `get_alerts`, `get_services`                                 |
+| **Scope**       | `get_services`, `get_hosts`, `get_trace_metrics`             |
+| **Timeline**    | `get_trace_metrics` (time series), `run_log_rate_analysis`   |
+| **Correlation** | `get_correlated_logs`, `get_downstream_dependencies`         |
+| **Root Cause**  | `get_log_groups`, `get_trace_metrics` (grouped by dimension) |
 
 ---
 
@@ -103,7 +103,7 @@ Tools must work with both ECS (Elastic Common Schema) and OpenTelemetry data. Ob
 
 ### Common Aliases
 
-| Query This (ECS)       | Instead of (OTel)        |
+| ECS Alias              | OTel Field               |
 | ---------------------- | ------------------------ |
 | `message`              | `body.text`              |
 | `log.level`            | `severity_text`          |
@@ -112,6 +112,12 @@ Tools must work with both ECS (Elastic Common Schema) and OpenTelemetry data. Ob
 | `service.environment`  | `deployment.environment` |
 | `kubernetes.pod.name`  | `k8s.pod.name`           |
 | `kubernetes.namespace` | `k8s.namespace.name`     |
+
+You can retrieve the full list of OTel aliases in a cluster:
+
+```bash
+curl -s -u elastic:changeme "http://localhost:9200/*otel*/_mapping/field/*" | jq '[.[] | .mappings | to_entries[] | select(.value.mapping[].type == "alias") | {alias: .key, target: .value.mapping[].path}] | unique'
+```
 
 ---
 
