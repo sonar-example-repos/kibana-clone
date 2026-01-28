@@ -21,6 +21,7 @@ plugins:
     - workflows_extensions
     - transform
     - fleet
+    - dashboard
   disabled:
 
 packages:
