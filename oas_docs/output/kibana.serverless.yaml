@@ -17651,6 +17651,104 @@ paths:
         <div><span class="operation-verb get">get</span>&nbsp;<span class="operation-path">/s/{space_id}/api/entity_analytics/privileged_user_monitoring/pad/status</span></div>
 
         Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.
+  /api/entity_analytics/watchlists/management:
+    post:
+      operationId: CreateWatchlist
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  description: Description of the watchlist
+                  type: string
+                managed:
+                  description: Indicates if the watchlist is managed by the system
+                  type: boolean
+                name:
+                  description: Unique name for the watchlist
+                  type: string
+                riskModifier:
+                  description: Risk score modifier associated with the watchlist
+                  type: number
+              required:
+                - name
+                - description
+                - riskModifier
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Security_Entity_Analytics_API_WatchlistObject'
+          description: Watchlist created successfully
+      summary: Create a new watchlist
+      tags:
+        - Security Entity Analytics API
+      x-metaTags:
+        - content: Kibana, Elastic Cloud Serverless
+          name: product_name
+      description: |-
+        **Spaces method and path for this operation:**
+
+        <div><span class="operation-verb post">post</span>&nbsp;<span class="operation-path">/s/{space_id}/api/entity_analytics/watchlists/management</span></div>
+
+        Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.
+  /api/entity_analytics/watchlists/management/{name}:
+    get:
+      operationId: GetWatchlist
+      parameters:
+        - description: Unique name for the watchlist
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Security_Entity_Analytics_API_WatchlistObject'
+          description: Watchlist details
+      summary: Get a watchlist by name
+      tags:
+        - Security Entity Analytics API
+      x-metaTags:
+        - content: Kibana, Elastic Cloud Serverless
+          name: product_name
+      description: |-
+        **Spaces method and path for this operation:**
+
+        <div><span class="operation-verb get">get</span>&nbsp;<span class="operation-path">/s/{space_id}/api/entity_analytics/watchlists/management/{name}</span></div>
+
+        Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.
+  /api/entity_analytics/watchlists/management/list:
+    get:
+      operationId: ListWatchlists
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Security_Entity_Analytics_API_WatchlistObject'
+                type: array
+          description: List of watchlists
+      summary: List all watchlists
+      tags:
+        - Security Entity Analytics API
+      x-metaTags:
+        - content: Kibana, Elastic Cloud Serverless
+          name: product_name
+      description: |-
+        **Spaces method and path for this operation:**
+
+        <div><span class="operation-verb get">get</span>&nbsp;<span class="operation-path">/s/{space_id}/api/entity_analytics/watchlists/management/list</span></div>
+
+        Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.
   /api/entity_store/enable:
     post:
       operationId: InitEntityStore
@@ -101725,6 +101823,33 @@ components:
             name:
               description: The name of the user.
               type: string
+    Security_Entity_Analytics_API_WatchlistObject:
+      type: object
+      properties:
+        createdAt:
+          description: Timestamp when the watchlist was created
+          format: date-time
+          type: string
+        description:
+          description: Description of the watchlist
+          type: string
+        managed:
+          description: Indicates if the watchlist is managed by the system
+          type: boolean
+        name:
+          description: Unique name of the watchlist
+          type: string
+        riskModifier:
+          description: Risk score modifier associated with the watchlist
+          type: number
+        updatedAt:
+          description: Timestamp when the watchlist was last updated
+          format: date-time
+          type: string
+      required:
+        - name
+        - riskModifier
+        - managed
     Security_Exceptions_API_BlocklistHashOrPathEntry:
       type: object
       properties:
