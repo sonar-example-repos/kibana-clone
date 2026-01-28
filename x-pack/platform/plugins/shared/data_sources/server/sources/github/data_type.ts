@@ -9,6 +9,7 @@ import { i18n } from '@kbn/i18n';
 import { MCPAuthType } from '@kbn/connector-schemas/mcp';
 import type { DataSource } from '@kbn/data-catalog-plugin';
 import { EARSSupportedOAuthProvider } from '@kbn/data-catalog-plugin';
+import { GITHUB_MCP_SERVER_URL } from '../../../common';
 import {
   generateGithubSearchIssuesWorkflow,
   generateGithubSearchCodeWorkflow,
@@ -36,7 +37,7 @@ export const githubDataSource: DataSource = {
   stackConnector: {
     type: '.mcp',
     config: {
-      serverUrl: 'https://api.githubcopilot.com/mcp/',
+      serverUrl: GITHUB_MCP_SERVER_URL,
       hasAuth: true,
       authType: MCPAuthType.Bearer,
     },
@@ -59,6 +60,8 @@ export const githubDataSource: DataSource = {
       'pull_request_read',
     ],
   },
+
+  requiresUIOverride: true,
 
   generateWorkflows(stackConnectorId: string) {
     return [

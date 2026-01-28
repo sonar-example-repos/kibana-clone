@@ -15,6 +15,7 @@ import type { ActiveSource } from '../../types/connector';
 import { queryKeys } from '../query_keys';
 import { useStackConnector } from './use_stack_connector';
 import { getConnectorIconType } from '../../utils/get_connector_icon';
+import { dataSourceUIConfigRegistry } from '../lib/data_source_ui_configs';
 
 export interface UseEditActiveSourceFlyoutOptions {
   activeSource: ActiveSource | null;
@@ -134,8 +135,24 @@ export const useEditActiveSourceFlyout = ({
       name: activeSource.name,
     };
 
+    // Check if this data source needs UI override
+    const uiConfig = dataSourceUIConfigRegistry.get(activeSource.type);
+
+    let displayConnector = connectorWithDataSourceName;
+
+    // If the data source has a UI override and uses MCP connector APIs,
+    // switch to the virtual connector type for branded UI
+    if (uiConfig?.uiOverride && stackConnector.actionTypeId === '.mcp') {
+      const virtualTypeId = `.${activeSource.type}_datasource`;
+
+      displayConnector = {
+        ...connectorWithDataSourceName,
+        actionTypeId: virtualTypeId,
+      };
+    }
+
     return triggersActionsUi.getEditConnectorFlyout({
-      connector: connectorWithDataSourceName,
+      connector: displayConnector,
       icon: getConnectorIconType(activeSource.iconType),
       hideRulesTab: true,
       isTestable: false,
