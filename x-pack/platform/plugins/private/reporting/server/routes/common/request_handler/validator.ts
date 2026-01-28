@@ -41,7 +41,7 @@ const timezoneSchema = z.string().refine((val) => validateTimezone(val) === unde
 
 const dimensionsSchema = z
   .object({
-    height: z.number().positive().max(14400),
+    height: z.number().positive().max(32000),
     width: z.number().positive().max(14400),
   })
   .strict();
