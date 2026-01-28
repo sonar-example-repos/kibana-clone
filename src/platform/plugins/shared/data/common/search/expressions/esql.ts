@@ -330,6 +330,24 @@ export const getEsqlFn = ({ getStartDependencies }: EsqlFnArguments) => {
                         }),
                       },
                     }),
+                    ...(rawResponse &&
+                      'documents_found' in rawResponse && {
+                        documentsQueried: {
+                          label: i18n.translate('data.search.es_search.documentsQueriedLabel', {
+                            defaultMessage: 'Documents queried',
+                          }),
+                          value: i18n.translate('data.search.es_search.documentsQueriedValue', {
+                            defaultMessage: '{documentsQueried}',
+                            values: { documentsQueried: rawResponse.documents_found },
+                          }),
+                          description: i18n.translate(
+                            'data.search.es_search.documentsQueriedDescription',
+                            {
+                              defaultMessage: 'The number of documents queried by the query.',
+                            }
+                          ),
+                        },
+                      }),
                   })
                   .json(params)
                   .ok({ json: { rawResponse }, requestParams });
