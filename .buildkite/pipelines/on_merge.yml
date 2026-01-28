@@ -9,7 +9,7 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-2
+      machineType: n2d-standard-2
     retry:
       automatic:
         - exit_status: '*'
@@ -27,7 +27,7 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-2
+      machineType: n2d-standard-2
       diskSizeGb: 95
 
   - command: .buildkite/scripts/steps/on_merge_build_and_metrics.sh
@@ -36,8 +36,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-8
+      machineType: c3d-standard-16-lssd
       preemptible: true
+      spotZones: us-central1-c,us-central1-b,us-central1-a
     key: build
     timeout_in_minutes: 60
     retry:
@@ -51,9 +52,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-highcpu-8
+      machineType: c3d-standard-8-lssd
       preemptible: true
-      diskSizeGb: 105
+      spotZones: us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     retry:
       automatic:
@@ -66,8 +67,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-2
+      machineType: c3d-standard-8
       preemptible: true
+      spotZones: us-central1-c,us-central1-b,us-central1-a
       diskSizeGb: 105
     timeout_in_minutes: 60
     retry:
@@ -81,8 +83,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-16
+      machineType: c3d‑standard‑30-lssd
       preemptible: true
+      spotZones: us-central1-c,us-central1-b,us-central1-a
       diskSizeGb: 105
     timeout_in_minutes: 60
     retry:
@@ -96,8 +99,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-32
+      machineType: c3d‑standard‑30-lssd
       preemptible: true
+      spotZones: us-central1-c,us-central1-b,us-central1-a
       diskSizeGb: 105
     timeout_in_minutes: 60
     retry:
@@ -111,10 +115,10 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: c4-standard-4
-      diskType: 'hyperdisk-balanced'
+      machineType: n4d-highcpu-4
+      diskType: hyperdisk-balanced
       preemptible: true
-      spotZones: us-central1-a,us-central1-b,us-central1-c
+      spotZones: us-central1-c,us-central1-b,us-central1-a
       diskSizeGb: 105
     timeout_in_minutes: 60
     retry:
@@ -128,8 +132,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     retry:
       automatic:
@@ -145,8 +150,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-highmem-4
+      machineType: n2d-highmem-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
       diskSizeGb: 105
     timeout_in_minutes: 80
     retry:
@@ -162,7 +168,7 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-2
+      machineType: n2d-standard-2
       diskSizeGb: 105
     timeout_in_minutes: 10
     depends_on:
@@ -179,7 +185,7 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-2
+      machineType: n2d-standard-2
       diskSizeGb: 105
     timeout_in_minutes: 10
     env:
@@ -197,7 +203,7 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       diskSizeGb: 105
     key: build_scout_tests
     timeout_in_minutes: 15
@@ -216,7 +222,7 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       diskSizeGb: 105
     timeout_in_minutes: 15
     depends_on:
@@ -232,8 +238,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 3
     retry:
@@ -247,8 +254,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 2
     retry:
@@ -262,8 +270,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 10
     retry:
@@ -277,8 +286,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 5
     retry:
@@ -292,8 +302,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 1
     retry:
@@ -307,8 +318,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 1
     retry:
@@ -322,8 +334,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 1
     retry:
@@ -337,8 +350,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 1
     retry:
@@ -352,8 +366,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 4
     retry:
@@ -367,8 +382,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 2
     retry:
@@ -382,8 +398,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 2
     retry:
@@ -397,8 +414,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 2
     retry:
@@ -412,8 +430,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 2
     retry:
@@ -427,8 +446,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 5
     retry:
@@ -442,8 +462,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 4
     retry:
@@ -457,8 +478,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 5
     retry:
@@ -472,8 +494,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 3
     retry:
@@ -487,8 +510,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 1
     retry:
@@ -502,8 +526,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 1
     retry:
@@ -517,8 +542,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 2
     retry:
@@ -532,8 +558,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 3
     retry:
@@ -547,8 +574,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 8
     retry:
@@ -562,8 +590,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 8
     retry:
@@ -577,8 +606,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     parallelism: 8
     retry:
@@ -595,6 +625,8 @@ steps:
       enableNestedVirtualization: true
       machineType: n2-standard-4
       diskSizeGb: 105
+      preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 75
     parallelism: 20
     retry:
@@ -611,6 +643,8 @@ steps:
       enableNestedVirtualization: true
       machineType: n2-standard-4
       diskSizeGb: 105
+      preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 75
     parallelism: 14
     retry:
@@ -624,8 +658,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 120
     parallelism: 3
     retry:
@@ -640,7 +675,7 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-2
+      machineType: n2d-standard-2
 
   - command: .buildkite/scripts/steps/storybooks/build_and_upload.sh
     label: 'Build Storybooks'
@@ -648,8 +683,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-8
+      machineType: n2d-standard-8
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     key: storybooks
     timeout_in_minutes: 80
     retry:
@@ -663,8 +699,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-2
+      machineType: n2d-standard-2
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     timeout_in_minutes: 60
     soft_fail: true
     retry:
@@ -678,8 +715,9 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-4
+      machineType: n2d-standard-4
       preemptible: true
+      spotZones: us-central1-f,us-central1-c,us-central1-b,us-central1-a
     artifact_paths: 'target/plugin_so_types_snapshot.json'
     timeout_in_minutes: 30
     retry:
@@ -697,7 +735,7 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-2
+      machineType: n2d-standard-2
 
   - wait
 
@@ -708,4 +746,4 @@ steps:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-2
+      machineType: n2d-standard-2
