@@ -314,9 +314,9 @@ export function registerToolsRoutes({
         authz: { requiredPrivileges: [apiPrivileges.readAgentBuilder] },
       },
       access: 'public',
-      summary: 'Execute a Tool',
+      summary: 'Run a tool',
       description:
-        'Execute a tool with parameters. Use this endpoint to run a tool directly with specified inputs and optional external connector integration.',
+        'Run a tool with parameters. Use this endpoint to run a tool directly with specified inputs and optional external connector integration.',
       options: {
         timeout: {
           idleSocket: AGENT_SOCKET_TIMEOUT_MS,
