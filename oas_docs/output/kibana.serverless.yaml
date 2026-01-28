@@ -58647,6 +58647,23 @@ paths:
                                                           description: A non-empty string.
                                                           minLength: 1
                                                           type: string
+                                                        downsample:
+                                                          items:
+                                                            additionalProperties: false
+                                                            type: object
+                                                            properties:
+                                                              after:
+                                                                description: A non-empty string.
+                                                                minLength: 1
+                                                                type: string
+                                                              fixed_interval:
+                                                                description: A non-empty string.
+                                                                minLength: 1
+                                                                type: string
+                                                            required:
+                                                              - after
+                                                              - fixed_interval
+                                                          type: array
                                                   required:
                                                     - dsl
                                                 - additionalProperties: false
@@ -63110,6 +63127,23 @@ paths:
                                                       description: A non-empty string.
                                                       minLength: 1
                                                       type: string
+                                                    downsample:
+                                                      items:
+                                                        additionalProperties: false
+                                                        type: object
+                                                        properties:
+                                                          after:
+                                                            description: A non-empty string.
+                                                            minLength: 1
+                                                            type: string
+                                                          fixed_interval:
+                                                            description: A non-empty string.
+                                                            minLength: 1
+                                                            type: string
+                                                        required:
+                                                          - after
+                                                          - fixed_interval
+                                                      type: array
                                               required:
                                                 - dsl
                                             - additionalProperties: false
@@ -67324,6 +67358,23 @@ paths:
                                                           description: A non-empty string.
                                                           minLength: 1
                                                           type: string
+                                                        downsample:
+                                                          items:
+                                                            additionalProperties: false
+                                                            type: object
+                                                            properties:
+                                                              after:
+                                                                description: A non-empty string.
+                                                                minLength: 1
+                                                                type: string
+                                                              fixed_interval:
+                                                                description: A non-empty string.
+                                                                minLength: 1
+                                                                type: string
+                                                            required:
+                                                              - after
+                                                              - fixed_interval
+                                                          type: array
                                                   required:
                                                     - dsl
                                                 - additionalProperties: false
@@ -71599,6 +71650,23 @@ paths:
                                                       description: A non-empty string.
                                                       minLength: 1
                                                       type: string
+                                                    downsample:
+                                                      items:
+                                                        additionalProperties: false
+                                                        type: object
+                                                        properties:
+                                                          after:
+                                                            description: A non-empty string.
+                                                            minLength: 1
+                                                            type: string
+                                                          fixed_interval:
+                                                            description: A non-empty string.
+                                                            minLength: 1
+                                                            type: string
+                                                        required:
+                                                          - after
+                                                          - fixed_interval
+                                                      type: array
                                               required:
                                                 - dsl
                                             - additionalProperties: false
@@ -75811,6 +75879,23 @@ paths:
                                           description: A non-empty string.
                                           minLength: 1
                                           type: string
+                                        downsample:
+                                          items:
+                                            additionalProperties: false
+                                            type: object
+                                            properties:
+                                              after:
+                                                description: A non-empty string.
+                                                minLength: 1
+                                                type: string
+                                              fixed_interval:
+                                                description: A non-empty string.
+                                                minLength: 1
+                                                type: string
+                                            required:
+                                              - after
+                                              - fixed_interval
+                                          type: array
                                   required:
                                     - dsl
                                 - additionalProperties: false
@@ -79968,6 +80053,23 @@ paths:
                                           description: A non-empty string.
                                           minLength: 1
                                           type: string
+                                        downsample:
+                                          items:
+                                            additionalProperties: false
+                                            type: object
+                                            properties:
+                                              after:
+                                                description: A non-empty string.
+                                                minLength: 1
+                                                type: string
+                                              fixed_interval:
+                                                description: A non-empty string.
+                                                minLength: 1
+                                                type: string
+                                            required:
+                                              - after
+                                              - fixed_interval
+                                          type: array
                                   required:
                                     - dsl
                                 - additionalProperties: false
