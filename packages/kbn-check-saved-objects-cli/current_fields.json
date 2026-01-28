@@ -1064,6 +1064,7 @@
     "realmName",
     "realmType",
     "sessionId",
+    "status",
     "username"
   ],
   "search-telemetry": [],
