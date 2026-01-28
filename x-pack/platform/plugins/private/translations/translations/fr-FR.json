@@ -31987,8 +31987,6 @@
     "xpack.searchIndices.indexActionsMenu.deleteIndex.deleteWarningDescription": "Vous ne pouvez pas récupérer un index supprimé. Assurez-vous de disposer des sauvegardes appropriées.",
     "xpack.searchIndices.indexDetails.ingestDocuments.description": "Ensuite, utilisez l’API Bulk d’Elasticsearch pour ingérer un tableau de documents dans l’index.",
     "xpack.searchIndices.indexDetails.ingestDocuments.title": "Ingérer les documents",
-    "xpack.searchIndices.indexDocuments.recentDocsActionMessage": "Vous consultez les documents les plus récemment ingérés {pageSize} dans cet index. Pour afficher tous les documents, consultez",
-    "xpack.searchIndices.indexDocuments.recentDocsActionMessageLink": "Discover.",
     "xpack.searchIndices.loadingDescription": "Chargement des détails de l'index…",
     "xpack.searchIndices.mappingsTabLabel": "Mappings",
     "xpack.searchIndices.moreOptions.apiReferenceLabel": "Référence d'API",

@@ -32022,8 +32022,6 @@
     "xpack.searchIndices.indexActionsMenu.deleteIndex.deleteWarningDescription": "您无法恢复删除的索引。确保您有适当的备份。",
     "xpack.searchIndices.indexDetails.ingestDocuments.description": "接下来，使用 Elasticsearch 批量 API 将一系列文档采集到索引中。",
     "xpack.searchIndices.indexDetails.ingestDocuments.title": "采集文档",
-    "xpack.searchIndices.indexDocuments.recentDocsActionMessage": "您正在查看此索引中的 {pageSize} 个最近采集的文档。要查看所有文档，请在以下项中查看：",
-    "xpack.searchIndices.indexDocuments.recentDocsActionMessageLink": "Discover。",
     "xpack.searchIndices.loadingDescription": "正在加载索引详情……",
     "xpack.searchIndices.mappingsTabLabel": "映射",
     "xpack.searchIndices.moreOptions.apiReferenceLabel": "API 参考",

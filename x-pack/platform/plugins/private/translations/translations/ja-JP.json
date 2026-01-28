@@ -32042,8 +32042,6 @@
     "xpack.searchIndices.indexActionsMenu.deleteIndex.deleteWarningDescription": "削除されたインデックスは復元できません。適切なバックアップがあることを確認してください。",
     "xpack.searchIndices.indexDetails.ingestDocuments.description": "次に、Elasticsearch Bulk APIを使用して、ドキュメントの配列をインデックスにインジェストします。",
     "xpack.searchIndices.indexDetails.ingestDocuments.title": "ドキュメントをインジェスト",
-    "xpack.searchIndices.indexDocuments.recentDocsActionMessage": "このインデックスで最近インジェストされた{pageSize}ドキュメントを表示しています。すべてのドキュメントを表示するには、表示してください",
-    "xpack.searchIndices.indexDocuments.recentDocsActionMessageLink": "Discover。",
     "xpack.searchIndices.loadingDescription": "インデックス詳細を読み込み中...",
     "xpack.searchIndices.mappingsTabLabel": "マッピング",
     "xpack.searchIndices.moreOptions.apiReferenceLabel": "API参照",
