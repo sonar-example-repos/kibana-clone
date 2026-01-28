@@ -39,6 +39,8 @@ ${help(this, '  ')}
   process.exit(64); // eslint-disable-line no-process-exit
 };
 
+console.log('just wanted to see if this would show up');
+
 Command.prototype.unknownArgv = function (argv) {
   if (argv) this.__unknownArgv = argv;
   return this.__unknownArgv ? this.__unknownArgv.slice(0) : [];
