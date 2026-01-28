@@ -83,6 +83,8 @@ export interface OverloadedFunction {
    * @param input A number to double.
    * @returns The doubled value.
    */
+  // Intentionally separate overloads to test docs tooling handling of overloaded function types.
+  // eslint-disable-next-line @typescript-eslint/unified-signatures
   (input: number): number;
   /**
    * Parse an array of strings.
@@ -123,12 +125,12 @@ export const overloadedFn: OverloadedFunction = ((input: string | number | strin
 //     line 54 - foo
 //     line 62 - bar
 //     line 65 - AReactElementFn
-//     line 98 - overloadedFn
+//     line 100 - overloadedFn
 //   param doc mismatches (4):
 //     line 30 - FnTypeWithGeneric
 //     line 54 - foo
 //     line 62 - bar
-//     line 98 - overloadedFn
+//     line 100 - overloadedFn
 //   missing complex type info (4):
 //     line 36 - p
 //     line 36 - p
@@ -161,7 +163,7 @@ export const overloadedFn: OverloadedFunction = ((input: string | number | strin
 //     line 80 - input
 //     line 80 - input
 //     line 81 - Unnamed
-//     line 86 - input
-//     line 87 - Unnamed
-//     line 92 - input
-//     line 98 - overloadedFn
+//     line 88 - input
+//     line 89 - Unnamed
+//     line 94 - input
+//     line 100 - overloadedFn

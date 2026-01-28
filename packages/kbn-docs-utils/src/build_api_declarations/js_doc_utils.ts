@@ -80,6 +80,9 @@ export function getJSDocParamComment(node: Node | JSDoc[], name: string | string
         idx += 1; // move past the type token
       }
       const nameToken = parts[idx];
+      if (!nameToken) {
+        continue;
+      }
       const commentText = parts.slice(idx + 1).join(' ');
       const rawName = normalizeName(nameToken);
       if (

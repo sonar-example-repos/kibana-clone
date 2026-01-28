@@ -7,7 +7,8 @@
     "paramDocMismatches": 14,
     "missingComplexTypeInfo": 15,
     "isAnyType": 1,
-    "noReferences": 144
+    "noReferences": 144,
+    "unnamedExports": 0
   },
   "missingComments": [
     {
@@ -721,7 +722,7 @@
       "label": "overloadedFn",
       "path": "packages/kbn-docs-utils/src/integration_tests/__fixtures__/src/plugin_a/public/types.ts",
       "type": "Function",
-      "lineNumber": 98,
+      "lineNumber": 100,
       "columnNumber": 14
     }
   ],
@@ -835,7 +836,7 @@
       "label": "overloadedFn",
       "path": "packages/kbn-docs-utils/src/integration_tests/__fixtures__/src/plugin_a/public/types.ts",
       "type": "Function",
-      "lineNumber": 98,
+      "lineNumber": 100,
       "columnNumber": 14
     }
   ],
@@ -2049,7 +2050,7 @@
       "label": "input",
       "path": "packages/kbn-docs-utils/src/integration_tests/__fixtures__/src/plugin_a/public/types.ts",
       "type": "number",
-      "lineNumber": 86,
+      "lineNumber": 88,
       "columnNumber": 4
     },
     {
@@ -2065,7 +2066,7 @@
       "label": "input",
       "path": "packages/kbn-docs-utils/src/integration_tests/__fixtures__/src/plugin_a/public/types.ts",
       "type": "Array",
-      "lineNumber": 92,
+      "lineNumber": 94,
       "columnNumber": 4
     },
     {
@@ -2073,7 +2074,7 @@
       "label": "Unnamed",
       "path": "packages/kbn-docs-utils/src/integration_tests/__fixtures__/src/plugin_a/public/types.ts",
       "type": "Function",
-      "lineNumber": 87,
+      "lineNumber": 89,
       "columnNumber": 3
     },
     {
@@ -2097,7 +2098,7 @@
       "label": "overloadedFn",
       "path": "packages/kbn-docs-utils/src/integration_tests/__fixtures__/src/plugin_a/public/types.ts",
       "type": "Function",
-      "lineNumber": 98,
+      "lineNumber": 100,
       "columnNumber": 14
     },
     {
@@ -2124,5 +2125,6 @@
       "lineNumber": 12,
       "columnNumber": 1
     }
-  ]
+  ],
+  "unnamedExports": []
 }

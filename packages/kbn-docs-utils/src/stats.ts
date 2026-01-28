@@ -29,7 +29,7 @@ export const hasCommentIssues = (stats: ApiStats): boolean =>
  * Collects API stats for a single plugin.
  */
 export function collectApiStatsForPlugin(doc: PluginApi, issues: IssuesByPlugin): ApiStats {
-  const { missingApiItems, deprecations, adoptionTrackedAPIs } = issues;
+  const { missingApiItems, deprecations, adoptionTrackedAPIs, unnamedExports } = issues;
 
   const stats: ApiStats = {
     missingComments: [],
@@ -45,6 +45,7 @@ export function collectApiStatsForPlugin(doc: PluginApi, issues: IssuesByPlugin)
     adoptionTrackedAPIsUnreferencedCount: 0,
     apiCount: countApiForPlugin(doc),
     missingExports: Object.values(missingApiItems[doc.id] ?? {}).length,
+    unnamedExports: unnamedExports?.[doc.id] || [],
   };
   Object.values(doc.client).forEach((def) => {
     collectStatsForApi(def, stats, doc);
