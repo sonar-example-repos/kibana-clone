@@ -33,10 +33,13 @@ import { RuleUpdateCallouts } from '../../components/rule_update_callouts/rule_u
 import { BlogPostPrebuiltRuleCustomizationCallout } from '../../components/blog_post_prebuilt_rule_customization_callout';
 import { RuleImportModal } from '../../components/rule_import_modal/rule_import_modal';
 import { RuleSettingsModal } from '../../../rule_gaps/components/rule_settings_modal';
-import { useGapAutoFillCapabilities } from '../../../rule_gaps/logic/use_gap_auto_fill_capabilities';
+import {
+  GapAutoFillSchedulerProvider,
+  useGapAutoFillSchedulerContext,
+} from '../../../rule_gaps/context/gap_auto_fill_scheduler_context';
 import { useUserPrivileges } from '../../../../common/components/user_privileges';
 
-const RulesPageComponent: React.FC = () => {
+const RulesPageContent = () => {
   const [isImportModalVisible, showImportModal, hideImportModal] = useBoolState();
   const [isValueListFlyoutVisible, showValueListFlyout, hideValueListFlyout] = useBoolState();
   const [isRuleSettingsModalOpen, openRuleSettingsModal, closeRuleSettingsModal] = useBoolState();
@@ -54,7 +57,7 @@ const RulesPageComponent: React.FC = () => {
     needsIndex: needsListsIndex,
   } = useListsConfig();
   const loading = userInfoLoading || listsConfigLoading;
-  const { canAccessGapAutoFill } = useGapAutoFillCapabilities();
+  const { canAccessGapAutoFill } = useGapAutoFillSchedulerContext();
 
   if (
     redirectToDetections(
@@ -166,5 +169,11 @@ const RulesPageComponent: React.FC = () => {
     </>
   );
 };
+
+const RulesPageComponent = () => (
+  <GapAutoFillSchedulerProvider>
+    <RulesPageContent />
+  </GapAutoFillSchedulerProvider>
+);
 
 export const RulesPage = React.memo(RulesPageComponent);
