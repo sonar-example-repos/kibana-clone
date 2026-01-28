@@ -14,6 +14,7 @@ import { DynamicActionStorage, type DynamicActionStorageApi } from './dynamic_ac
 import { getDynamicActionsState } from './get_dynamic_actions_state';
 import type { DynamicActionsSerializedState, EmbeddableDynamicActionsManager } from './types';
 import type { StartDependencies } from '../plugin';
+import { extractEnhancements, serializeEnhancements } from './bwc';
 
 export function initializeDynamicActionsManager(
   uuid: string,
@@ -22,7 +23,7 @@ export function initializeDynamicActionsManager(
   services: StartDependencies
 ): EmbeddableDynamicActionsManager {
   const dynamicActionsState$ = new BehaviorSubject<DynamicActionsSerializedState['enhancements']>(
-    getDynamicActionsState(state.enhancements)
+    getDynamicActionsState(extractEnhancements(state))
   );
   const api: DynamicActionStorageApi = {
     dynamicActionsState$,
@@ -41,15 +42,14 @@ export function initializeDynamicActionsManager(
   });
 
   function getLatestState() {
-    return { enhancements: dynamicActionsState$.getValue() };
+    return serializeEnhancements(dynamicActionsState$.getValue());
   }
 
   return {
     api: { ...api, enhancements: { dynamicActions } },
     comparators: {
-      enhancements: (a, b) => {
-        return deepEqual(getDynamicActionsState(a), getDynamicActionsState(b));
-      },
+      enhancements: 'skip',
+      drilldowns: (a, b) => deepEqual(a, b),
     } as StateComparators<DynamicActionsSerializedState>,
     anyStateChange$: dynamicActionsState$.pipe(map(() => undefined)),
     getLatestState,
