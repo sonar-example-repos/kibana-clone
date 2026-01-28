@@ -32,10 +32,13 @@ export const AllRuleCoveragePanel: React.FC = () => {
 
   const { getIntegrations, getDetectionRules } = useSiemReadinessApi();
 
-  const getInstalledIntegrations =
-    getIntegrations?.data?.items?.filter(
-      (pkg: SiemReadinessPackageInfo) => pkg.status === 'installed'
-    ) || [];
+  const getInstalledIntegrations = useMemo(() => {
+    return (
+      getIntegrations?.data?.items?.filter(
+        (pkg: SiemReadinessPackageInfo) => pkg.status === 'installed'
+      ) || []
+    );
+  }, [getIntegrations?.data?.items]);
 
   const integrationNames = getInstalledIntegrations?.map((item) => item.name) || [];
 
@@ -50,29 +53,53 @@ export const AllRuleCoveragePanel: React.FC = () => {
     [integrationDisplayNames.data]
   );
 
+  const integrationsFromEnabledRules = useMemo(() => {
+    if (!getDetectionRules.data?.data || getDetectionRules.data.data.length === 0) {
+      return {
+        relatedIntegrationNames: [],
+        installedIntegrationNames: [],
+      };
+    }
+
+    const integrationsSet = new Set<string>();
+
+    getDetectionRules.data.data.forEach((rule) => {
+      if (rule.enabled && rule.related_integrations) {
+        rule.related_integrations.forEach((integration) => {
+          if (integration.package) {
+            integrationsSet.add(integration.package);
+          }
+        });
+      }
+    });
+
+    return {
+      relatedIntegrationNames: Array.from(integrationsSet),
+      installedIntegrationNames: getInstalledIntegrations.map((item) => item.name),
+    };
+  }, [getDetectionRules.data?.data, getInstalledIntegrations]);
+
   const installedIntegrationsOptions = useMemo(() => {
-    return (installedIntegrationRules.ruleIntegrationCoverage?.installedIntegrations || []).map(
-      (integration) => ({
-        label: getIntegrationDisplayName(integration),
-        key: integration,
-      })
+    const installedIntegrations = integrationsFromEnabledRules.relatedIntegrationNames.filter(
+      (integration) => integrationsFromEnabledRules.installedIntegrationNames.includes(integration)
     );
-  }, [
-    getIntegrationDisplayName,
-    installedIntegrationRules.ruleIntegrationCoverage?.installedIntegrations,
-  ]);
+
+    return installedIntegrations.map((integration) => ({
+      label: getIntegrationDisplayName(integration),
+      key: integration,
+    }));
+  }, [integrationsFromEnabledRules, getIntegrationDisplayName]);
 
   const missingIntegrationsOptions = useMemo(() => {
-    return (installedIntegrationRules.ruleIntegrationCoverage?.missingIntegrations || []).map(
-      (integration) => ({
-        label: getIntegrationDisplayName(integration),
-        key: integration,
-      })
+    const missingIntegrations = integrationsFromEnabledRules.relatedIntegrationNames.filter(
+      (integration) => !integrationsFromEnabledRules.installedIntegrationNames.includes(integration)
     );
-  }, [
-    getIntegrationDisplayName,
-    installedIntegrationRules.ruleIntegrationCoverage?.missingIntegrations,
-  ]);
+
+    return missingIntegrations.map((integration) => ({
+      label: getIntegrationDisplayName(integration),
+      key: integration,
+    }));
+  }, [integrationsFromEnabledRules, getIntegrationDisplayName]);
 
   const chartBaseTheme = useMemo(
     () => ({
@@ -177,6 +204,7 @@ export const AllRuleCoveragePanel: React.FC = () => {
     ],
     [installedIntegrationAssociatedRulesCount, missingIntegrationAssociatedRulesCount]
   );
+
   const isLoading = getIntegrations.isLoading || getDetectionRules.isLoading;
   const DONUT_CHART_DATA = useMemo(
     () => [
