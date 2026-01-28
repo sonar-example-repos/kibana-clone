@@ -147,7 +147,7 @@ const getColumnConfigs = ({
           defaultMessage: 'Health',
         }),
         order: 20,
-        render: (index) => <DataHealth health={index.health} />,
+        render: (index) => (index.health ? <DataHealth health={index.health} /> : undefined),
       },
       {
         fieldName: 'status',
@@ -297,6 +297,35 @@ export class IndexTable extends Component {
           })}
         />
         <EuiSpacer />
+      </>
+    );
+  }
+
+  renderEnrichmentErrors() {
+    const { indicesEnrichmentErrors } = this.props;
+    if (!indicesEnrichmentErrors || indicesEnrichmentErrors.length === 0) {
+      return null;
+    }
+
+    return (
+      <>
+        <EuiCallOut
+          iconType="warning"
+          color="warning"
+          data-test-subj="indicesEnrichmentErrorCallout"
+          title={i18n.translate('xpack.idxMgmt.indexTable.enrichmentErrorTitle', {
+            defaultMessage: 'Some index details could not be loaded',
+          })}
+        >
+          <FormattedMessage
+            id="xpack.idxMgmt.indexTable.enrichmentErrorDescription"
+            defaultMessage="The following data sources failed to load: {sources}."
+            values={{
+              sources: indicesEnrichmentErrors.join(', '),
+            }}
+          />
+        </EuiCallOut>
+        <EuiSpacer size="m" />
       </>
     );
   }
@@ -706,6 +735,8 @@ export class IndexTable extends Component {
               </EuiFlexGroup>
 
               {this.renderFilterError()}
+
+              {this.renderEnrichmentErrors()}
 
               <EuiSpacer size="m" />
 
