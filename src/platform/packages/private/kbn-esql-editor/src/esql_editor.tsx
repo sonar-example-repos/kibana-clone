@@ -1116,7 +1116,7 @@ const ESQLEditorInternal = function ESQLEditor({
   const editorPanel = (
     <>
       <Global styles={lookupIndexBadgeStyle} />
-      {Boolean(editorIsInline) && (
+      {Boolean(editorIsInline) && (formLabel || !hideRunQueryButton) ? (
         <EuiFlexGroup
           gutterSize="none"
           responsive={false}
@@ -1126,8 +1126,8 @@ const ESQLEditorInternal = function ESQLEditor({
             padding: ${theme.euiTheme.size.s} 0;
           `}
         >
-          <EuiFlexItem grow={false}>
-            {formLabel && (
+          {formLabel && (
+            <EuiFlexItem grow={false}>
               <EuiFormLabel
                 isFocused={labelInFocus && !isDisabled}
                 isDisabled={isDisabled}
@@ -1144,10 +1144,10 @@ const ESQLEditorInternal = function ESQLEditor({
               >
                 {formLabel}
               </EuiFormLabel>
-            )}
-          </EuiFlexItem>
-          <EuiFlexItem grow={false}>
-            {!hideRunQueryButton && (
+            </EuiFlexItem>
+          )}
+          {!hideRunQueryButton && (
+            <EuiFlexItem grow={false}>
               <EuiToolTip
                 position="top"
                 content={i18n.translate('esqlEditor.query.runQuery', {
@@ -1167,10 +1167,10 @@ const ESQLEditorInternal = function ESQLEditor({
                   {queryRunButtonProperties.label}
                 </EuiButton>
               </EuiToolTip>
-            )}
-          </EuiFlexItem>
+            </EuiFlexItem>
+          )}
         </EuiFlexGroup>
-      )}
+      ) : null}
       <EuiFlexGroup
         gutterSize="none"
         css={{
