@@ -20,6 +20,7 @@ import {
 } from '@kbn/core/public';
 import { Storage } from '@kbn/kibana-utils-plugin/public';
 import { WORKFLOWS_UI_SETTING_ID } from '@kbn/workflows/common/constants';
+import { TelemetryService } from './common/lib/telemetry/telemetry_service';
 import type {
   WorkflowsPublicPluginSetup,
   WorkflowsPublicPluginSetupDependencies,
@@ -43,15 +44,20 @@ export class WorkflowsPlugin
     >
 {
   private appUpdater$: Subject<AppUpdater>;
+  private telemetryService: TelemetryService;
 
   constructor() {
     this.appUpdater$ = new Subject<AppUpdater>();
+    this.telemetryService = new TelemetryService();
   }
 
   public setup(
     core: CoreSetup<WorkflowsPublicPluginStartDependencies, WorkflowsPublicPluginStart>,
     plugins: WorkflowsPublicPluginSetupDependencies
   ): WorkflowsPublicPluginSetup {
+    // Initialize telemetry service
+    this.telemetryService.setup({ analytics: core.analytics });
+
     // Check if workflows UI is enabled
     const isWorkflowsUiEnabled = core.uiSettings.get<boolean>(WORKFLOWS_UI_SETTING_ID, false);
 
@@ -107,7 +113,9 @@ export class WorkflowsPlugin
       }
     });
 
-    return {};
+    return {
+      telemetry: this.telemetryService.start(),
+    };
   }
 
   public stop() {}
@@ -117,12 +125,17 @@ export class WorkflowsPlugin
     core: CoreSetup<WorkflowsPublicPluginStartDependencies, WorkflowsPublicPluginStart>
   ): Promise<WorkflowsServices> {
     // Get start services as specified in kibana.jsonc
-    const [coreStart, depsStart] = await core.getStartServices();
+    const [coreStart, depsStart, pluginStart] = await core.getStartServices();
 
     const additionalServices: WorkflowsPublicPluginStartAdditionalServices = {
       storage: new Storage(localStorage),
+      workflowsManagement: pluginStart,
     };
 
-    return { ...coreStart, ...depsStart, ...additionalServices };
+    return {
+      ...coreStart,
+      ...depsStart,
+      ...additionalServices,
+    };
   }
 }
