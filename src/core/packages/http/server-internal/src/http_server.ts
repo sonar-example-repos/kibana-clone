@@ -19,6 +19,7 @@ import apm from 'elastic-apm-node';
 import Brok from 'brok';
 import type { Logger, LoggerFactory } from '@kbn/logging';
 import type { InternalExecutionContextSetup } from '@kbn/core-execution-context-server-internal';
+import type { InternalUserActivityServiceSetup } from '@kbn/core-user-activity-server-internal';
 import type { CoreVersionedRouter, Router } from '@kbn/core-http-router-server-internal';
 import { isSafeMethod } from '@kbn/core-http-router-server-internal';
 import type {
@@ -170,6 +171,7 @@ export type LifecycleRegistrar = Pick<
 export interface HttpServerSetupOptions {
   config$: Observable<HttpConfig>;
   executionContext?: InternalExecutionContextSetup;
+  userActivity?: InternalUserActivityServiceSetup;
 }
 
 /** @internal */
@@ -235,6 +237,7 @@ export class HttpServer {
   public async setup({
     config$,
     executionContext,
+    userActivity,
   }: HttpServerSetupOptions): Promise<HttpServerSetup> {
     const config = await firstValueFrom(config$);
     this.config = config;
@@ -277,7 +280,7 @@ export class HttpServer {
 
     // It's important to have setupRequestStateAssignment call the very first, otherwise context passing will be broken.
     // That's the only reason why context initialization exists in this method.
-    this.setupRequestStateAssignment(config, executionContext);
+    this.setupRequestStateAssignment(config, executionContext, userActivity);
     const basePathService = new BasePath(config.basePath, config.publicBaseUrl);
     this.setupBasePathRewrite(config, basePathService);
     this.setupConditionalCompression(config);
@@ -527,7 +530,8 @@ export class HttpServer {
 
   private setupRequestStateAssignment(
     config: HttpConfig,
-    executionContext?: InternalExecutionContextSetup
+    executionContext?: InternalExecutionContextSetup,
+    userActivity?: InternalUserActivityServiceSetup
   ) {
     this.server!.ext('onPreResponse', (request, responseToolkit) => {
       const stop = (request.app as KibanaRequestState).measureElu;
@@ -554,6 +558,13 @@ export class HttpServer {
 
       const parentContext = executionContext?.getParentContextFrom(request.headers);
 
+      // TODO: This only works if we get the execution context from the request in the x-kbn-context header.
+      // The browser does this but if someone does a request directly to the server it may not exist.
+      // Should we do it differently or is this ok?
+      userActivity?.setInjectedContext({
+        kibana: { space: { id: parentContext?.space } },
+      });
+
       if (executionContext && parentContext) {
         executionContext.set(parentContext);
         apm.addLabels(executionContext.getAsLabels());
@@ -575,6 +586,28 @@ export class HttpServer {
     });
 
     this.server!.ext('onPreHandler', (request, responseToolkit) => {
+      // TODO: is it ok to pull the values like this or should we
+      // look for an alternative?
+      const credentials = request?.auth?.credentials as {
+        username?: string;
+        email?: string;
+        roles: string[];
+        profile_uid: string;
+      };
+
+      userActivity?.setInjectedContext({
+        user: {
+          ip: request.raw.req.socket?.remoteAddress,
+          id: credentials?.profile_uid,
+          username: credentials?.username,
+          email: credentials?.email,
+          roles: credentials?.roles,
+        },
+        session: {
+          id: request.state?.sid?.sid,
+        },
+      });
+
       (request.app as KibanaRequestState).span?.end();
       (request.app as KibanaRequestState).span = null;
 
