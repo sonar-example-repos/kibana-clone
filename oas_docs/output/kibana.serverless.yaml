@@ -3047,7 +3047,7 @@ paths:
 
         Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.
 
-        Execute a tool with parameters. Use this endpoint to run a tool directly with specified inputs and optional external connector integration.<br/><br/>[Required authorization] Route required privileges: read_agent_builder.
+        Run a tool with parameters. Use this endpoint to run a tool directly with specified inputs and optional external connector integration.<br/><br/>[Required authorization] Route required privileges: read_agent_builder.
       operationId: post-agent-builder-tools-execute
       parameters:
         - description: A required header to protect against CSRF attacks
@@ -3238,7 +3238,7 @@ paths:
                         tool_result_id: uE8y
                         type: tabular_data
           description: Indicates a successful response
-      summary: Execute a Tool
+      summary: Run a tool
       tags:
         - agent builder
       x-state: ''
