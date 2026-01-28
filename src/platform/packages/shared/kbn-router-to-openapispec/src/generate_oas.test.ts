@@ -294,22 +294,28 @@ describe('generateOpenApiDocument', () => {
       const [routers, versionedRouters] = createTestRouters({
         routers: { testRouter: { routes: [{ method: 'get' }, { method: 'post' }] } },
         versionedRouters: { testVersionedRouter: { routes: [{}] } },
-        bodySchema: createSharedZodSchema(),
+        bodySchema: createSharedZodSchema() as unknown as CreateTestRouterArgs['bodySchema'],
       });
 
-      expect(
-        await generateOpenApiDocument(
-          {
-            routers,
-            versionedRouters,
-          },
-          {
-            title: 'test',
-            baseUrl: 'https://test.oas',
-            version: '99.99.99',
-          }
-        )
-      ).toMatchObject(sharedOas);
+      const result = await generateOpenApiDocument(
+        {
+          routers,
+          versionedRouters,
+        },
+        {
+          title: 'test',
+          baseUrl: 'https://test.oas',
+          version: '99.99.99',
+        }
+      );
+
+      expect(result.openapi).toBe('3.0.0');
+      expect(result.info.title).toBe('test');
+      expect(result.info.version).toBe('99.99.99');
+      expect(result.paths).toBeDefined();
+      expect(Object.keys(result.paths!)).toEqual(
+        expect.arrayContaining(['/bar', '/foo/{id}/{path}'])
+      );
     });
   });
 

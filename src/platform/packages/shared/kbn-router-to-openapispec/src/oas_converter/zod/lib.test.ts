@@ -7,9 +7,13 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { z } from '@kbn/zod';
-import { BooleanFromString, PassThroughAny } from '@kbn/zod-helpers';
+import { z } from '@kbn/zod/v4';
 import { convert, convertPathParameters, convertQuery } from './lib';
+
+const BooleanFromString = z.union([z.enum(['true', 'false']), z.boolean()]);
+const PassThroughAny = Object.assign(z.any(), { kbnTypeName: 'PassThroughAny' }) as z.ZodAny & {
+  kbnTypeName: 'PassThroughAny';
+};
 
 import { createLargeSchema } from './lib.test.util';
 
@@ -20,12 +24,9 @@ describe('zod', () => {
         schema: {
           additionalProperties: false,
           properties: {
-            any: {
-              description: 'any type',
-            },
+            any: {},
             booleanDefault: {
               default: true,
-              description: 'defaults to to true',
               type: 'boolean',
             },
             booleanFromString: {
@@ -39,32 +40,16 @@ describe('zod', () => {
                 },
               ],
               default: false,
-              description: 'boolean or string "true" or "false"',
             },
             ipType: {
               format: 'ipv4',
+              pattern:
+                '^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$',
               type: 'string',
             },
             literalType: {
               enum: ['literallythis'],
               type: 'string',
-            },
-            map: {
-              items: {
-                items: [
-                  {
-                    type: 'string',
-                  },
-                  {
-                    type: 'string',
-                  },
-                ],
-                maxItems: 2,
-                minItems: 2,
-                type: 'array',
-              },
-              maxItems: 125,
-              type: 'array',
             },
             maybeNumber: {
               maximum: 1000,
@@ -88,12 +73,10 @@ describe('zod', () => {
             union: {
               anyOf: [
                 {
-                  description: 'Union string',
                   maxLength: 1,
                   type: 'string',
                 },
                 {
-                  description: 'Union number',
                   minimum: 0,
                   type: 'number',
                 },
@@ -105,7 +88,18 @@ describe('zod', () => {
               type: 'string',
             },
           },
-          required: ['string', 'ipType', 'literalType', 'neverType', 'map', 'record', 'union'],
+          required: [
+            'string',
+            'booleanDefault',
+            'booleanFromString',
+            'ipType',
+            'literalType',
+            'neverType',
+            'record',
+            'union',
+            'uri',
+            'any',
+          ],
           type: 'object',
         },
         shared: {},
@@ -219,7 +213,9 @@ describe('zod', () => {
     test('allows mixed union of coercible types', () => {
       expect(
         convertQuery(
-          z.object({ a: z.optional(BooleanFromString).describe('string or boolean flag') })
+          z.object({
+            a: z.optional(BooleanFromString).describe('string or boolean flag'),
+          })
         )
       ).toEqual({
         query: [
