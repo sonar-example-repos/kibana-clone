@@ -34,6 +34,10 @@ import { EmptyPrompt } from '../shared/empty_prompt';
 import { GetStartedPanel } from '../shared/get_started_panel';
 import { FeedbackButtons } from '../shared/feedback_buttons';
 import { CopyToClipboardButton } from '../shared/copy_to_clipboard_button';
+import {
+  WiredStreamsIngestionSelector,
+  type IngestionMode,
+} from '../shared/wired_streams_ingestion_selector';
 import { useKubernetesFlow } from '../kubernetes/use_kubernetes_flow';
 import { useFlowBreadcrumb } from '../../shared/use_flow_breadcrumbs';
 import { buildInstallStackCommand } from './build_install_stack_command';
@@ -46,6 +50,7 @@ import { buildValuesFileUrl } from './build_values_file_url';
 import { useManagedOtlpServiceAvailability } from '../../shared/use_managed_otlp_service_availability';
 import { usePricingFeature } from '../shared/use_pricing_feature';
 import { ManagedOtlpCallout } from '../shared/managed_otlp_callout';
+import { useWiredStreamsStatus } from '../../../hooks/use_wired_streams_status';
 
 export const OtelKubernetesPanel: React.FC = () => {
   useFlowBreadcrumb({
@@ -56,7 +61,7 @@ export const OtelKubernetesPanel: React.FC = () => {
   const { data, error, refetch } = useKubernetesFlow('kubernetes_otel');
   const [idSelected, setIdSelected] = useState('nodejs');
   const {
-    services: { share },
+    services: { share, docLinks },
   } = useKibana<ObservabilityOnboardingAppServices>();
 
   const apmLocator = share.url.locators.get('APM_LOCATOR');
@@ -68,6 +73,15 @@ export const OtelKubernetesPanel: React.FC = () => {
     ObservabilityOnboardingPricingFeature.METRICS_ONBOARDING
   );
   const isManagedOtlpServiceAvailable = useManagedOtlpServiceAvailability();
+
+  const {
+    isEnabled: isWiredStreamsEnabled,
+    isLoading: isWiredStreamsLoading,
+    isEnabling,
+    enableWiredStreams,
+  } = useWiredStreamsStatus();
+  const [ingestionMode, setIngestionMode] = useState<IngestionMode>('classic');
+  const useWiredStreams = ingestionMode === 'wired';
 
   useEffect(() => {
     if (data) {
@@ -101,6 +115,7 @@ export const OtelKubernetesPanel: React.FC = () => {
         elasticsearchUrl: data.elasticsearchUrl,
         apiKeyEncoded: data.apiKeyEncoded,
         agentVersion: data.elasticAgentVersionInfo.agentBaseVersion,
+        useWiredStreams,
       })
     : undefined;
 
@@ -138,6 +153,17 @@ export const OtelKubernetesPanel: React.FC = () => {
             ),
             children: installStackCommand ? (
               <>
+                {!isWiredStreamsLoading && (
+                  <WiredStreamsIngestionSelector
+                    ingestionMode={ingestionMode}
+                    onChange={setIngestionMode}
+                    streamsDocLink={docLinks?.links.observability.logsStreams}
+                    isWiredStreamsEnabled={isWiredStreamsEnabled}
+                    isEnabling={isEnabling}
+                    flowType="otel_kubernetes"
+                    onEnableWiredStreams={enableWiredStreams}
+                  />
+                )}
                 <p>
                   <FormattedMessage
                     id="xpack.observability_onboarding.otelKubernetesPanel.injectAutoinstrumentationLibrariesForLabel"
