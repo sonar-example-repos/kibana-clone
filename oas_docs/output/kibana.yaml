@@ -2950,6 +2950,15 @@ paths:
       summary: List tools
       tags:
         - agent builder
+      x-codeSamples:
+        - lang: cURL
+          source: |
+            curl \
+              -X GET "https://${KIBANA_URL}/api/agent_builder/tools" \
+              -H "Authorization: ApiKey ${API_KEY}"
+        - lang: Console
+          source: |
+            GET kbn:/api/agent_builder/tools
       x-state: Added in 9.2.0
       x-metaTags:
         - content: Kibana
@@ -3105,6 +3114,55 @@ paths:
       summary: Create a tool
       tags:
         - agent builder
+      x-codeSamples:
+        - lang: cURL
+          source: |
+            curl \
+             -X POST "https://${KIBANA_URL}/api/agent_builder/tools" \
+             -H "Authorization: ApiKey ${API_KEY}" \
+             -H "kbn-xsrf: true" \
+             -H "Content-Type: application/json" \
+             -d '{
+               "id": "example-esql-tool",
+               "type": "esql",
+               "description": "Example ES|QL query tool for analyzing financial trades with time filtering",
+               "tags": ["analytics", "finance"],
+               "configuration": {
+                 "query": "FROM financial_trades | WHERE execution_timestamp >= ?startTime | STATS trade_count=COUNT(*), avg_price=AVG(execution_price) BY symbol | SORT trade_count DESC | LIMIT ?limit",
+                 "params": {
+                   "startTime": {
+                     "type": "date",
+                     "description": "Start time for the analysis in ISO format"
+                   },
+                   "limit": {
+                     "type": "integer",
+                     "description": "Maximum number of results to return"
+                   }
+                 }
+               }
+             }'
+        - lang: Console
+          source: |
+            POST kbn:/api/agent_builder/tools
+            {
+              "id": "example-esql-tool",
+              "type": "esql",
+              "description": "An ES|QL query tool for analyzing financial trades with time filtering",
+              "tags": ["analytics", "finance", "updated"],
+              "configuration": {
+                "query": "FROM financial_trades | WHERE execution_timestamp >= ?startTime | STATS trade_count=COUNT(*), avg_price=AVG(execution_price) BY symbol | SORT trade_count DESC | LIMIT ?limit",
+                "params": {
+                  "startTime": {
+                    "type": "date",
+                    "description": "Start time for the analysis in ISO format"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "Maximum number of results to return"
+                  }
+                }
+              }
+            }
       x-state: Added in 9.2.0
       x-metaTags:
         - content: Kibana
