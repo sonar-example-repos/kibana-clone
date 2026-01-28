@@ -5,17 +5,11 @@
  * 2.0.
  */
 
-import type { SavedObjectsFindResponse, SavedObjectsClientContract } from '@kbn/core/server';
+import type { SavedObjectsClientContract } from '@kbn/core/server';
+import type { WatchlistObject } from '../../../../../../common/api/entity_analytics/watchlists/management/common.gen';
 import { watchlistConfigTypeName } from './watchlist_config_type';
 
 export const MAX_PER_PAGE = 10_000;
-interface WatchlistConfigAttributes {
-  name: string;
-  description?: string;
-  riskModifier?: number;
-  createdAt: string;
-  modifiedAt: string;
-}
 
 interface WatchlistConfigClientDeps {
   soClient: SavedObjectsClientContract;
@@ -30,15 +24,15 @@ export class WatchlistConfigClient {
     return `watchlist-config-${this.deps.namespace}-${name}`;
   }
 
-  async create(attrs: Omit<WatchlistConfigAttributes, 'createdAt' | 'modifiedAt'>) {
+  async create(attrs: Omit<WatchlistObject, 'createdAt' | 'updatedAt'>) {
     const now = new Date().toISOString();
     const id = this.getSavedObjectId(attrs.name);
-    const { attributes } = await this.deps.soClient.create<WatchlistConfigAttributes>(
+    const { attributes } = await this.deps.soClient.create<WatchlistObject>(
       watchlistConfigTypeName,
       {
         ...attrs,
         createdAt: now,
-        modifiedAt: now,
+        updatedAt: now,
       },
       { id, refresh: 'wait_for' }
     );
@@ -47,18 +41,18 @@ export class WatchlistConfigClient {
 
   async update(
     name: string,
-    attrs: Partial<Omit<WatchlistConfigAttributes, 'createdAt' | 'modifiedAt' | 'name'>>
+    attrs: Partial<Omit<WatchlistObject, 'createdAt' | 'updatedAt' | 'name'>>
   ) {
     const id = this.getSavedObjectId(name);
     const now = new Date().toISOString();
 
     const existing = await this.get(name);
-    const update = {
+    const update: Partial<WatchlistObject> = {
       ...existing,
       ...attrs,
-      modifiedAt: now,
+      updatedAt: now,
     };
-    const { attributes } = await this.deps.soClient.update<WatchlistConfigAttributes>(
+    const { attributes } = await this.deps.soClient.update<WatchlistObject>(
       watchlistConfigTypeName,
       id,
       update,
@@ -67,21 +61,20 @@ export class WatchlistConfigClient {
     return attributes;
   }
 
-  async find(): Promise<SavedObjectsFindResponse<WatchlistConfigAttributes>> {
-    return this.deps.soClient.find<WatchlistConfigAttributes>({
-      type: watchlistConfigTypeName,
-      namespaces: [this.deps.namespace],
-      perPage: MAX_PER_PAGE,
-    });
+  async find(): Promise<WatchlistObject[]> {
+    return this.deps.soClient
+      .find<WatchlistObject>({
+        type: watchlistConfigTypeName,
+        namespaces: [this.deps.namespace],
+        perPage: MAX_PER_PAGE,
+      })
+      .then((response) => response.saved_objects.map((so) => so.attributes));
   }
 
   async get(name: string) {
     const id = this.getSavedObjectId(name);
     try {
-      const so = await this.deps.soClient.get<WatchlistConfigAttributes>(
-        watchlistConfigTypeName,
-        id
-      );
+      const so = await this.deps.soClient.get<WatchlistObject>(watchlistConfigTypeName, id);
       return so.attributes;
     } catch (e) {
       if (e.output && e.output.statusCode === 404) {

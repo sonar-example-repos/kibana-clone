@@ -30,6 +30,7 @@ import {
   PrivilegeMonitoringApiKeyEncryptionParams,
   PrivilegeMonitoringApiKeyType,
 } from './lib/entity_analytics/privilege_monitoring/auth/saved_object';
+import { watchlistConfigType } from './lib/entity_analytics/watchlists/management/saved_object/watchlist_config_type';
 
 // Conditional Saved Object Types
 // Saved object types that will only be registered if the associated feature flag is enabled
@@ -50,6 +51,7 @@ const types = [
   riskEngineConfigurationType,
   entityEngineDescriptorType,
   privilegeMonitoringType,
+  watchlistConfigType,
   PrivilegeMonitoringApiKeyType,
   monitoringEntitySourceType,
   protectionUpdatesNoteType,

@@ -1,0 +1,33 @@
+openapi: 3.0.0
+info:
+  title: Watchlists Common Schema
+  description: Common schema for Watchlists
+  version: "1"
+paths: {}
+components:
+  schemas:
+    WatchlistObject:
+      type: object
+      required:
+        - name
+        - riskModifier
+        - createdAt
+        - updatedAt
+      properties:
+        name:
+          type: string
+          description: Unique name of the watchlist
+        description:
+          type: string
+          description: Description of the watchlist
+        riskModifier:
+          type: number
+          description: Risk score modifier associated with the watchlist
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the watchlist was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the watchlist was last updated
