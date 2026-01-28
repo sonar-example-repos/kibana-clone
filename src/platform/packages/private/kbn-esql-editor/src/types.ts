@@ -16,7 +16,7 @@ import type { Storage } from '@kbn/kibana-utils-plugin/public';
 import type { KqlPluginStart } from '@kbn/kql/public';
 import type { UiActionsStart } from '@kbn/ui-actions-plugin/public';
 import type { DataPublicPluginStart } from '@kbn/data-plugin/public';
-import type { ESQLControlVariable } from '@kbn/esql-types';
+import type { ESQLControlVariable, ESQLSourceResult } from '@kbn/esql-types';
 
 export interface ControlsContext {
   /** The editor supports the creation of controls,
@@ -116,6 +116,7 @@ export interface EsqlPluginStartBase {
   variablesService: ESQLVariableService;
   getLicense: () => Promise<ILicense | undefined>;
   isServerless: boolean;
+  enrichSources?: (sources: ESQLSourceResult[]) => Promise<ESQLSourceResult[]>;
 }
 
 export interface ESQLEditorDeps {
