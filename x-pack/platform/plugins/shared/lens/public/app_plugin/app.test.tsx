@@ -243,12 +243,14 @@ describe('Lens App', () => {
     });
 
     it('sets breadcrumbs when the document title changes', async () => {
+      // Override the default mock to ensure no originating app
+      services.getOriginatingAppName = jest.fn(() => undefined);
       const { lensStore } = await renderApp();
 
       expect(services.chrome.setBreadcrumbs).toHaveBeenCalledWith([
         {
-          text: 'Visualize library',
-          href: '/testbasepath/app/visualize#/',
+          text: 'Dashboards',
+          href: '/testbasepath/app/dashboards#/',
           onClick: expect.anything(),
         },
         { text: 'Create' },
@@ -264,8 +266,8 @@ describe('Lens App', () => {
 
       expect(services.chrome.setBreadcrumbs).toHaveBeenCalledWith([
         {
-          text: 'Visualize library',
-          href: '/testbasepath/app/visualize#/',
+          text: 'Dashboards',
+          href: '/testbasepath/app/dashboards#/',
           onClick: expect.anything(),
         },
         { text: 'Daaaaaaadaumching!' },
@@ -281,8 +283,7 @@ describe('Lens App', () => {
 
       expect(services.chrome.setBreadcrumbs).toHaveBeenCalledWith([
         {
-          text: 'Visualize library',
-          href: '/testbasepath/app/visualize#/',
+          text: 'The Coolest Container Ever Made',
           onClick: expect.anything(),
         },
         { text: 'Create' },
@@ -300,8 +301,7 @@ describe('Lens App', () => {
 
       expect(services.chrome.setBreadcrumbs).toHaveBeenCalledWith([
         {
-          text: 'Visualize library',
-          href: '/testbasepath/app/visualize#/',
+          text: 'The Coolest Container Ever Made',
           onClick: expect.anything(),
         },
         { text: 'Daaaaaaadaumching!' },

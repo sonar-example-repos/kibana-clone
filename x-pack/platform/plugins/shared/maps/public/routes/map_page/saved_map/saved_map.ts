@@ -303,6 +303,10 @@ export class SavedMap {
     }
   }
 
+  private _isOriginatingFromDashboardListing() {
+    return this._originatingApp === 'dashboards' && this._originatingPath?.includes('/list/');
+  }
+
   setBreadcrumbs(history: ScopedHistory) {
     if (!this._attributes) {
       throw new Error('Invalid usage, must await whenReady before calling hasUnsavedChanges');
@@ -323,7 +327,13 @@ export class SavedMap {
         getAppNameFromId: this._getStateTransfer().getAppNameFromId,
         history,
       });
-      getCoreChrome().setBreadcrumbs(breadcrumbs);
+      if (this._originatingApp) {
+        getCoreChrome().setBreadcrumbs(breadcrumbs, {
+          project: { value: breadcrumbs, absolute: true },
+        });
+      } else {
+        getCoreChrome().setBreadcrumbs(breadcrumbs);
+      }
     }
   }
 
@@ -356,8 +366,7 @@ export class SavedMap {
   }
 
   public hasSaveAndReturnConfig() {
-    const hasOriginatingApp = this.hasOriginatingApp();
-    return hasOriginatingApp;
+    return this.hasOriginatingApp() && !this._isOriginatingFromDashboardListing();
   }
 
   public getTitle(): string {
@@ -495,8 +504,12 @@ export class SavedMap {
     }
 
     this._mapEmbeddableState = mapEmbeddableState;
-    // break connection to originating application
-    this._originatingApp = undefined;
+    // Keep dashboard originating context for breadcrumbs when accessed from Dashboard app
+    // For other apps, break the connection after save
+    const isDashboardOrigin = this._originatingApp === 'dashboards';
+    if (!isDashboardOrigin) {
+      this._originatingApp = undefined;
+    }
 
     // remove editor state so the connection is still broken after reload
     this._getStateTransfer().clearEditorState(APP_ID);
@@ -510,7 +523,21 @@ export class SavedMap {
 
     getCoreChrome().docTitle.change(newTitle);
     this.setBreadcrumbs(history);
-    history.push(`/${MAP_PATH}/${this.getSavedObjectId()}${window.location.hash}`);
+
+    // Preserve originating app context in URL for dashboard breadcrumbs
+    const searchParams = new URLSearchParams();
+    if (isDashboardOrigin && this._originatingApp) {
+      searchParams.set('originatingApp', this._originatingApp);
+      if (this._originatingPath) {
+        searchParams.set('originatingPath', this._originatingPath);
+      }
+    }
+
+    history.push({
+      pathname: `/${MAP_PATH}/${this.getSavedObjectId()}`,
+      search: searchParams.toString(),
+      hash: window.location.hash,
+    });
 
     if (this._onSaveCallback) {
       this._onSaveCallback();
