@@ -1,2 +1,0 @@
-config:
-  - path: src/dev/build/tasks/os_packages/docker_generator/templates/ironbank
