@@ -11,10 +11,13 @@ import { i18n } from '@kbn/i18n';
 import { MB } from '@kbn/file-upload-common/src/constants';
 import { GEO_FILE_TYPES, geoImporterFactory } from '../../importer/geo';
 import type { GeoFileImporter, GeoFilePreview } from '../../importer/geo';
+import { hasSidecarFiles } from '../utils';
 
 export type OnFileSelectParameters = GeoFilePreview & {
   indexName: string;
   importer: GeoFileImporter;
+  file: File;
+  getFilesTelemetry: () => { total_files: number; total_size_bytes: number };
 };
 
 interface Props {
@@ -28,6 +31,7 @@ interface State {
   isLoadingPreview: boolean;
   importer: GeoFileImporter | null;
   previewSummary: string | null;
+  file: File | null;
 }
 
 export class GeoFilePicker extends Component<Props, State> {
@@ -39,6 +43,7 @@ export class GeoFilePicker extends Component<Props, State> {
     isLoadingPreview: false,
     importer: null,
     previewSummary: null,
+    file: null,
   };
 
   async componentDidMount() {
@@ -58,6 +63,7 @@ export class GeoFilePicker extends Component<Props, State> {
       isLoadingPreview: false,
       importer: null,
       previewSummary: null,
+      file: null,
     });
 
     if (files && files.length) {
@@ -68,6 +74,7 @@ export class GeoFilePicker extends Component<Props, State> {
           {
             defaultIndexName: file.name.split('.')[0].toLowerCase(),
             importer,
+            file,
           },
           this._loadFilePreview
         );
@@ -116,11 +123,29 @@ export class GeoFilePicker extends Component<Props, State> {
           : null,
     });
 
-    if (preview) {
+    if (preview && this.state.importer && this.state.file) {
       this.props.onSelect({
         ...preview,
         importer: this.state.importer,
         indexName: this.state.defaultIndexName ? this.state.defaultIndexName : 'features',
+        file: this.state.file,
+        getFilesTelemetry: () => {
+          // Include main file
+          let totalFiles = 1;
+          let totalSize = this.state.file?.size ?? 0;
+
+          // For shapefiles include sidecar files
+          if (hasSidecarFiles(this.state.importer)) {
+            const sidecarFiles = this.state.importer.getSidecarFiles();
+            totalFiles += sidecarFiles.length;
+            totalSize += sidecarFiles.reduce((total, file) => total + file.size, 0);
+          }
+
+          return {
+            total_files: totalFiles,
+            total_size_bytes: totalSize,
+          };
+        },
       });
     }
   };

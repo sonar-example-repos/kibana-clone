@@ -10,14 +10,15 @@ import { i18n } from '@kbn/i18n';
 import { EuiProgress, EuiText } from '@elastic/eui';
 import { ES_FIELD_TYPES } from '@kbn/data-plugin/public';
 import type { ImportResults } from '@kbn/file-upload-common';
+import { FileUploadTelemetryService } from '@kbn/file-upload-common';
 import { getDataViewsService } from '../kibana_services';
 import type { OnFileSelectParameters } from './geo_upload_form';
 import { GeoUploadForm } from './geo_upload_form';
 import { ImportCompleteView } from './import_complete_view';
-import type { FileUploadComponentProps, FileUploadGeoResults } from '../lazy_load_bundle';
+import type { GeoUploadWizardProps, FileUploadGeoResults } from '../lazy_load_bundle';
 import type { GeoFileImporter } from '../importer/geo';
 import { hasImportPermission } from '../api';
-import { getPartialImportMessage } from './utils';
+import { getPartialImportMessage, hasSidecarFiles } from './utils';
 
 enum PHASE {
   CONFIGURE = 'CONFIGURE',
@@ -45,9 +46,17 @@ interface State {
   smallChunks: boolean;
 }
 
-export class GeoUploadWizard extends Component<FileUploadComponentProps, State> {
+export class GeoUploadWizard extends Component<GeoUploadWizardProps, State> {
   private _geoFileImporter?: GeoFileImporter;
   private _isMounted = false;
+  private _telemetryService?: FileUploadTelemetryService;
+  private _uploadSessionId: string = '';
+  private _fileId: string = '';
+  private _sessionStartTime: number = 0;
+  private _file?: File;
+  private _sessionTelemetryTracked: boolean = false;
+  private _getFilesTelemetry?: () => { total_files: number; total_size_bytes: number };
+  private _sidecarFiles: Array<{ file: File; fileId: string }> = [];
 
   state: State = {
     failedPermissionCheck: false,
@@ -61,10 +70,37 @@ export class GeoUploadWizard extends Component<FileUploadComponentProps, State> 
 
   componentDidMount() {
     this._isMounted = true;
+    this._uploadSessionId = FileUploadTelemetryService.generateId();
+    this._fileId = FileUploadTelemetryService.generateId();
+    this._telemetryService = new FileUploadTelemetryService(
+      this.props.analytics,
+      this.props.location
+    );
   }
 
   componentWillUnmount() {
     this._isMounted = false;
+
+    // Track cancel action
+    if (
+      this._telemetryService &&
+      this._file &&
+      this._sessionStartTime > 0 &&
+      !this._sessionTelemetryTracked &&
+      (this.state.phase === PHASE.IMPORT || this.state.phase === PHASE.CONFIGURE)
+    ) {
+      // Get documents that were uploaded before cancellation
+      const currentStats = this._geoFileImporter?.getCurrentImportStats();
+      const cancelledImportResults = {
+        success: false,
+        failures: currentStats?.failures ?? [],
+        docCount: currentStats?.docCount ?? 0,
+      };
+      const sessionTimeMs = this._getSessionTimeMs();
+      this._trackUploadSession(false, false, sessionTimeMs, true);
+      this._trackUploadFiles(cancelledImportResults, sessionTimeMs, false, true);
+    }
+
     if (this._geoFileImporter) {
       this._geoFileImporter.destroy();
       this._geoFileImporter = undefined;
@@ -77,10 +113,103 @@ export class GeoUploadWizard extends Component<FileUploadComponentProps, State> 
     }
   }
 
+  private _getSessionTimeMs(): number {
+    return this._sessionStartTime > 0 ? Date.now() - this._sessionStartTime : 0;
+  }
+
+  private _trackUploadFiles(
+    importResults: ImportResults,
+    uploadTimeMs: number,
+    uploadSuccess: boolean,
+    uploadCancelled: boolean = false
+  ) {
+    if (!this._telemetryService || !this._file) {
+      return;
+    }
+
+    // Track main file upload event
+    const fileSizeBytes = this._file.size;
+    const documentsFailed = importResults.failures?.length ?? 0;
+    const documentsSuccess =
+      importResults.docCount !== undefined ? importResults.docCount - documentsFailed : 0;
+
+    this._telemetryService.trackUploadFile({
+      upload_session_id: this._uploadSessionId,
+      file_id: this._fileId,
+      mapping_clash_new_fields: 0, // Geo files don't have mapping clashes
+      mapping_clash_missing_fields: 0,
+      file_size_bytes: fileSizeBytes,
+      documents_success: documentsSuccess,
+      documents_failed: documentsFailed,
+      upload_success: uploadSuccess,
+      upload_cancelled: uploadCancelled,
+      upload_time_ms: uploadTimeMs,
+      file_extension: FileUploadTelemetryService.getFileExtension(this._file.name),
+    });
+
+    // Track telemetry for each sidecar file
+    if (this._sidecarFiles.length > 0) {
+      this._sidecarFiles.forEach(({ file: sidecarFile, fileId: sidecarFileId }) => {
+        this._telemetryService!.trackUploadFile({
+          upload_session_id: this._uploadSessionId,
+          file_id: sidecarFileId,
+          mapping_clash_new_fields: 0, // Sidecar files don't have mapping clashes
+          mapping_clash_missing_fields: 0,
+          file_size_bytes: sidecarFile.size,
+          documents_success: 0, // Sidecar files don't produce documents
+          documents_failed: 0,
+          upload_success: uploadSuccess, // Same success status as main file
+          upload_cancelled: uploadCancelled,
+          upload_time_ms: 0, // Sidecar files don't have separate upload time
+          file_extension: FileUploadTelemetryService.getFileExtension(sidecarFile.name),
+        });
+      });
+    }
+  }
+
+  private _trackUploadSession(
+    sessionSuccess: boolean,
+    dataViewCreated: boolean,
+    sessionTimeMs: number,
+    cancelled: boolean = false
+  ) {
+    if (!this._telemetryService || !this._file) {
+      return;
+    }
+
+    if (this._sessionTelemetryTracked) {
+      return;
+    }
+
+    this._sessionTelemetryTracked = true;
+
+    const filesTelemetry = this._getFilesTelemetry?.() ?? {
+      total_files: 1,
+      total_size_bytes: this._file.size,
+    };
+
+    this._telemetryService.trackUploadSession({
+      upload_session_id: this._uploadSessionId,
+      total_files: filesTelemetry.total_files,
+      total_size_bytes: filesTelemetry.total_size_bytes,
+      session_success: sessionSuccess,
+      session_cancelled: cancelled,
+      session_time_ms: sessionTimeMs,
+      new_index_created: true,
+      data_view_created: dataViewCreated,
+      mapping_clash_total_new_fields: 0,
+      mapping_clash_total_missing_fields: 0,
+      contains_auto_added_semantic_text_field: false,
+    });
+  }
+
   _import = async () => {
     if (!this._geoFileImporter) {
       return;
     }
+
+    const uploadStartTime = Date.now();
+    this._sessionStartTime = uploadStartTime;
 
     let indexSettings = {};
     try {
@@ -169,7 +298,11 @@ export class GeoUploadWizard extends Component<FileUploadComponentProps, State> 
       return;
     }
 
+    const uploadTimeMs = Date.now() - uploadStartTime;
+
     if (!importResults.success) {
+      this._trackUploadSession(false, false, uploadTimeMs);
+      this._trackUploadFiles(importResults, uploadTimeMs, false);
       this.setState({
         importResults,
         importStatus: i18n.translate('xpack.fileUpload.geoUploadWizard.dataIndexingError', {
@@ -180,6 +313,8 @@ export class GeoUploadWizard extends Component<FileUploadComponentProps, State> 
       this.props.onUploadError();
       return;
     } else if (importResults.docCount === importResults.failures?.length) {
+      this._trackUploadSession(false, false, uploadTimeMs);
+      this._trackUploadFiles(importResults, uploadTimeMs, false);
       this.setState({
         // Force importResults into failure shape when no features are indexed
         importResults: {
@@ -237,6 +372,9 @@ export class GeoUploadWizard extends Component<FileUploadComponentProps, State> 
         docCount: importResults.docCount !== undefined ? importResults.docCount : 0,
       };
     } catch (error) {
+      const sessionTimeMs = this._getSessionTimeMs();
+      this._trackUploadSession(false, false, sessionTimeMs);
+      this._trackUploadFiles(importResults, uploadTimeMs, false);
       if (this._isMounted) {
         this.setState({
           importStatus: i18n.translate('xpack.fileUpload.geoUploadWizard.dataViewError', {
@@ -251,6 +389,10 @@ export class GeoUploadWizard extends Component<FileUploadComponentProps, State> 
     if (!this._isMounted) {
       return;
     }
+
+    const sessionTimeMs = this._getSessionTimeMs();
+    this._trackUploadSession(true, true, sessionTimeMs);
+    this._trackUploadFiles(importResults, uploadTimeMs, true);
 
     //
     // Successful import
@@ -267,8 +409,27 @@ export class GeoUploadWizard extends Component<FileUploadComponentProps, State> 
     this.props.onUploadComplete(results!);
   };
 
-  _onFileSelect = ({ features, importer, indexName, previewCoverage }: OnFileSelectParameters) => {
+  _onFileSelect = ({
+    features,
+    importer,
+    indexName,
+    previewCoverage,
+    file,
+    getFilesTelemetry,
+  }: OnFileSelectParameters) => {
     this._geoFileImporter = importer;
+    this._file = file;
+    this._getFilesTelemetry = getFilesTelemetry;
+
+    // Generate file IDs for sidecar files
+    this._sidecarFiles = [];
+    if (hasSidecarFiles(this._geoFileImporter)) {
+      const sidecarFiles = this._geoFileImporter.getSidecarFiles();
+      this._sidecarFiles = sidecarFiles.map((sidecarFile: File) => ({
+        file: sidecarFile,
+        fileId: FileUploadTelemetryService.generateId(),
+      }));
+    }
 
     this.props.onFileSelect(
       {
@@ -285,6 +446,8 @@ export class GeoUploadWizard extends Component<FileUploadComponentProps, State> 
       this._geoFileImporter.destroy();
       this._geoFileImporter = undefined;
     }
+    this._file = undefined;
+    this._sidecarFiles = [];
 
     this.props.onFileClear();
   };
