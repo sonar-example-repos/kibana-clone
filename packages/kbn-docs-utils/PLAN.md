@@ -123,6 +123,13 @@ Key files:
 
 ## Phase 4: Fix Bugs and Fill Gaps
 
+### Phase 4.0: Refactor and Improve Tooling
+- [x] Add `IssuesByPlugin` interface to [packages/kbn-docs-utils/src/types.ts](packages/kbn-docs-utils/src/types.ts) for extensible options
+- [x] Refactor `collectApiStatsForPlugin` in [packages/kbn-docs-utils/src/stats.ts](packages/kbn-docs-utils/src/stats.ts) to use `IssuesByPlugin`
+- [x] Add `hasCommentIssues` utility to [packages/kbn-docs-utils/src/stats.ts](packages/kbn-docs-utils/src/stats.ts)
+- [x] Update [packages/kbn-docs-utils/src/README.md](packages/kbn-docs-utils/src/README.md) with comprehensive documentation
+- [x] Add [packages/kbn-docs-utils/scripts/update_fixture_comments.js](packages/kbn-docs-utils/scripts/update_fixture_comments.js) for fixture maintenance
+
 ### Phase 4.1: Fix Destructured Parameter Validation
 - [ ] Update `getJSDocParamComment` in [packages/kbn-docs-utils/src/build_api_declarations/js_doc_utils.ts](packages/kbn-docs-utils/src/build_api_declarations/js_doc_utils.ts):
   - Support dot notation (`obj.prop`) for property-level tags
@@ -143,88 +150,89 @@ Key files:
   - Don't flag as missing if property-level JSDoc exists
   - Add validation for required vs. optional parameter documentation
 
-### Phase 4.4: Add Additional Validation Rules
-- [ ] Add validation for:
-  - Missing `@returns` tags on functions
-  - Missing type information in JSDoc when TypeScript types are complex
-  - Inconsistent JSDoc (e.g., `@param` count doesn't match function signature)
-- [ ] Make validation rules configurable (surfaced via the existing `comments` check)
-- [ ] Track validation output in stats snapshots (logic lives in `stats.ts`; no separate `src/validation/` directory needed)
-- [ ] Emit new validation counts (missing returns, param doc mismatches, missing complex type info) to CI stats in `report_metrics.ts`
-- [ ] Include line-anchored GitHub links in CLI issue tables when line numbers are available
+### Phase 4.4: Add Checks for @returns Tags
+- [ ] Add `missingReturns` field to `ApiStats` in [packages/kbn-docs-utils/src/types.ts](packages/kbn-docs-utils/src/types.ts)
+- [ ] Add `trackMissingReturns` function in [packages/kbn-docs-utils/src/stats.ts](packages/kbn-docs-utils/src/stats.ts)
+- [ ] Extend `hasCommentIssues` to include `missingReturns`
+- [ ] Update mocks and fixture "Expected issues" blocks
 
-### Phase 4.5: Update Integration Tests
-- [ ] Update fixture comments to demonstrate proper JSDoc for destructured params
-- [ ] Add test cases for fixed bugs
-- [ ] Verify all integration tests pass
+### Phase 4.5: Add Param Doc Mismatch Checks
+- [ ] Add `paramDocMismatches` field to `ApiStats` in [packages/kbn-docs-utils/src/types.ts](packages/kbn-docs-utils/src/types.ts)
+- [ ] Add `trackParamDocMismatches` function in [packages/kbn-docs-utils/src/stats.ts](packages/kbn-docs-utils/src/stats.ts)
+- [ ] Extend `hasCommentIssues` to include `paramDocMismatches`
+- [ ] Update mocks and fixture "Expected issues" blocks
 
-## Phase 5: Documentation and Cleanup
+### Phase 4.6: Add Complex Type Info Checks
+- [ ] Add `missingComplexTypeInfo` field to `ApiStats` in [packages/kbn-docs-utils/src/types.ts](packages/kbn-docs-utils/src/types.ts)
+- [ ] Add `trackMissingComplexTypeInfo` function in [packages/kbn-docs-utils/src/stats.ts](packages/kbn-docs-utils/src/stats.ts)
+- [ ] Extend `hasCommentIssues` to include `missingComplexTypeInfo`
+- [ ] Update mocks and fixture "Expected issues" blocks
 
-### Phase 5.1: Update Documentation
-- [ ] Update [packages/kbn-docs-utils/src/README.md](packages/kbn-docs-utils/src/README.md) with:
-  - New CLI usage
-  - Validation rules and standards
-  - Examples of proper JSDoc for destructured parameters
+### Phase 4.7: Improve Multiple Call Signature Validation
+- [ ] Handle interfaces with multiple call signatures
+- [ ] Extract parameter documentation from first overload signature
+- [ ] Add test cases for overloaded functions
 
-### Phase 5.2: Final Testing
-- [ ] Run full test suite
-- [ ] Test CLI commands with real plugins
-- [ ] Verify backward compatibility
-- [ ] Check for any regressions
+### Phase 4.8: Unnamed Exports Validator
+- [ ] Add `UnnamedExport` type to [packages/kbn-docs-utils/src/types.ts](packages/kbn-docs-utils/src/types.ts)
+- [ ] Extend `IssuesByPlugin` with optional `unnamedExports` field
+- [ ] Update `getDeclarationNodesForPluginScope` in [packages/kbn-docs-utils/src/get_declaration_nodes_for_plugin.ts](packages/kbn-docs-utils/src/get_declaration_nodes_for_plugin.ts) to detect unnamed exports
+- [ ] Update `getPluginApi` in [packages/kbn-docs-utils/src/get_plugin_api.ts](packages/kbn-docs-utils/src/get_plugin_api.ts) to propagate unnamed exports
+- [ ] Add `--check unnamed` CLI flag
+- [ ] Add tests for unnamed export detection
+
+## Phase 5: CLI Output Improvements
+- [ ] Improve `getLink` in [packages/kbn-docs-utils/src/cli/tasks/report_metrics.ts](packages/kbn-docs-utils/src/cli/tasks/report_metrics.ts) to use line numbers when available
+- [ ] Add `printIssueTable` helper for consistent output formatting
+- [ ] Add `printMissingExportsTable` helper for missing exports output
+- [ ] Refactor existing console output to use helper functions
 
 ## Phase 6: Flat Stats Output and MCP Auto-Fix Tooling
 
 ### Phase 6.1: Emit Flat Stats File
-- [ ] Add `--write` CLI flag to `check_package_docs` to emit validation stats as a flat JSON file.
-- [ ] Write stats to each plugin's `target/api_docs/stats.json` (follows Kibana convention for build artifacts).
-- [ ] Include line-anchored GitHub URLs when line numbers are present.
-- [ ] Stats include counts and detailed entries for: missing comments, any types, no references, missing returns, param doc mismatches, missing complex type info, and missing exports.
-- [ ] Document the file schema and location in `README.md`.
+- [ ] Add `--write` CLI flag to `check_package_docs` to emit validation stats as a flat JSON file
+- [ ] Write stats to each plugin's `target/api_docs/stats.json` (follows Kibana convention for build artifacts)
+- [ ] Include line-anchored GitHub URLs when line numbers are present
+- [ ] Stats include counts and detailed entries for: missing comments, any types, no references, missing returns, param doc mismatches, missing complex type info, and missing exports
 
 ### Phase 6.2: MCP Tools for Documentation Checking and Fixing
-- [ ] Create `check_package_docs` MCP tool for quick validation checks:
-  - Returns pass/fail status with issue counts.
-  - Lightweight for initial assessment.
-- [ ] Create `fix_package_docs` MCP tool for detailed issue reporting:
-  - Runs CLI internally to generate fresh stats.
-  - Groups issues by file with source snippets (3 lines context).
-  - Provides mechanical templates (`@returns {TYPE}`, `@param {TYPE} name -`) for agent to complete.
-  - Supports filtering by issue type.
-  - Supports filtering by individual file path (infers package automatically).
-- [ ] Both tools registered in `kbn-mcp-dev-server`.
-- [ ] Tested on `@kbn/docs-utils` and `@kbn/content-management-content-editor`.
-- [ ] Add usage docs and basic tests for the MCP tools.
+- [ ] Create `check_package_docs` MCP tool for quick validation checks
+- [ ] Create `fix_package_docs` MCP tool for detailed issue reporting with code snippets
+- [ ] Both tools registered in `kbn-mcp-dev-server`
+- [ ] Add usage docs and basic tests for the MCP tools
 
 ## Phase 7: Improve Performance of Single Package Builds and Validation
 
 ### Phase 7.1: Optimize TypeScript Project Loading
 - [ ] Update `getTsProject` in [packages/kbn-docs-utils/src/cli/tasks/setup_project.ts](packages/kbn-docs-utils/src/cli/tasks/setup_project.ts):
-  - For single-plugin builds, only load source files from the target plugin directory.
-  - Skip `resolveSourceFileDependencies()` for single-plugin builds; rely on lazy resolution.
-  - Trade-off: first access to external types may be slightly slower, but overall build time is reduced.
-- [ ] Add `allPlugins` to `SetupProjectResult` for cross-reference resolution while iterating over filtered plugins.
+  - For single-plugin builds, only load source files from the target plugin directory
+  - Skip `resolveSourceFileDependencies()` for single-plugin builds; rely on lazy resolution
+- [ ] Add `allPlugins` to `SetupProjectResult` for cross-reference resolution
 
 ### Phase 7.2: Optimize Documentation Writing
 - [ ] Update `writeDocs` in [packages/kbn-docs-utils/src/cli/tasks/write_docs.ts](packages/kbn-docs-utils/src/cli/tasks/write_docs.ts):
-  - Skip aggregate docs (plugin directory, deprecation summaries) for filtered builds.
-  - Aggregate docs require complete data from all plugins to be accurate.
-  - Move deprecation doc writing outside the per-plugin loop (was incorrectly inside).
+  - Skip aggregate docs (plugin directory, deprecation summaries) for filtered builds
+  - Move deprecation doc writing outside the per-plugin loop
 
 ### Phase 7.3: Handle Cross-References in Single-Package Builds
 - [ ] Update `removeBrokenLinksFromApi` in [packages/kbn-docs-utils/src/utils.ts](packages/kbn-docs-utils/src/utils.ts):
-  - When validating cross-package links, keep references as-is if the target plugin isn't loaded.
-  - Allows single-package builds to work without loading all plugins into memory.
+  - When validating cross-package links, keep references as-is if the target plugin isn't loaded
 
 ### Phase 7.4: Update Tests
-- [ ] Update [packages/kbn-docs-utils/src/cli/tasks/setup_project.test.ts](packages/kbn-docs-utils/src/cli/tasks/setup_project.test.ts):
-  - Add tests for single-plugin project scoping.
-  - Verify `allPlugins` is populated for cross-reference resolution.
-- [ ] Update [packages/kbn-docs-utils/src/cli/tasks/build_api_map.test.ts](packages/kbn-docs-utils/src/cli/tasks/build_api_map.test.ts) and other affected test files.
+- [ ] Update [packages/kbn-docs-utils/src/cli/tasks/setup_project.test.ts](packages/kbn-docs-utils/src/cli/tasks/setup_project.test.ts) with single-plugin tests
+- [ ] Update other affected test files
+
+## Phase 8: APM Metrics for New Validation Fields
+- [ ] Add APM metrics for `missingReturns` count
+- [ ] Add APM metrics for `paramDocMismatches` count
+- [ ] Add APM metrics for `missingComplexTypeInfo` count
+- [ ] Update `passesAllChecks` logic to include new fields
+- [ ] Add CLI output for new validation fields under `comments` option
 
 ## Implementation Notes
 
 - Each phase can be tackled independently by an agent
-- Phases should be completed in order (0 → 1 → 2 → 3 → 4 → 5 → 6 → 7)
+- Phases should be completed in order (0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8)
 - Tests should be written before implementing fixes (TDD approach for Phase 4)
 - Maintain backward compatibility throughout
 - Use existing patterns and conventions from the codebase

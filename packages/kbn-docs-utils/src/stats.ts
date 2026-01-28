@@ -11,18 +11,23 @@ import {
   type AdoptionTrackedAPIsByPlugin,
   type ApiDeclaration,
   type ApiStats,
-  type MissingApiItemMap,
+  type IssuesByPlugin,
   type PluginApi,
-  type ReferencedDeprecationsByPlugin,
   TypeKind,
 } from './types';
 
-export function collectApiStatsForPlugin(
-  doc: PluginApi,
-  missingApiItems: MissingApiItemMap,
-  deprecations: ReferencedDeprecationsByPlugin,
-  adoptionTrackedAPIs: AdoptionTrackedAPIsByPlugin
-): ApiStats {
+/**
+ * Returns true if the stats contain any comment-related issues.
+ */
+export const hasCommentIssues = (stats: ApiStats): boolean =>
+  stats.missingComments.length > 0;
+
+/**
+ * Collects API stats for a single plugin.
+ */
+export function collectApiStatsForPlugin(doc: PluginApi, issues: IssuesByPlugin): ApiStats {
+  const { missingApiItems, deprecations, adoptionTrackedAPIs } = issues;
+
   const stats: ApiStats = {
     missingComments: [],
     isAnyType: [],

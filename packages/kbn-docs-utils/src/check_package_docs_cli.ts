@@ -25,6 +25,7 @@ import {
   type CliContext,
   type CliOptions,
 } from './cli';
+import { hasCommentIssues } from './stats';
 import type { PluginOrPackage, MissingApiItemMap } from './types';
 import type { AllPluginStats } from './cli/types';
 
@@ -83,12 +84,12 @@ export const getValidationResults = (
         : 0;
 
       const hasAnyIssues = shouldCheckAny && pluginStats.isAnyType.length > 0;
-      const hasCommentIssues = shouldCheckComments && pluginStats.missingComments.length > 0;
+      const hasCommentProblems = shouldCheckComments && hasCommentIssues(pluginStats);
       const hasExportIssues = shouldCheckExports && missingExports > 0;
 
       return {
         pluginId: plugin.id,
-        passed: !(hasAnyIssues || hasCommentIssues || hasExportIssues),
+        passed: !(hasAnyIssues || hasCommentProblems || hasExportIssues),
       };
     });
 };
