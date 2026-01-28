@@ -1,0 +1,53 @@
+{
+  "extends": "@kbn/tsconfig-base/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "target/types"
+  },
+  "include": [
+    "server/**/*",
+    // have to declare *.json explicitly due to https://github.com/microsoft/TypeScript/issues/25636
+    "server/**/*.json",
+    "public/**/*"
+  ],
+  "kbn_references": [
+    "@kbn/core",
+    "@kbn/task-manager-plugin",
+    "@kbn/features-plugin",
+    "@kbn/spaces-plugin",
+    "@kbn/security-plugin",
+    "@kbn/data-plugin",
+    "@kbn/config-schema",
+    "@kbn/core-saved-objects-server",
+    "@kbn/core-http-server",
+    "@kbn/logging",
+    "@kbn/es-types",
+    "@kbn/spaces-utils",
+    "@kbn/search-types",
+    "@kbn/core-di",
+    "@kbn/core-di-browser",
+    "@kbn/core-di-server",
+    "@kbn/esql-utils",
+    "@kbn/response-ops-retry-service",
+    "@kbn/core-application-browser",
+    "@kbn/shared-ux-router",
+    "@kbn/management-plugin",
+    "@kbn/i18n-react",
+    "@kbn/esql-types",
+    "@kbn/yaml-rule-editor",
+    "@kbn/core-http-server-mocks",
+    "@kbn/core-security-common",
+    "@kbn/core-elasticsearch-server-mocks",
+    "@kbn/logging-mocks",
+    "@kbn/core-elasticsearch-client-server-mocks",
+    "@kbn/es-errors",
+    "@kbn/alerting-v2-schemas",
+    "@kbn/zod",
+    "@kbn/core-di-internal",
+    "@kbn/i18n",
+    "@kbn/zod-helpers",
+    "@kbn/core-saved-objects-api-server-mocks"
+  ],
+  "exclude": [
+    "target/**/*"
+  ]
+}

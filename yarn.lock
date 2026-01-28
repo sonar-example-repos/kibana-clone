@@ -4710,6 +4710,14 @@
   version "0.0.0"
   uid ""
 
+"@kbn/alerting-v2-plugin@link:x-pack/platform/plugins/shared/alerting_v2":
+  version "0.0.0"
+  uid ""
+
+"@kbn/alerting-v2-schemas@link:x-pack/platform/packages/shared/response-ops/alerting-v2-schemas":
+  version "0.0.0"
+  uid ""
+
 "@kbn/alerts-as-data-utils@link:src/platform/packages/shared/kbn-alerts-as-data-utils":
   version "0.0.0"
   uid ""
@@ -9543,6 +9551,10 @@
   uid ""
 
 "@kbn/xstate-utils@link:src/platform/packages/shared/kbn-xstate-utils":
+  version "0.0.0"
+  uid ""
+
+"@kbn/yaml-rule-editor@link:x-pack/platform/packages/shared/response-ops/yaml-rule-editor":
   version "0.0.0"
   uid ""
 
