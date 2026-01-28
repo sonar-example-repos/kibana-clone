@@ -9,7 +9,6 @@ import { loggingSystemMock } from '@kbn/core-logging-server-mocks';
 import { httpServerMock } from '@kbn/core-http-server-mocks';
 import { elasticsearchServiceMock } from '@kbn/core-elasticsearch-server-mocks';
 import { savedObjectsClientMock } from '@kbn/core-saved-objects-api-server-mocks';
-import { Headers } from 'node-fetch';
 
 import { getBundledPackageByPkgKey } from '../../services/epm/packages/bundled_packages';
 import { getFile, getInstallation } from '../../services/epm/packages/get';
@@ -25,6 +24,10 @@ jest.mock('../../services/epm/archive');
 jest.mock('../../services/epm/archive/storage');
 jest.mock('../../services/epm/packages/bundled_packages');
 jest.mock('../../services/epm/packages/get');
+
+// Mock Readable.fromWeb to return the mock body directly since we're testing with mock responses
+import { Readable } from 'stream';
+jest.spyOn(Readable, 'fromWeb').mockImplementation((webStream: any) => webStream);
 
 const mockedGetBundledPackageByPkgKey = jest.mocked(getBundledPackageByPkgKey);
 const mockedGetInstallation = jest.mocked(getInstallation);
