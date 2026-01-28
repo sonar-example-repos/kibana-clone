@@ -94,7 +94,11 @@ export function sendRequest(args: RequestArgs): Promise<RequestResult[]> {
         resolve(results);
         return;
       }
-      const req = requests.shift()!;
+      const req = requests.shift();
+      if (!req) {
+        resolve(results);
+        return;
+      }
       const path = req.url;
       const method = req.method;
 

@@ -41,7 +41,7 @@ import {
   getRequestFromEditor,
 } from './utils';
 
-import type { AdjustedParsedRequest } from './types';
+import type { AdjustedParsedRequest, EditorRequest } from './types';
 import { type RequestToRestore, RestoreMethod } from '../../../types';
 import { StorageQuotaError } from '../../components/storage_quota_error';
 import type { ContextValue } from '../../contexts';
@@ -280,8 +280,8 @@ export class MonacoEditorActionsProvider {
     // get variables values
     const variables = getStorage().get(StorageKeys.VARIABLES, DEFAULT_VARIABLES);
     return stringifiedRequests
-      .filter(Boolean)
-      .map((request) => replaceRequestVariables(request!, variables));
+      .filter((request): request is EditorRequest => Boolean(request))
+      .map((request) => replaceRequestVariables(request, variables));
   }
 
   public async getCurl(elasticsearchBaseUrl: string): Promise<string> {
@@ -300,9 +300,14 @@ export class MonacoEditorActionsProvider {
       const allRequests = await this.getRequests();
       const selectedRequests = await this.getSelectedParsedRequests();
       if (selectedRequests.length) {
+        const firstSelected = selectedRequests[0];
+        const lastSelected = selectedRequests[selectedRequests.length - 1];
+        if (!firstSelected || !lastSelected) {
+          return;
+        }
         const selectedErrors = await this.getErrorsBetweenLines(
-          selectedRequests.at(0)!.startLineNumber,
-          selectedRequests.at(-1)!.endLineNumber
+          firstSelected.startLineNumber,
+          lastSelected.endLineNumber
         );
         if (selectedErrors.length) {
           toasts.addDanger(

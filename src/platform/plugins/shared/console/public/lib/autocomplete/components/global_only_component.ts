@@ -7,26 +7,45 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type {
+  AutoCompleteContext,
+  AutocompleteEditor,
+  AutocompleteMatch,
+  AutocompleteMatchResult,
+  AutocompleteToken,
+  AutocompleteTerm,
+} from '../types';
+
 import { SharedComponent } from './shared_component';
+
 export class GlobalOnlyComponent extends SharedComponent {
-  getTerms() {
+  override getTerms(
+    _context: AutoCompleteContext,
+    _editor: AutocompleteEditor
+  ): AutocompleteTerm[] | null {
     return null;
   }
 
-  match(token, context) {
-    const result = {
-      next: [],
-    };
+  override match(
+    token: AutocompleteToken,
+    context: AutoCompleteContext,
+    _editor: AutocompleteEditor
+  ): AutocompleteMatch {
+    const result: AutocompleteMatchResult = { next: [] };
 
     // try to link to GLOBAL rules
-    const globalRules = context.globalComponentResolver(token, false);
+    const globalRules = context.globalComponentResolver!(
+      Array.isArray(token) ? token.join(',') : token,
+      false
+    );
     if (globalRules) {
-      result.next.push.apply(result.next, globalRules);
+      result.next.push(...globalRules);
     }
 
     if (result.next.length) {
       return result;
     }
+
     // just loop back to us
     result.next = [this];
 

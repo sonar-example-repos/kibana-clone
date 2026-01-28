@@ -9,7 +9,7 @@
 
 import { renderHook, act } from '@testing-library/react';
 import { useSetInitialValue } from './use_set_initial_value';
-import type { IToasts } from '@kbn/core-notifications-browser';
+import { notificationServiceMock } from '@kbn/core/public/mocks';
 import { decompressFromEncodedURIComponent } from 'lz-string';
 import { DEFAULT_INPUT_VALUE } from '../../../../../common/constants';
 import { useEditorActionContext } from '../../../contexts';
@@ -26,15 +26,14 @@ jest.mock('../../../contexts', () => ({
   useEditorActionContext: jest.fn(),
 }));
 
-const mockUseEditorActionContext = useEditorActionContext as jest.MockedFunction<
-  typeof useEditorActionContext
->;
+const mockUseEditorActionContext = jest.mocked(useEditorActionContext);
+const mockDecompressFromEncodedURIComponent = jest.mocked(decompressFromEncodedURIComponent);
 
 describe('useSetInitialValue', () => {
   const setValueMock = jest.fn();
-  const addWarningMock = jest.fn();
   const editorDispatchMock = jest.fn();
-  const toastsMock: IToasts = { addWarning: addWarningMock } as any;
+  const toastsMock = notificationServiceMock.createSetupContract().toasts;
+  const addWarningMock = jest.mocked(toastsMock.addWarning);
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -94,11 +93,12 @@ describe('useSetInitialValue', () => {
     });
 
     // Mock fetch to return "remote data"
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        text: () => Promise.resolve('remote data'),
-      })
-    ) as jest.Mock;
+    const mockFetch = jest.fn(async (_input: RequestInfo | URL) => {
+      return {
+        text: async () => 'remote data',
+      };
+    });
+    global.fetch = mockFetch as unknown as typeof fetch;
 
     await act(async () => {
       renderHook(() =>
@@ -120,8 +120,12 @@ describe('useSetInitialValue', () => {
 
     // Verify fetch was called with the correct URL
     expect(fetch).toHaveBeenCalled();
-    const fetchCall = (fetch as jest.Mock).mock.calls[0];
-    expect(fetchCall[0].href).toBe('https://www.elastic.co/docs/some-data');
+    const fetchCall = mockFetch.mock.calls[0]?.[0];
+    expect(fetchCall).toBeDefined();
+    if (!(fetchCall instanceof URL)) {
+      throw new Error('Expected fetch to be called with a URL');
+    }
+    expect(fetchCall?.href).toBe('https://www.elastic.co/docs/some-data');
 
     // The initial value should still be set
     expect(setValueMock).toHaveBeenCalledWith('initial value');
@@ -171,7 +175,7 @@ describe('useSetInitialValue', () => {
         hash: '?load_from=data:text/plain,compressed-data',
       },
     });
-    (decompressFromEncodedURIComponent as jest.Mock).mockReturnValue('decompressed data');
+    mockDecompressFromEncodedURIComponent.mockReturnValue('decompressed data');
 
     await act(async () => {
       renderHook(() =>
@@ -208,7 +212,8 @@ describe('useSetInitialValue', () => {
         hash: '?load_from=data:text/plain,invalid-data',
       },
     });
-    (decompressFromEncodedURIComponent as jest.Mock).mockReturnValue(null);
+    // Hook treats both `null` and '' as failure.
+    mockDecompressFromEncodedURIComponent.mockReturnValue('');
 
     await act(async () => {
       renderHook(() =>

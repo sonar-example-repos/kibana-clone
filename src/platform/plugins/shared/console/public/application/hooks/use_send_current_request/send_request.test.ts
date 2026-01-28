@@ -8,13 +8,14 @@
  */
 
 import type { ContextValue } from '../../contexts';
+import type { RequestResult } from './send_request';
 
 jest.mock('./send_request', () => ({ sendRequest: jest.fn(() => Promise.resolve()) }));
 
 import { sendRequest } from './send_request';
 import { serviceContextMock } from '../../contexts/services_context.mock';
 
-const mockedSendRequest = sendRequest as jest.Mock;
+const mockedSendRequest = jest.mocked(sendRequest);
 
 describe('sendRequest', () => {
   let mockContextValue: ContextValue;
@@ -28,14 +29,19 @@ describe('sendRequest', () => {
   });
 
   it('should send request', async () => {
-    mockedSendRequest.mockResolvedValue([
+    const result: RequestResult[] = [
       {
+        request: { data: '', method: 'PUT', path: 'test' },
         response: {
+          timeMs: 0,
           statusCode: 200,
+          statusText: 'OK',
+          contentType: 'application/json',
           value: '{\n  "acknowledged": true \n}',
         },
       },
-    ]);
+    ];
+    mockedSendRequest.mockResolvedValue(result);
 
     const args = {
       http: mockContextValue.services.http,
@@ -52,23 +58,39 @@ describe('sendRequest', () => {
 
   describe('with multiple requests', () => {
     it('should return results with exceptions', async () => {
-      mockedSendRequest.mockResolvedValue([
+      const result: RequestResult[] = [
         {
+          request: { data: '', method: 'GET', path: 'success' },
           response: {
+            timeMs: 0,
             statusCode: 200,
+            statusText: 'OK',
+            contentType: 'application/json',
+            value: '',
           },
         },
         {
+          request: { data: '', method: 'GET', path: 'success' },
           response: {
+            timeMs: 0,
             statusCode: 200,
+            statusText: 'OK',
+            contentType: 'application/json',
+            value: '',
           },
         },
         {
+          request: { data: '', method: 'GET', path: 'fail' },
           response: {
+            timeMs: 0,
             statusCode: 400,
+            statusText: 'Bad Request',
+            contentType: 'application/json',
+            value: '',
           },
         },
-      ]);
+      ];
+      mockedSendRequest.mockResolvedValue(result);
 
       const args = {
         http: mockContextValue.services.http,
@@ -92,8 +114,11 @@ describe('sendRequest', () => {
   it('should handle errors', async () => {
     mockedSendRequest.mockRejectedValue({
       response: {
+        timeMs: 0,
         statusCode: 500,
         statusText: 'error',
+        contentType: 'application/json',
+        value: '',
       },
     });
 
@@ -102,9 +127,20 @@ describe('sendRequest', () => {
         http: mockContextValue.services.http,
         requests: [{ method: 'GET', url: 'test', data: [] }],
       });
-    } catch (error) {
-      expect(error.response.statusCode).toEqual(500);
-      expect(error.response.statusText).toEqual('error');
+    } catch (error: unknown) {
+      if (
+        typeof error !== 'object' ||
+        error === null ||
+        !('response' in error) ||
+        typeof (error as { response?: unknown }).response !== 'object' ||
+        (error as { response?: unknown }).response === null
+      ) {
+        throw error;
+      }
+
+      const { response } = error as { response: { statusCode: number; statusText: string } };
+      expect(response.statusCode).toEqual(500);
+      expect(response.statusText).toEqual('error');
       expect(mockedSendRequest).toHaveBeenCalledTimes(1);
     }
   });
@@ -112,13 +148,26 @@ describe('sendRequest', () => {
   describe('successful response value', () => {
     describe('with text', () => {
       it('should return value with lines separated', async () => {
-        mockedSendRequest.mockResolvedValue('\ntest_index-1    []\ntest_index-2    []\n');
+        const value = '\ntest_index-1    []\ntest_index-2    []\n';
+        const result: RequestResult[] = [
+          {
+            request: { data: '', method: 'GET', path: 'test-1' },
+            response: {
+              timeMs: 0,
+              statusCode: 200,
+              statusText: 'OK',
+              contentType: 'text/plain',
+              value,
+            },
+          },
+        ];
+        mockedSendRequest.mockResolvedValue(result);
         const response = await sendRequest({
           http: mockContextValue.services.http,
           requests: [{ method: 'GET', url: 'test-1', data: [] }],
         });
 
-        expect(response).toMatchInlineSnapshot(`
+        expect(response[0].response.value).toMatchInlineSnapshot(`
           "
           test_index-1    []
           test_index-2    []
@@ -130,13 +179,25 @@ describe('sendRequest', () => {
 
     describe('with parsed json', () => {
       it('should stringify value', async () => {
-        mockedSendRequest.mockResolvedValue(JSON.stringify({ test: 'some value' }));
+        const result: RequestResult[] = [
+          {
+            request: { data: '', method: 'GET', path: 'test-2' },
+            response: {
+              timeMs: 0,
+              statusCode: 200,
+              statusText: 'OK',
+              contentType: 'application/json',
+              value: JSON.stringify({ test: 'some value' }),
+            },
+          },
+        ];
+        mockedSendRequest.mockResolvedValue(result);
         const response = await sendRequest({
           http: mockContextValue.services.http,
           requests: [{ method: 'GET', url: 'test-2', data: [] }],
         });
 
-        expect(typeof response).toBe('string');
+        expect(typeof response[0].response.value).toBe('string');
         expect(mockedSendRequest).toHaveBeenCalledTimes(1);
       });
     });

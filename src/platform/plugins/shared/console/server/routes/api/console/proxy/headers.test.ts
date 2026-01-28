@@ -15,9 +15,10 @@ jest.mock('@kbn/core-http-router-server-internal', () => {
   };
 });
 
-import { kibanaResponseFactory } from '@kbn/core/server';
+import { coreMock, httpServerMock } from '@kbn/core/server/mocks';
 
 import { ensureRawRequest } from '@kbn/core-http-router-server-internal';
+import { hapiMocks } from '@kbn/hapi-mocks';
 
 import { getProxyRouteHandlerDeps } from './mocks';
 
@@ -31,7 +32,7 @@ describe('Console Proxy Route', () => {
   let handler: ReturnType<typeof createHandler>;
 
   beforeEach(() => {
-    (requestModule.proxyRequest as jest.Mock).mockResolvedValue(createResponseStub(''));
+    jest.mocked(requestModule.proxyRequest).mockResolvedValue(createResponseStub(''));
     handler = createHandler(getProxyRouteHandlerDeps({}));
   });
 
@@ -41,34 +42,35 @@ describe('Console Proxy Route', () => {
 
   describe('headers', () => {
     it('forwards the remote header info', async () => {
-      (ensureRawRequest as jest.Mock).mockReturnValue({
-        // This mocks the shape of the hapi request object, will probably change
-        info: {
-          remoteAddress: '0.0.0.0',
-          remotePort: '1234',
-          host: 'test',
-        },
-        server: {
+      jest.mocked(ensureRawRequest).mockReturnValue(
+        hapiMocks.createRequest({
           info: {
-            protocol: 'http',
+            remoteAddress: '0.0.0.0',
+            remotePort: '1234',
+            host: 'test',
           },
-        },
-      });
-
-      await handler(
-        {} as any,
-        {
-          headers: {},
-          query: {
-            method: 'POST',
-            path: '/api/console/proxy?method=GET&path=/',
+          server: {
+            info: {
+              protocol: 'http',
+            },
           },
-        } as any,
-        kibanaResponseFactory
+        })
       );
 
-      expect((requestModule.proxyRequest as jest.Mock).mock.calls.length).toBe(1);
-      const [[{ headers }]] = (requestModule.proxyRequest as jest.Mock).mock.calls;
+      const ctx = coreMock.createCustomRequestHandlerContext({});
+      const req = httpServerMock.createKibanaRequest({
+        headers: {},
+        query: {
+          method: 'POST',
+          path: '/api/console/proxy?method=GET&path=/',
+        },
+      });
+      const res = httpServerMock.createResponseFactory();
+
+      await handler(ctx, req, res);
+
+      expect(jest.mocked(requestModule.proxyRequest).mock.calls.length).toBe(1);
+      const [[{ headers }]] = jest.mocked(requestModule.proxyRequest).mock.calls;
       expect(headers).toHaveProperty('x-forwarded-for');
       expect(headers['x-forwarded-for']).toBe('0.0.0.0');
       expect(headers).toHaveProperty('x-forwarded-port');
@@ -80,40 +82,44 @@ describe('Console Proxy Route', () => {
     });
 
     it('sends product-origin header when withProductOrigin query param is set', async () => {
-      await handler(
-        {} as any,
-        {
-          headers: {},
-          query: {
-            method: 'POST',
-            path: '/api/console/proxy?path=_aliases&method=GET',
-            withProductOrigin: true,
-          },
-        } as any,
-        kibanaResponseFactory
-      );
+      const ctx = coreMock.createCustomRequestHandlerContext({});
+      const req = httpServerMock.createKibanaRequest({
+        headers: {},
+        query: {
+          method: 'POST',
+          path: '/api/console/proxy?path=_aliases&method=GET',
+          withProductOrigin: true,
+        },
+      });
+      const res = httpServerMock.createResponseFactory();
 
-      const [[{ headers }]] = (requestModule.proxyRequest as jest.Mock).mock.calls;
+      await handler(ctx, req, res);
+
+      const [[{ headers }]] = jest.mocked(requestModule.proxyRequest).mock.calls;
       expect(headers).toHaveProperty('x-elastic-product-origin');
       expect(headers['x-elastic-product-origin']).toBe('kibana');
     });
 
     it('sends es status code and status text as headers', async () => {
-      const response = await handler(
-        {} as any,
-        {
-          headers: {},
-          query: {
-            method: 'POST',
-            path: '/api/console/proxy?path=_aliases&method=GET',
-          },
-        } as any,
-        kibanaResponseFactory
-      );
+      const ctx = coreMock.createCustomRequestHandlerContext({});
+      const req = httpServerMock.createKibanaRequest({
+        headers: {},
+        query: {
+          method: 'POST',
+          path: '/api/console/proxy?path=_aliases&method=GET',
+        },
+      });
+      const res = httpServerMock.createResponseFactory();
 
-      const { headers } = response.options;
-      expect(headers).toHaveProperty('x-console-proxy-status-code');
-      expect(headers).toHaveProperty('x-console-proxy-status-text');
+      await handler(ctx, req, res);
+
+      expect(res.ok).toHaveBeenCalledTimes(1);
+      const okArgs = res.ok.mock.calls[0]?.[0];
+      if (!okArgs) {
+        throw new Error('Expected response.ok() to be called with args');
+      }
+      expect(okArgs.headers).toHaveProperty('x-console-proxy-status-code');
+      expect(okArgs.headers).toHaveProperty('x-console-proxy-status-text');
     });
   });
 });

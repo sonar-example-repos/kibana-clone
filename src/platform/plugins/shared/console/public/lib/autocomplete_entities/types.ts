@@ -18,7 +18,7 @@ import type {
 
 export interface Field {
   name: string;
-  type: string;
+  type?: string;
 }
 
 export interface FieldMapping {
@@ -27,8 +27,44 @@ export interface FieldMapping {
   properties?: Record<string, FieldMapping>;
   type?: string;
   index_name?: string;
-  fields?: FieldMapping[];
+  fields?: Record<string, FieldMapping>;
 }
+
+/**
+ * These types are derived from the official ES client response types but narrowed to only the
+ * fields Console actually consumes.
+ */
+export interface IndexTemplatesResponseLike {
+  index_templates?: Array<
+    Pick<NonNullable<IndicesGetIndexTemplateResponse['index_templates']>[number], 'name'>
+  >;
+}
+
+export interface ComponentTemplatesResponseLike {
+  component_templates?: Array<
+    Pick<NonNullable<ClusterGetComponentTemplateResponse['component_templates']>[number], 'name'>
+  >;
+}
+
+export interface DataStreamsResponseLike {
+  data_streams?: Array<
+    Pick<NonNullable<IndicesGetDataStreamResponse['data_streams']>[number], 'name'> & {
+      indices?: Array<
+        Pick<
+          NonNullable<
+            NonNullable<IndicesGetDataStreamResponse['data_streams']>[number]['indices']
+          >[number],
+          'index_name'
+        >
+      >;
+    }
+  >;
+}
+
+export type LegacyTemplatesResponseLike = Record<
+  string,
+  Partial<IndicesGetTemplateResponse[string]>
+>;
 
 export interface AutoCompleteEntitiesApiResponse {
   mappings: IndicesGetMappingResponse;

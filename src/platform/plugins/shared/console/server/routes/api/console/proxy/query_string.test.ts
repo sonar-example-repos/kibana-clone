@@ -7,8 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { IKibanaResponse } from '@kbn/core/server';
-import { kibanaResponseFactory } from '@kbn/core/server';
+import { coreMock, httpServerMock } from '@kbn/core/server/mocks';
 import { getProxyRouteHandlerDeps } from './mocks';
 import { createResponseStub } from './stubs';
 import * as requestModule from '../../../../lib/proxy_request';
@@ -16,20 +15,24 @@ import * as requestModule from '../../../../lib/proxy_request';
 import { createHandler } from './create_handler';
 
 describe('Console Proxy Route', () => {
-  let request: (method: string, path: string) => Promise<IKibanaResponse> | IKibanaResponse;
-  const proxyRequestMock = requestModule.proxyRequest as jest.Mock;
+  let request: (method: string, path: string) => Promise<void>;
+  const proxyRequestMock = jest.mocked(requestModule.proxyRequest);
 
   beforeEach(() => {
-    (requestModule.proxyRequest as jest.Mock).mockResolvedValue(createResponseStub('foo'));
+    jest.mocked(requestModule.proxyRequest).mockResolvedValue(createResponseStub('foo'));
 
     request = async (method: string, path: string) => {
       const handler = createHandler(getProxyRouteHandlerDeps({}));
 
-      return handler(
-        {} as any,
-        { headers: {}, query: { method, path } } as any,
-        kibanaResponseFactory
-      );
+      const ctx = coreMock.createCustomRequestHandlerContext({});
+      const req = httpServerMock.createKibanaRequest({
+        headers: {},
+        query: { method, path },
+      });
+      const res = httpServerMock.createResponseFactory();
+
+      await handler(ctx, req, res);
+      expect(res.ok).toHaveBeenCalledTimes(1);
     };
   });
 
@@ -43,7 +46,7 @@ describe('Console Proxy Route', () => {
         it('treats the url as a path', async () => {
           await request('GET', 'http://evil.com/test');
           expect(proxyRequestMock.mock.calls.length).toBe(1);
-          const [[args]] = (requestModule.proxyRequest as jest.Mock).mock.calls;
+          const [[args]] = jest.mocked(requestModule.proxyRequest).mock.calls;
           expect(args.uri.href).toBe('http://localhost:9200/http%3A//evil.com/test?pretty=true');
         });
       });
@@ -51,7 +54,7 @@ describe('Console Proxy Route', () => {
         it('combines well with the base url', async () => {
           await request('GET', '/index/id');
           expect(proxyRequestMock.mock.calls.length).toBe(1);
-          const [[args]] = (requestModule.proxyRequest as jest.Mock).mock.calls;
+          const [[args]] = jest.mocked(requestModule.proxyRequest).mock.calls;
           expect(args.uri.href).toBe('http://localhost:9200/index/id?pretty=true');
         });
       });
@@ -59,7 +62,7 @@ describe('Console Proxy Route', () => {
         it('combines well with the base url', async () => {
           await request('GET', 'index/id');
           expect(proxyRequestMock.mock.calls.length).toBe(1);
-          const [[args]] = (requestModule.proxyRequest as jest.Mock).mock.calls;
+          const [[args]] = jest.mocked(requestModule.proxyRequest).mock.calls;
           expect(args.uri.href).toBe('http://localhost:9200/index/id?pretty=true');
         });
       });
@@ -67,8 +70,7 @@ describe('Console Proxy Route', () => {
         it('correctly encodes plus sign', async () => {
           const path = '/_search?q=create_date:[2022-03-10T08:00:00.000+08:00 TO *]';
 
-          const { status } = await request('GET', path);
-          expect(status).toBe(200);
+          await request('GET', path);
           expect(proxyRequestMock.mock.calls.length).toBe(1);
           const [[args]] = proxyRequestMock.mock.calls;
           expect(args.uri.search).toEqual(

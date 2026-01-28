@@ -8,12 +8,13 @@
  */
 
 import { ConstantComponent } from './constant_component';
+import type { SharedComponent } from './shared_component';
 
 export class FullRequestComponent extends ConstantComponent {
-  readonly name: string;
-  constructor(name: string, parent: unknown, private readonly template: string) {
+  template: string;
+  constructor(name: string, parent: SharedComponent | undefined, template: string) {
     super(name, parent);
-    this.name = name;
+    this.template = template;
   }
 
   getTerms() {

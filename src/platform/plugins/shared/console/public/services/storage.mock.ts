@@ -9,14 +9,59 @@
 
 import { Storage } from './storage';
 
+function createInMemoryStorageEngine(): typeof window.localStorage {
+  const store: Record<string, string> = Object.create(null);
+
+  const engine: Record<string, unknown> & {
+    length: number;
+    key: (index: number) => string | null;
+    getItem: (key: string) => string | null;
+    setItem: (key: string, value: string) => void;
+    removeItem: (key: string) => void;
+    clear: () => void;
+  } = Object.create(null);
+
+  const syncLength = () => {
+    engine.length = Object.keys(store).length;
+  };
+
+  engine.key = (index: number) => Object.keys(store)[index] ?? null;
+
+  engine.getItem = (key: string) => {
+    return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : null;
+  };
+
+  engine.setItem = (key: string, value: string) => {
+    store[key] = value;
+    engine[key] = value;
+    syncLength();
+  };
+
+  engine.removeItem = (key: string) => {
+    delete store[key];
+    delete engine[key];
+    syncLength();
+  };
+
+  engine.clear = () => {
+    for (const key of Object.keys(store)) {
+      delete store[key];
+      delete engine[key];
+    }
+    syncLength();
+  };
+
+  syncLength();
+
+  return engine as unknown as typeof window.localStorage;
+}
+
 export class StorageMock extends Storage {
-  delete = jest.fn();
-  decode = jest.fn();
-  decodeKey = jest.fn();
-  encodeKey = jest.fn();
-  encode = jest.fn();
-  has = jest.fn();
-  keys = jest.fn();
-  get = jest.fn();
-  set = jest.fn();
+  constructor(initialState: Record<string, unknown> = {}, prefix: string = 'test') {
+    super(createInMemoryStorageEngine(), prefix);
+
+    for (const [key, value] of Object.entries(initialState)) {
+      this.set(key, value);
+    }
+  }
 }

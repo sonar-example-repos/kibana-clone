@@ -8,39 +8,29 @@
  */
 
 import _ from 'lodash';
-import { ConstantComponent, ListComponent, SharedComponent } from './components';
 
-export class ParamComponent extends ConstantComponent {
-  constructor(name, parent, description) {
-    super(name, parent);
-    this.description = description;
-  }
-  getTerms() {
-    const t = { name: this.name };
-    if (this.description === '__flag__') {
-      t.meta = 'flag';
-    } else {
-      t.meta = 'param';
-      t.insertValue = this.name + '=';
-    }
-    return [t];
-  }
-}
+import { ListComponent, SharedComponent } from './components';
+import { ParamComponent } from './url_params_param_component';
 
 export class UrlParams {
-  constructor(description, defaults) {
+  rootComponent: SharedComponent;
+
+  constructor(description?: Record<string, unknown>, defaults?: Record<string, unknown>) {
     // This is not really a component, just a handy container to make iteration logic simpler
     this.rootComponent = new SharedComponent('ROOT');
-    if (_.isUndefined(defaults)) {
-      defaults = {
+
+    const resolvedDefaults =
+      defaults ??
+      ({
         pretty: '__flag__',
         format: ['json', 'yaml'],
         filter_path: '',
-      };
-    }
-    description = _.clone(description || {});
-    _.defaults(description, defaults);
-    _.each(description, (pDescription, param) => {
+      } as const);
+
+    const merged = _.clone(description || {});
+    _.defaults(merged, resolvedDefaults);
+
+    _.each(merged, (pDescription, param) => {
       const component = new ParamComponent(param, this.rootComponent, pDescription);
       if (Array.isArray(pDescription)) {
         new ListComponent(param, pDescription, component);
@@ -49,6 +39,7 @@ export class UrlParams {
       }
     });
   }
+
   getTopLevelComponents() {
     return this.rootComponent.next;
   }

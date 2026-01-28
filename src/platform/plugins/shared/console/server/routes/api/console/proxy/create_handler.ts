@@ -7,10 +7,11 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { Agent, IncomingMessage } from 'http';
+import type { Agent, IncomingMessage, OutgoingHttpHeaders } from 'http';
 import { pick } from 'lodash';
 
 import type { KibanaRequest, RequestHandler } from '@kbn/core/server';
+import type { Headers } from '@kbn/core/server';
 
 // TODO: find a better way to get information from the request like remoteAddress and remotePort
 // for forwarding.
@@ -23,7 +24,7 @@ import type { RouteDependencies } from '../../..';
 import type { Body, Query } from './validation_config';
 import { toURL } from '../../../../lib/utils';
 
-function filterHeaders(originalHeaders: object, headersToKeep: string[]): object {
+function filterHeaders(originalHeaders: Headers, headersToKeep: string[]): OutgoingHttpHeaders {
   const normalizeHeader = function (header: string) {
     if (!header) {
       return '';
@@ -39,9 +40,9 @@ function filterHeaders(originalHeaders: object, headersToKeep: string[]): object
 }
 
 export function getRequestConfig(
-  headers: object,
+  headers: Headers,
   esConfig: ESConfigForProxy
-): { agent: Agent; timeout: number; headers: object } {
+): { agent: Agent; timeout: number; headers: OutgoingHttpHeaders } {
   const filteredHeaders = filterHeaders(headers, esConfig.requestHeadersWhitelist);
   const newHeaders = setHeaders(filteredHeaders, esConfig.customHeaders);
 
@@ -51,12 +52,14 @@ export function getRequestConfig(
   };
 }
 
-function getProxyHeaders(req: KibanaRequest) {
-  const headers = Object.create(null);
+function getProxyHeaders(req: KibanaRequest): OutgoingHttpHeaders {
+  const headers: OutgoingHttpHeaders = {};
 
   // Scope this proto-unsafe functionality to where it is being used.
-  function extendCommaList(obj: Record<string, any>, property: string, value: string) {
-    obj[property] = (obj[property] ? obj[property] + ',' : '') + value;
+  function extendCommaList(obj: OutgoingHttpHeaders, property: string, value: string) {
+    const current = obj[property];
+    const currentString = Array.isArray(current) ? current.join(',') : current ?? '';
+    obj[property] = currentString ? `${currentString},${value}` : value;
   }
 
   const _req = ensureRawRequest(req);
@@ -71,7 +74,9 @@ function getProxyHeaders(req: KibanaRequest) {
 
   const contentType = req.headers['content-type'];
   if (contentType) {
-    headers['content-type'] = contentType;
+    // Node's OutgoingHttpHeaders narrows `content-type` to string, but Kibana request headers can
+    // be string|string[]. Preserve typical runtime behavior while keeping types strict.
+    headers['content-type'] = Array.isArray(contentType) ? contentType.join(',') : contentType;
   }
   return headers;
 }
@@ -116,8 +121,8 @@ export const createHandler =
         payload: body,
         agent,
       });
-    } catch (e) {
-      log.error(e);
+    } catch (e: unknown) {
+      log.error(e instanceof Error ? e : String(e));
       log.warn(`Could not connect to ES node [${host}]`);
 
       const hasMultipleHosts = hosts.length > 1;

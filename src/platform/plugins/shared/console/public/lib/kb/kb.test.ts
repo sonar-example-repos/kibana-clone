@@ -8,94 +8,83 @@
  */
 
 import _ from 'lodash';
+
+import type { AutoCompleteContext, ResultTerm } from '../autocomplete/types';
+import type { TokenPathToken } from '../autocomplete/engine';
+
 import { populateContext } from '../autocomplete/engine';
 
 import * as kb from '.';
 import { AutocompleteInfo, setAutocompleteInfo } from '../../services';
 
 describe('Knowledge base', () => {
-  let autocompleteInfo;
+  let autocompleteInfo: AutocompleteInfo;
+
   beforeEach(() => {
     kb._test.setActiveApi(kb._test.loadApisFromJson({}));
     autocompleteInfo = new AutocompleteInfo();
     setAutocompleteInfo(autocompleteInfo);
     autocompleteInfo.mapping.clearMappings();
   });
+
   afterEach(() => {
     kb._test.setActiveApi(kb._test.loadApisFromJson({}));
-    autocompleteInfo = null;
-    setAutocompleteInfo(null);
+    setAutocompleteInfo(new AutocompleteInfo());
   });
 
   const MAPPING = {
     index1: {
-      properties: {
-        'field1.1.1': { type: 'string' },
-        'field1.1.2': { type: 'long' },
+      mappings: {
+        properties: {
+          'field1.1.1': { type: 'string' },
+          'field1.1.2': { type: 'long' },
+        },
       },
     },
     index2: {
-      properties: {
-        'field2.1.1': { type: 'string' },
-        'field2.1.2': { type: 'string' },
+      mappings: {
+        properties: {
+          'field2.1.1': { type: 'string' },
+          'field2.1.2': { type: 'string' },
+        },
       },
     },
   };
 
-  function testUrlContext(tokenPath, otherTokenValues, expectedContext) {
-    if (expectedContext.autoCompleteSet) {
-      expectedContext.autoCompleteSet = _.map(expectedContext.autoCompleteSet, function (t) {
-        if (_.isString(t)) {
-          t = { name: t };
-        }
-        return t;
-      });
-    }
+  function testUrlContext(
+    tokenPath: TokenPathToken[],
+    otherTokenValues: string | string[],
+    expectedContext: Record<string, unknown> & { autoCompleteSet?: Array<ResultTerm | string> }
+  ) {
+    const expected = normalizeExpectedContext(expectedContext);
 
-    const context = { otherTokenValues: otherTokenValues };
+    const context: AutoCompleteContext = { otherTokenValues };
     populateContext(
       tokenPath,
       context,
-      null,
-      expectedContext.autoCompleteSet,
+      undefined,
+      Boolean(expected.autoCompleteSet),
       kb.getTopLevelUrlCompleteComponents('GET')
     );
 
-    // override context to just check on id
-    if (context.endpoint) {
-      context.endpoint = context.endpoint.id;
-    }
+    const actual = normalizeActualContext(context);
+    delete actual.otherTokenValues;
 
-    delete context.otherTokenValues;
-
-    function norm(t) {
-      if (_.isString(t)) {
-        return { name: t };
-      }
-      return t;
-    }
-
-    if (context.autoCompleteSet) {
-      context.autoCompleteSet = _.sortBy(_.map(context.autoCompleteSet, norm), 'name');
-    }
-    if (expectedContext.autoCompleteSet) {
-      expectedContext.autoCompleteSet = _.sortBy(
-        _.map(expectedContext.autoCompleteSet, norm),
-        'name'
-      );
-    }
-
-    expect(context).toEqual(expectedContext);
+    expect(actual).toEqual(expected);
   }
 
-  function i(term) {
+  function i(term: string): ResultTerm {
     return { name: term, meta: 'index' };
   }
 
-  function indexTest(name, tokenPath, otherTokenValues, expectedContext) {
-    test(name, function () {
-      // eslint-disable-next-line new-cap
-      const testApi = new kb._test.loadApisFromJson(
+  function indexTest(
+    name: string,
+    tokenPath: TokenPathToken[],
+    otherTokenValues: string | string[],
+    expectedContext: Record<string, unknown> & { autoCompleteSet?: Array<ResultTerm | string> }
+  ) {
+    test(name, () => {
+      const testApi = kb._test.loadApisFromJson(
         {
           indexTest: {
             endpoints: {
@@ -132,13 +121,41 @@ describe('Knowledge base', () => {
     { autoCompleteSet: ['_no_index', i('index2')] }
   );
 
-  indexTest('Index integration 2', ['index1'], [], {
+  indexTest('Index integration 3', ['index1'], [], {
     indices: ['index1'],
     autoCompleteSet: ['_multi_indices', '_single_index'],
   });
 
-  indexTest('Index integration 2', [['index1', 'index2']], [], {
+  indexTest('Index integration 4', [['index1', 'index2']], [], {
     indices: ['index1', 'index2'],
     autoCompleteSet: ['_multi_indices', '_single_index'],
   });
 });
+
+function normalizeExpectedContext(
+  expected: Record<string, unknown> & { autoCompleteSet?: Array<ResultTerm | string> }
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...expected };
+  if (expected.autoCompleteSet) {
+    out.autoCompleteSet = _.sortBy(expected.autoCompleteSet.map(normalizeTerm), 'name');
+  }
+  return out;
+}
+
+function normalizeActualContext(context: AutoCompleteContext): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...context };
+
+  if (context.endpoint && typeof context.endpoint.id === 'string') {
+    out.endpoint = context.endpoint.id;
+  }
+
+  if (context.autoCompleteSet) {
+    out.autoCompleteSet = _.sortBy(context.autoCompleteSet, 'name');
+  }
+
+  return out;
+}
+
+function normalizeTerm(t: ResultTerm | string): ResultTerm {
+  return typeof t === 'string' ? { name: t } : t;
+}

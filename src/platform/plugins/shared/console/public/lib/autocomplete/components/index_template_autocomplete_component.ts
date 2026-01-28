@@ -7,30 +7,22 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import _ from 'lodash';
 import { getAutocompleteInfo, ENTITIES } from '../../../services';
 import { ListComponent } from './list_component';
+import type { SharedComponent } from './shared_component';
 
-function nonValidIndexType(token) {
-  return !(token === '_all' || token[0] !== '_');
-}
-
-export class IndexAutocompleteComponent extends ListComponent {
-  constructor(name, parent, multiValued) {
-    super(name, getAutocompleteInfo().getEntityProvider(ENTITIES.INDICES), parent, multiValued);
-  }
-  validateTokens(tokens) {
-    if (!this.multiValued && tokens.length > 1) {
-      return false;
-    }
-    return !_.find(tokens, nonValidIndexType);
+export class IndexTemplateAutocompleteComponent extends ListComponent {
+  constructor(name: string, parent: SharedComponent | undefined) {
+    super(
+      name,
+      getAutocompleteInfo().getEntityProvider(ENTITIES.INDEX_TEMPLATES),
+      parent,
+      true,
+      true
+    );
   }
 
-  getDefaultTermMeta() {
-    return 'index';
-  }
-
-  getContextKey() {
-    return 'indices';
+  override getContextKey(): string {
+    return 'index_template';
   }
 }

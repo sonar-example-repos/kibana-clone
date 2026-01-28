@@ -8,40 +8,47 @@
  */
 
 import _ from 'lodash';
+
+import type { AutoCompleteContext, ResultTerm } from './types';
+import type { TokenPathToken } from './engine';
+
 import { UrlParams } from './url_params';
 import { populateContext } from './engine';
 
 describe('Url params', () => {
-  function paramTest(name, description, tokenPath, expectedContext, globalParams) {
-    test(name, function () {
-      const urlParams = new UrlParams(description, globalParams || {});
-      if (typeof tokenPath === 'string') {
-        tokenPath = _.map(tokenPath.split('/'), function (p) {
-          p = p.split(',');
-          if (p.length === 1) {
-            return p[0];
-          }
-          return p;
-        });
-      }
+  type ExpectedContext = Omit<AutoCompleteContext, 'autoCompleteSet'> & {
+    autoCompleteSet?: Array<ResultTerm | string>;
+  };
 
-      if (expectedContext.autoCompleteSet) {
-        expectedContext.autoCompleteSet = _.map(expectedContext.autoCompleteSet, function (t) {
-          if (_.isString(t)) {
-            t = { name: t };
-          }
-          return t;
-        });
-        expectedContext.autoCompleteSet = _.sortBy(expectedContext.autoCompleteSet, 'name');
-      }
+  function paramTest(
+    name: string,
+    description: Record<string, unknown>,
+    tokenPath: TokenPathToken[] | string,
+    expectedContext: ExpectedContext,
+    globalParams?: Record<string, unknown>
+  ) {
+    test(name, () => {
+      const urlParams = new UrlParams(description, globalParams ?? {});
 
-      const context = {};
+      const parsedTokenPath: TokenPathToken[] =
+        typeof tokenPath === 'string'
+          ? tokenPath.split('/').map((p) => {
+              const parts = p.split(',');
+              return parts.length === 1 ? parts[0] : parts;
+            })
+          : tokenPath;
+
+      const expectedAutoCompleteSet = expectedContext.autoCompleteSet
+        ? _.sortBy(expectedContext.autoCompleteSet.map(normalizeTerm), 'name')
+        : undefined;
+
+      const context: AutoCompleteContext = {};
 
       populateContext(
-        tokenPath,
+        parsedTokenPath,
         context,
-        null,
-        expectedContext.autoCompleteSet,
+        undefined,
+        Boolean(expectedAutoCompleteSet),
         urlParams.getTopLevelComponents()
       );
 
@@ -49,32 +56,40 @@ describe('Url params', () => {
         context.autoCompleteSet = _.sortBy(context.autoCompleteSet, 'name');
       }
 
-      expect(context).toEqual(expectedContext);
+      const expected: AutoCompleteContext = {
+        ...expectedContext,
+        autoCompleteSet: expectedAutoCompleteSet,
+      };
+      expect(context).toEqual(expected);
     });
   }
 
-  function t(name, meta, insertValue) {
-    let r = name;
+  function t(name: string, meta?: string, insertValue?: string): ResultTerm | string {
+    let r: ResultTerm | string = name;
+
     if (meta) {
-      r = { name: name, meta: meta };
+      r = { name, meta };
       if (meta === 'param' && !insertValue) {
-        insertValue = name + '=';
+        insertValue = `${name}=`;
       }
     }
+
     if (insertValue) {
       if (_.isString(r)) {
-        r = { name: name };
+        r = { name };
       }
       r.insertValue = insertValue;
     }
+
     return r;
   }
 
-  (function () {
+  (() => {
     const params = {
       a: ['1', '2'],
       b: '__flag__',
     };
+
     paramTest('settings params', params, 'a/1', { a: ['1'] });
 
     paramTest('autocomplete top level', params, [], {
@@ -100,3 +115,7 @@ describe('Url params', () => {
     });
   })();
 });
+
+function normalizeTerm(t: ResultTerm | string): ResultTerm {
+  return typeof t === 'string' ? { name: t } : t;
+}

@@ -61,6 +61,7 @@ dependsOn:
   - '@kbn/core-injected-metadata-browser-internal'
   - '@kbn/node-libs-browser-webpack-plugin'
   - '@kbn/esql-types'
+  - '@kbn/hapi-mocks'
 tags:
   - plugin
   - prod

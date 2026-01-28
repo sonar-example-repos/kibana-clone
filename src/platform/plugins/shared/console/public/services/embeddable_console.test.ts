@@ -16,7 +16,7 @@ describe('EmbeddableConsoleInfo', () => {
   let eConsole: EmbeddableConsoleInfo;
   let storage: StorageMock;
   beforeEach(() => {
-    storage = new StorageMock({} as unknown as Storage, 'test');
+    storage = new StorageMock({}, 'test');
     eConsole = new EmbeddableConsoleInfo(storage);
   });
   describe('isEmbeddedConsoleAvailable', () => {
@@ -101,17 +101,18 @@ describe('EmbeddableConsoleInfo', () => {
   });
   describe('getConsoleHeight', () => {
     it('returns value in storage when found', () => {
-      storage.get.mockReturnValue('201');
+      const getSpy = jest.spyOn(storage, 'get').mockReturnValue('201');
       expect(eConsole.getConsoleHeight()).toEqual('201');
-      expect(storage.get).toHaveBeenCalledWith('embeddedConsoleHeight', undefined);
+      expect(getSpy).toHaveBeenCalledWith('embeddedConsoleHeight', undefined);
     });
     it('returns undefined when not found', () => {
-      storage.get.mockReturnValue(undefined);
+      jest.spyOn(storage, 'get').mockReturnValue(undefined);
       expect(eConsole.getConsoleHeight()).toEqual(undefined);
     });
   });
   describe('setConsoleHeight', () => {
     it('stores value in storage', () => {
+      const setSpy = jest.spyOn(storage, 'set');
       // setConsoleHeight calls are debounced
       eConsole.setConsoleHeight('120');
       eConsole.setConsoleHeight('110');
@@ -119,8 +120,8 @@ describe('EmbeddableConsoleInfo', () => {
 
       jest.runAllTimers();
 
-      expect(storage.set).toHaveBeenCalledTimes(1);
-      expect(storage.set).toHaveBeenCalledWith('embeddedConsoleHeight', '100');
+      expect(setSpy).toHaveBeenCalledTimes(1);
+      expect(setSpy).toHaveBeenCalledWith('embeddedConsoleHeight', '100');
     });
   });
 });

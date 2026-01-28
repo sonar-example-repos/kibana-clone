@@ -163,7 +163,7 @@ describe('requests_utils', () => {
         { method: 'GET', url: '_search', data: [] },
         { method: 'POST', url: '_test', data: [] },
       ];
-      const mockMetricsTracker: jest.Mocked<MetricsTracker> = { count: jest.fn(), load: jest.fn() };
+      const mockMetricsTracker: MetricsTracker = { count: jest.fn(), load: jest.fn() };
       trackSentRequests(requests, mockMetricsTracker);
       expect(mockMetricsTracker.count).toHaveBeenCalledTimes(2);
       expect(mockMetricsTracker.count).toHaveBeenNthCalledWith(1, 'GET__search');

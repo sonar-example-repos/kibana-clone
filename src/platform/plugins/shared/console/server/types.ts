@@ -8,6 +8,7 @@
  */
 
 import type { Duration } from 'moment';
+import type { OutgoingHttpHeaders } from 'http';
 import type { ConsoleServerPlugin } from './plugin';
 
 export interface SpecDefinitionsJson {
@@ -30,7 +31,7 @@ export interface ConsoleStart {
 export interface ESConfigForProxy {
   hosts: string[];
   requestHeadersWhitelist: string[];
-  customHeaders: Record<string, any>;
+  customHeaders: OutgoingHttpHeaders;
   requestTimeout: Duration;
   ssl?: {
     verificationMode: 'none' | 'certificate' | 'full';

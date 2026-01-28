@@ -8,81 +8,107 @@
  */
 
 import _ from 'lodash';
+
+import type { AutoCompleteContext, AutocompleteTerm, ResultTerm } from './types';
+import type { TokenPathToken } from './engine';
+
 import { URL_PATH_END_MARKER, UrlPatternMatcher, ListComponent } from './components';
 import { populateContext } from './engine';
+import { UrlParams } from './url_params';
+import type { SharedComponent } from './components/shared_component';
+import type { ParametrizedComponentFactories as UrlParametrizedComponentFactories } from './components/url_pattern_matcher';
+
+interface TestEndpoint {
+  patterns: string[];
+  methods: string[];
+  url_components?: Record<string, unknown>;
+  priority?: number;
+}
+
+interface ExpectedContext {
+  autoCompleteSet?: AutocompleteTerm[];
+  endpoint?: string;
+  method?: string;
+  [key: string]: unknown;
+}
+
+type GlobalFactory = (name: string, parent: SharedComponent) => SharedComponent | undefined;
 
 describe('Url autocomplete', () => {
-  function patternsTest(name, endpoints, tokenPath, expectedContext, globalUrlComponentFactories) {
-    test(name, function () {
+  function patternsTest(
+    name: string,
+    endpoints: Record<string, TestEndpoint>,
+    tokenPath: TokenPathToken[] | string,
+    expectedContext: ExpectedContext,
+    globalUrlComponentFactories?: UrlParametrizedComponentFactories
+  ) {
+    test(name, () => {
       const patternMatcher = new UrlPatternMatcher(globalUrlComponentFactories);
-      _.each(endpoints, function (e, id) {
-        e.id = id;
-        _.each(e.patterns, function (p) {
-          patternMatcher.addEndpoint(p, e);
-        });
-      });
-      if (typeof tokenPath === 'string') {
-        if (tokenPath[tokenPath.length - 1] === '$') {
-          tokenPath = tokenPath.substr(0, tokenPath.length - 1) + '/' + URL_PATH_END_MARKER;
+
+      for (const [id, e] of Object.entries(endpoints)) {
+        const fullEndpoint: NonNullable<AutoCompleteContext['endpoint']> & {
+          id: string;
+          patterns: string[];
+          methods: string[];
+          url_components?: Record<string, unknown>;
+          priority?: number;
+        } = {
+          id,
+          patterns: e.patterns,
+          methods: e.methods,
+          url_components: e.url_components,
+          priority: e.priority,
+          paramsAutocomplete: new UrlParams(undefined),
+          bodyAutocompleteRootComponents: [],
+        };
+
+        for (const p of e.patterns) {
+          patternMatcher.addEndpoint(p, fullEndpoint);
         }
-        tokenPath = _.map(tokenPath.split('/'), function (p) {
-          p = p.split(',');
-          if (p.length === 1) {
-            return p[0];
-          }
-          return p;
-        });
       }
 
-      if (expectedContext.autoCompleteSet) {
-        expectedContext.autoCompleteSet = _.map(expectedContext.autoCompleteSet, function (t) {
-          if (_.isString(t)) {
-            t = { name: t };
-          }
-          return t;
-        });
-        expectedContext.autoCompleteSet = _.sortBy(expectedContext.autoCompleteSet, 'name');
-      }
+      const parsedTokenPath: TokenPathToken[] =
+        typeof tokenPath === 'string'
+          ? tokenPath
+              .replace(/\$$/, `/${URL_PATH_END_MARKER}`)
+              .split('/')
+              .map((p) => {
+                const parts = p.split(',');
+                return parts.length === 1 ? parts[0] : parts;
+              })
+          : tokenPath;
 
-      const context = {};
+      const context: AutoCompleteContext = {};
       if (expectedContext.method) {
         context.method = expectedContext.method;
       }
+
       populateContext(
-        tokenPath,
+        parsedTokenPath,
         context,
-        null,
-        expectedContext.autoCompleteSet,
+        undefined,
+        Boolean(expectedContext.autoCompleteSet),
         patternMatcher.getTopLevelComponents(context.method)
       );
 
-      // override context to just check on id
-      if (context.endpoint) {
-        context.endpoint = context.endpoint.id;
-      }
-
-      if (context.autoCompleteSet) {
-        context.autoCompleteSet = _.sortBy(context.autoCompleteSet, 'name');
-      }
-
-      expect(context).toEqual(expectedContext);
+      expect(normalizeActualContext(context)).toEqual(normalizeExpectedContext(expectedContext));
     });
   }
 
-  function t(name, meta) {
-    if (meta) {
-      return { name: name, meta: meta };
-    }
-    return name;
+  function t(name: string, meta?: string): AutocompleteTerm {
+    if (!meta) return name;
+    const term: ResultTerm = { name, meta };
+    return term;
   }
 
-  (function () {
-    const endpoints = {
+  (() => {
+    const endpoints: Record<string, TestEndpoint> = {
       1: {
         patterns: ['a/b'],
         methods: ['GET'],
       },
     };
+
     patternsTest('simple single path - completion', endpoints, 'a/b$', {
       endpoint: '1',
       method: 'GET',
@@ -108,8 +134,8 @@ describe('Url autocomplete', () => {
     patternsTest('simple single path - different path', endpoints, 'a/c', {});
   })();
 
-  (function () {
-    const endpoints = {
+  (() => {
+    const endpoints: Record<string, TestEndpoint> = {
       1: {
         patterns: ['a/b', 'a/b/{p}'],
         methods: ['GET'],
@@ -119,6 +145,7 @@ describe('Url autocomplete', () => {
         methods: ['GET'],
       },
     };
+
     patternsTest('shared path  - completion 1', endpoints, 'a/b$', {
       endpoint: '1',
       method: 'GET',
@@ -159,8 +186,8 @@ describe('Url autocomplete', () => {
     });
   })();
 
-  (function () {
-    const endpoints = {
+  (() => {
+    const endpoints: Record<string, TestEndpoint> = {
       1: {
         patterns: ['a/{p}'],
         url_components: {
@@ -173,6 +200,7 @@ describe('Url autocomplete', () => {
         methods: ['GET'],
       },
     };
+
     patternsTest('option testing - completion 1', endpoints, 'a/a$', {
       method: 'GET',
       endpoint: '1',
@@ -213,8 +241,8 @@ describe('Url autocomplete', () => {
     });
   })();
 
-  (function () {
-    const endpoints = {
+  (() => {
+    const endpoints: Record<string, TestEndpoint> = {
       1: {
         patterns: ['a/{p}'],
         url_components: {
@@ -238,13 +266,13 @@ describe('Url autocomplete', () => {
         },
       },
     };
-    const globalFactories = {
-      p: function (name, parent) {
-        return new ListComponent(name, ['g1', 'g2'], parent);
-      },
-      getComponent(name) {
-        return this[name];
-      },
+
+    const factories: Record<string, GlobalFactory | undefined> = {
+      p: (name, parent) => new ListComponent(name, ['g1', 'g2'], parent),
+    };
+
+    const globalFactories: UrlParametrizedComponentFactories = {
+      getComponent: (name) => factories[name],
     };
 
     patternsTest(
@@ -289,6 +317,7 @@ describe('Url autocomplete', () => {
       { method: 'GET', autoCompleteSet: ['c'], l: ['la'] },
       globalFactories
     );
+
     patternsTest(
       'Non valid token acceptance - partial, with auto complete 2',
       endpoints,
@@ -298,13 +327,14 @@ describe('Url autocomplete', () => {
     );
   })();
 
-  (function () {
-    const endpoints = {
+  (() => {
+    const endpoints: Record<string, TestEndpoint> = {
       1: {
         patterns: ['a/b/{p}/c/e'],
         methods: ['GET'],
       },
     };
+
     patternsTest('look ahead - autocomplete before param 1', endpoints, 'a', {
       method: 'GET',
       autoCompleteSet: ['b'],
@@ -328,8 +358,8 @@ describe('Url autocomplete', () => {
     });
   })();
 
-  (function () {
-    const endpoints = {
+  (() => {
+    const endpoints: Record<string, TestEndpoint> = {
       '1_param': {
         patterns: ['a/{p}'],
         methods: ['GET'],
@@ -340,31 +370,32 @@ describe('Url autocomplete', () => {
       },
     };
 
-    let e = _.cloneDeep(endpoints);
-    e['1_param'].priority = 1;
-    patternsTest('Competing endpoints - priority 1', e, 'a/b$', {
+    const e1 = _.cloneDeep(endpoints);
+    e1['1_param'].priority = 1;
+    patternsTest('Competing endpoints - priority 1', e1, 'a/b$', {
       method: 'GET',
       endpoint: '1_param',
       p: 'b',
     });
-    e = _.cloneDeep(endpoints);
-    e['1_param'].priority = 1;
-    e['2_explicit'].priority = 0;
-    patternsTest('Competing endpoints - priority 2', e, 'a/b$', {
+
+    const e2 = _.cloneDeep(endpoints);
+    e2['1_param'].priority = 1;
+    e2['2_explicit'].priority = 0;
+    patternsTest('Competing endpoints - priority 2', e2, 'a/b$', {
       method: 'GET',
       endpoint: '2_explicit',
     });
 
-    e = _.cloneDeep(endpoints);
-    e['2_explicit'].priority = 0;
-    patternsTest('Competing endpoints - priority 3', e, 'a/b$', {
+    const e3 = _.cloneDeep(endpoints);
+    e3['2_explicit'].priority = 0;
+    patternsTest('Competing endpoints - priority 3', e3, 'a/b$', {
       method: 'GET',
       endpoint: '2_explicit',
     });
   })();
 
-  (function () {
-    const endpoints = {
+  (() => {
+    const endpoints: Record<string, TestEndpoint> = {
       '1_GET': {
         patterns: ['a'],
         methods: ['GET'],
@@ -382,18 +413,22 @@ describe('Url autocomplete', () => {
         methods: ['DELETE'],
       },
     };
+
     patternsTest('Competing endpoint - sub url of another - auto complete', endpoints, 'a', {
       method: 'GET',
       autoCompleteSet: ['b'],
     });
+
     patternsTest('Competing endpoint - sub url of another, complete 1', endpoints, 'a$', {
       method: 'GET',
       endpoint: '1_GET',
     });
+
     patternsTest('Competing endpoint - sub url of another, complete 2', endpoints, 'a$', {
       method: 'PUT',
       endpoint: '1_PUT',
     });
+
     patternsTest('Competing endpoint - sub url of another, complete 3', endpoints, 'a$', {
       method: 'DELETE',
     });
@@ -414,8 +449,40 @@ describe('Url autocomplete', () => {
       method: 'DELETE',
       endpoint: '2_DELETE',
     });
+
     patternsTest('Competing endpoint - extension of another, complete 1', endpoints, 'a/b$', {
       method: 'PUT',
     });
   })();
 });
+
+function normalizeExpectedContext(expected: ExpectedContext): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...expected };
+  if (expected.autoCompleteSet) {
+    out.autoCompleteSet = _.sortBy(expected.autoCompleteSet.map(normalizeAutocompleteTerm), 'name');
+  }
+  return out;
+}
+
+function normalizeActualContext(context: AutoCompleteContext): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...context };
+  if (context.endpoint && typeof context.endpoint.id === 'string') {
+    out.endpoint = context.endpoint.id;
+  }
+  if (context.autoCompleteSet) {
+    out.autoCompleteSet = _.sortBy(context.autoCompleteSet, 'name');
+  }
+  return out;
+}
+
+function normalizeAutocompleteTerm(term: AutocompleteTerm): ResultTerm {
+  if (
+    term === null ||
+    typeof term === 'string' ||
+    typeof term === 'boolean' ||
+    typeof term === 'number'
+  ) {
+    return { name: term };
+  }
+  return term;
+}

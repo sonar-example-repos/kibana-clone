@@ -7,15 +7,31 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type {
+  AutoCompleteContext,
+  AutocompleteEditor,
+  AutocompleteMatch,
+  AutocompleteMatchResult,
+  AutocompleteToken,
+} from '../types';
+
 import { SharedComponent } from './shared_component';
+
 export class SimpleParamComponent extends SharedComponent {
-  constructor(name, parent) {
-    super(name, parent);
-  }
-  match(token, context, editor) {
-    const result = super.match(token, context, editor);
-    result.context_values = result.context_values || {};
+  override match(
+    token: AutocompleteToken,
+    context: AutoCompleteContext,
+    editor: AutocompleteEditor
+  ): AutocompleteMatch {
+    const base = super.match(token, context, editor);
+    if (!base) {
+      return base;
+    }
+
+    const result: AutocompleteMatchResult = base;
+    result.context_values ??= {};
     result.context_values[this.name] = token;
+
     return result;
   }
 }

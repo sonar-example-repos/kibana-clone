@@ -8,34 +8,33 @@
  */
 
 import _ from 'lodash';
+
 import { getAutocompleteInfo, ENTITIES } from '../../../services';
 import { ListComponent } from './list_component';
+import type { SharedComponent } from './shared_component';
 
-function FieldGenerator(context) {
-  return _.map(getAutocompleteInfo().getEntityProvider(ENTITIES.FIELDS, context), function (field) {
-    return { name: field.name, meta: field.type };
-  });
+function isNotAnIndexName(name: string): boolean {
+  return name.startsWith('_') && name !== '_all';
 }
 
-export class FieldAutocompleteComponent extends ListComponent {
-  constructor(name, parent, multiValued) {
-    super(name, FieldGenerator, parent, multiValued);
+export class IndexAutocompleteComponent extends ListComponent {
+  constructor(name: string, parent: SharedComponent | undefined, multiValued: boolean) {
+    super(name, getAutocompleteInfo().getEntityProvider(ENTITIES.INDICES), parent, multiValued);
   }
-  validateTokens(tokens) {
+
+  override validateTokens(tokens: string[]): boolean {
     if (!this.multiValued && tokens.length > 1) {
       return false;
     }
 
-    return !_.find(tokens, function (token) {
-      return token.match(/[^\w.?*]/);
-    });
+    return !_.find(tokens, isNotAnIndexName);
   }
 
-  getDefaultTermMeta() {
-    return 'field';
+  override getDefaultTermMeta(): string {
+    return 'index';
   }
 
-  getContextKey() {
-    return 'fields';
+  override getContextKey(): string {
+    return 'indices';
   }
 }

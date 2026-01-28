@@ -13,7 +13,7 @@ import { EmbeddableConsoleView } from '../../types/embeddable_console';
 
 describe('embeddable_console store', () => {
   it('should return initial state when no action matches', () => {
-    const action = { type: 'unknown' } as any;
+    const action = { type: 'unknown' } as unknown as EmbeddedConsoleAction;
     const newState = reducer(initialValue, action);
     expect(newState).toBe(initialValue);
   });

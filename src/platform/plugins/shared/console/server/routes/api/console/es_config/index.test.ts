@@ -7,8 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { kibanaResponseFactory } from '@kbn/core/server';
-import { httpServiceMock, coreMock } from '@kbn/core/server/mocks';
+import { coreMock, httpServerMock, httpServiceMock } from '@kbn/core/server/mocks';
 import { duration } from 'moment';
 import { EsLegacyConfigService, SpecDefinitionsService } from '../../../../services';
 import { registerEsConfigRoute } from '.';
@@ -53,22 +52,26 @@ describe('ES Config Route', () => {
 
   describe('when cloud URL is available', () => {
     beforeEach(() => {
-      (mockEsLegacyConfigService.getCloudUrl as jest.Mock).mockReturnValue(
-        'https://cloud.elastic.co:443'
-      );
+      jest
+        .mocked(mockEsLegacyConfigService.getCloudUrl)
+        .mockReturnValue('https://cloud.elastic.co:443');
     });
 
     it('should use cloud URL as host but proxy hosts for allHosts', async () => {
       const [[, handler]] = mockRouter.get.mock.calls;
-      const mockRequest = {} as any;
-      const mockResponse = kibanaResponseFactory;
-      const mockContext = {};
+      const mockContext = coreMock.createCustomRequestHandlerContext({});
+      const mockRequest = httpServerMock.createKibanaRequest();
+      const mockResponse = httpServerMock.createResponseFactory();
 
-      const response = await handler(mockContext, mockRequest, mockResponse);
+      await handler(mockContext, mockRequest, mockResponse);
 
       expect(mockReadLegacyESConfig).toHaveBeenCalled();
-      expect(response.status).toBe(200);
-      expect(response.payload).toEqual({
+      expect(mockResponse.ok).toHaveBeenCalledTimes(1);
+      const okArgs = mockResponse.ok.mock.calls[0]?.[0];
+      if (!okArgs) {
+        throw new Error('Expected response.ok() to be called with args');
+      }
+      expect(okArgs.body).toEqual({
         host: 'https://cloud.elastic.co:443',
         allHosts: ['http://localhost:9200', 'http://localhost:9201'],
       });
@@ -77,20 +80,24 @@ describe('ES Config Route', () => {
 
   describe('when cloud URL is not available', () => {
     beforeEach(() => {
-      (mockEsLegacyConfigService.getCloudUrl as jest.Mock).mockReturnValue(undefined);
+      jest.mocked(mockEsLegacyConfigService.getCloudUrl).mockReturnValue(undefined);
     });
 
     it('should use first proxy host as host and all proxy hosts for allHosts', async () => {
       const [[, handler]] = mockRouter.get.mock.calls;
-      const mockRequest = {} as any;
-      const mockResponse = kibanaResponseFactory;
-      const mockContext = {};
+      const mockContext = coreMock.createCustomRequestHandlerContext({});
+      const mockRequest = httpServerMock.createKibanaRequest();
+      const mockResponse = httpServerMock.createResponseFactory();
 
-      const response = await handler(mockContext, mockRequest, mockResponse);
+      await handler(mockContext, mockRequest, mockResponse);
 
       expect(mockReadLegacyESConfig).toHaveBeenCalled();
-      expect(response.status).toBe(200);
-      expect(response.payload).toEqual({
+      expect(mockResponse.ok).toHaveBeenCalledTimes(1);
+      const okArgs = mockResponse.ok.mock.calls[0]?.[0];
+      if (!okArgs) {
+        throw new Error('Expected response.ok() to be called with args');
+      }
+      expect(okArgs.body).toEqual({
         host: 'http://localhost:9200',
         allHosts: ['http://localhost:9200', 'http://localhost:9201'],
       });
@@ -108,18 +115,23 @@ describe('ES Config Route', () => {
     });
 
     it('should return all proxy hosts in allHosts regardless of cloud URL', async () => {
-      (mockEsLegacyConfigService.getCloudUrl as jest.Mock).mockReturnValue(
-        'https://cloud.elastic.co:443'
-      );
+      jest
+        .mocked(mockEsLegacyConfigService.getCloudUrl)
+        .mockReturnValue('https://cloud.elastic.co:443');
 
       const [[, handler]] = mockRouter.get.mock.calls;
-      const mockRequest = {} as any;
-      const mockResponse = kibanaResponseFactory;
-      const mockContext = {};
+      const mockContext = coreMock.createCustomRequestHandlerContext({});
+      const mockRequest = httpServerMock.createKibanaRequest();
+      const mockResponse = httpServerMock.createResponseFactory();
 
-      const response = await handler(mockContext, mockRequest, mockResponse);
+      await handler(mockContext, mockRequest, mockResponse);
 
-      expect(response.payload).toEqual({
+      expect(mockResponse.ok).toHaveBeenCalledTimes(1);
+      const okArgs = mockResponse.ok.mock.calls[0]?.[0];
+      if (!okArgs) {
+        throw new Error('Expected response.ok() to be called with args');
+      }
+      expect(okArgs.body).toEqual({
         host: 'https://cloud.elastic.co:443',
         allHosts: ['http://es-node-1:9200', 'http://es-node-2:9200', 'http://es-node-3:9200'],
       });

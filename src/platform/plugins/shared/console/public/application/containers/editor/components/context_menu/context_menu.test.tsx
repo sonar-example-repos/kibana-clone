@@ -11,10 +11,12 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { I18nProvider } from '@kbn/i18n-react';
 import userEvent from '@testing-library/user-event';
-import type { NotificationsStart } from '@kbn/core/public';
+import type { NotificationsSetup } from '@kbn/core/public';
+import { notificationServiceMock } from '@kbn/core/public/mocks';
 import { ContextMenu } from './context_menu';
 import { ServicesContextProvider } from '../../../../contexts';
 import type { ContextValue } from '../../../../contexts/services_context';
+import { serviceContextMock } from '../../../../contexts/services_context.mock';
 
 jest.mock('./language_selector_modal', () => ({
   LanguageSelectorModal: () => <div>Language Selector Modal</div>,
@@ -29,52 +31,20 @@ jest.mock('../../../../../services', () => ({
   },
 }));
 
-const mockNotifications: Pick<NotificationsStart, 'toasts'> = {
-  toasts: {
-    addSuccess: jest.fn(),
-    addDanger: jest.fn(),
-    addWarning: jest.fn(),
-  } as any,
+const mockNotifications: Pick<NotificationsSetup, 'toasts'> = {
+  toasts: notificationServiceMock.createSetupContract().toasts,
 };
 
 const createMockContextValue = (isPackagedEnvironment?: boolean): ContextValue => {
-  return {
-    services: {
-      storage: {
-        get: jest.fn(() => 'curl'),
-        set: jest.fn(),
-      } as any,
-      esHostService: {
-        getHost: jest.fn(() => 'http://localhost:9200'),
-        init: jest.fn(),
-      } as any,
-      history: {} as any,
-      settings: {} as any,
-      notifications: mockNotifications as any,
-      objectStorageClient: {} as any,
-      trackUiMetric: jest.fn() as any,
-      http: {} as any,
-      autocompleteInfo: {} as any,
-      data: {} as any,
-      licensing: {} as any,
-      application: {} as any,
-    },
-    docLinkVersion: '8.0',
-    docLinks: {} as any,
-    config: {
-      isDevMode: false,
-      isPackagedEnvironment,
-    },
-    // Required properties from ConsoleStartServices
-    analytics: {
-      reportEvent: jest.fn(),
-    },
-    i18n: {} as any,
-    theme: {
-      theme$: jest.fn(),
-    } as any,
-    userProfile: {} as any,
+  const contextValue = serviceContextMock.create();
+  contextValue.services.storage.get = jest.fn(() => 'curl');
+  contextValue.services.notifications = mockNotifications;
+  contextValue.config = {
+    ...contextValue.config,
+    isPackagedEnvironment,
   };
+  contextValue.docLinkVersion = '8.0';
+  return contextValue;
 };
 
 const defaultProps = {

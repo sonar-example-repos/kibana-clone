@@ -7,20 +7,22 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { ListComponent } from './list_component';
 import { getAutocompleteInfo, ENTITIES } from '../../../services';
+import { ListComponent } from './list_component';
+import type { SharedComponent } from './shared_component';
 
-export class DataStreamAutocompleteComponent extends ListComponent {
-  constructor(name, parent, multiValued) {
+export class ComponentTemplateAutocompleteComponent extends ListComponent {
+  constructor(name: string, parent: SharedComponent | undefined) {
     super(
       name,
-      getAutocompleteInfo().getEntityProvider(ENTITIES.DATA_STREAMS),
+      getAutocompleteInfo().getEntityProvider(ENTITIES.COMPONENT_TEMPLATES),
       parent,
-      multiValued
+      true,
+      true
     );
   }
 
-  getContextKey() {
-    return 'data_stream';
+  override getContextKey(): string {
+    return 'component_template';
   }
 }

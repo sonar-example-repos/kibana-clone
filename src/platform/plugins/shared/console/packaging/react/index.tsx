@@ -12,23 +12,26 @@
 
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { noop } from 'lodash';
+import { EMPTY } from 'rxjs';
+import type { IToasts, Toast } from '@kbn/core-notifications-browser';
+import { monaco } from '@kbn/monaco';
 
 // Disable Monaco workers entirely, in case monaco ever decides to spawn any for some reason.
 // Console doesnt use any of the monaco features that require workers, since we provide
 // our own language tokenizer and autocompletion provider.
-(window as any).MonacoEnvironment = {
-  getWorker() {
-    // Return a minimal mock worker that doesn't actually do anything
-    return {
-      postMessage: () => {},
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      terminate: () => {},
-      onerror: null,
-      onmessage: null,
-      onmessageerror: null,
-    };
-  },
+const noopWorker = {
+  postMessage: noop,
+  addEventListener: noop,
+  removeEventListener: noop,
+  terminate: noop,
+  onerror: null,
+  onmessage: null,
+  onmessageerror: null,
+} as unknown as Worker;
+
+window.MonacoEnvironment = {
+  monaco,
+  getWorker: (_workerId: string, _label: string) => noopWorker,
 };
 
 import { __IntlProvider as IntlProvider } from '@kbn/i18n-react';
@@ -43,8 +46,9 @@ import { AnalyticsService } from '@kbn/core-analytics-browser-internal';
 import { ThemeService } from '@kbn/core-theme-browser-internal';
 import { I18nService } from '@kbn/core-i18n-browser-internal';
 import { i18n } from '@kbn/i18n';
-import { type HttpSetup } from '@kbn/core/public';
-import type { NotificationsSetup } from '@kbn/core/public';
+import type { ApplicationStart, CoreStart, HttpSetup, NotificationsSetup } from '@kbn/core/public';
+import type { DataPublicPluginStart } from '@kbn/data-plugin/public';
+import type { LicensingPluginStart } from '@kbn/licensing-plugin/public';
 import { createStorage, createHistory, createSettings, setStorage } from '../../public/services';
 import { loadActiveApi } from '../../public/lib/kb';
 
@@ -77,6 +81,19 @@ const translations = {
 };
 /* eslint-enable @kbn/imports/no_unresolvable_imports */
 
+interface ServicesRefValue {
+  http: HttpSetup;
+  docLinks: ReturnType<DocLinksService['start']>;
+  theme: ReturnType<ThemeService['setup']>;
+  i18nService: I18nService;
+  storage: ReturnType<typeof createStorage>;
+  storageHistory: ReturnType<typeof createHistory>;
+  settings: ReturnType<typeof createSettings>;
+  objectStorageClient: ReturnType<typeof localStorageObjectClient.create>;
+  esHostService: ReturnType<typeof createEsHostService>;
+  autocompleteInfo: AutocompleteInfo;
+}
+
 export const OneConsole = ({
   lang = 'en',
   http: customHttp,
@@ -95,7 +112,7 @@ export const OneConsole = ({
   });
 
   // Create all services once using useRef as they should never be recreated
-  const servicesRef = useRef<any>(null);
+  const servicesRef = useRef<ServicesRefValue | null>(null);
 
   if (!servicesRef.current) {
     const docLinksService = new DocLinksService(coreContext as CoreContext);
@@ -110,7 +127,10 @@ export const OneConsole = ({
     const analyticsService = new AnalyticsService(coreContext as CoreContext);
     const analytics = analyticsService.setup({ injectedMetadata });
 
-    const rootDomElement = document.getElementById('root')!;
+    const rootDomElement = document.getElementById('root');
+    if (!rootDomElement) {
+      throw new Error('Expected #root element to exist');
+    }
     const fatalErrorsService = new FatalErrorsService(rootDomElement, () => {
       // eslint-disable-next-line no-console
       console.log('FATAL ERROR OCURRED');
@@ -132,10 +152,7 @@ export const OneConsole = ({
       executionContext,
     });
 
-    const http = {
-      ...originalHttp,
-      ...customHttp,
-    } as HttpSetup;
+    const http = { ...originalHttp, ...customHttp } as unknown as HttpSetup;
 
     const storage = createStorage({
       engine: window.localStorage,
@@ -184,26 +201,29 @@ export const OneConsole = ({
   } = servicesRef.current;
 
   // Use the custom notifications provided by the consumer
-  const notifications = useMemo(
-    () => ({
-      toasts: {
-        addSuccess: customNotifications.addSuccess || noop,
-        addWarning: customNotifications.addWarning || noop,
-        addDanger: customNotifications.addDanger || noop,
-        addError: customNotifications.addError || noop,
-        add: customNotifications.add || noop,
-        remove: customNotifications.remove || noop,
-      },
-    }),
-    [customNotifications]
-  );
+  const notifications: Pick<NotificationsSetup, 'toasts'> = useMemo(() => {
+    const createToast = (): Toast => ({ id: 'packaged-console-toast' });
+
+    const toasts: IToasts = {
+      get$: () => EMPTY,
+      add: customNotifications.add ?? (() => createToast()),
+      remove: customNotifications.remove ?? (() => undefined),
+      addInfo: customNotifications.addInfo ?? (() => createToast()),
+      addSuccess: customNotifications.addSuccess ?? (() => createToast()),
+      addWarning: customNotifications.addWarning ?? (() => createToast()),
+      addDanger: customNotifications.addDanger ?? (() => createToast()),
+      addError: customNotifications.addError ?? (() => createToast()),
+    };
+
+    return { toasts };
+  }, [customNotifications]);
 
   useEffect(() => {
     const loadApi = async () => {
       try {
         await loadActiveApi(http);
         setApiLoaded(true);
-      } catch (error) {
+      } catch (_error: unknown) {
         setApiLoaded(true);
       }
     };
@@ -230,7 +250,7 @@ export const OneConsole = ({
           userProfile: {
             getUserProfile$: () => ({ pipe: () => ({ subscribe: () => {} }) }),
             userProfile: null,
-          } as any,
+          } as unknown as CoreStart['userProfile'],
           docLinkVersion: docLinks.DOC_LINK_VERSION,
           docLinks: docLinks.links,
           services: {
@@ -238,14 +258,14 @@ export const OneConsole = ({
             storage,
             history: storageHistory,
             settings,
-            notifications: notifications as NotificationsSetup,
+            notifications,
             trackUiMetric,
             objectStorageClient,
             http,
             autocompleteInfo,
-            data: {} as any,
-            licensing: {} as any,
-            application: {} as any,
+            data: {} as unknown as DataPublicPluginStart,
+            licensing: {} as unknown as LicensingPluginStart,
+            application: {} as unknown as ApplicationStart,
           },
           config: {
             isDevMode: false,

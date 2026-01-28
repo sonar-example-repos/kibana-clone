@@ -7,11 +7,11 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { IndicesGetIndexTemplateResponse } from '@elastic/elasticsearch/lib/api/types';
 import { BaseTemplate } from './base_template';
+import type { IndexTemplatesResponseLike } from './types';
 
-export class IndexTemplate extends BaseTemplate<IndicesGetIndexTemplateResponse> {
-  loadTemplates = (templates: IndicesGetIndexTemplateResponse) => {
+export class IndexTemplate extends BaseTemplate<IndexTemplatesResponseLike> {
+  loadTemplates = (templates: IndexTemplatesResponseLike) => {
     this.templates = (templates.index_templates ?? []).map(({ name }) => name).sort();
   };
 }

@@ -31,11 +31,10 @@ const coreStart = coreMock.createStart();
 
 export const serviceContextMock = {
   create: (): ContextValue => {
-    const storage = new StorageMock({} as unknown as Storage, 'test');
+    const storage = new StorageMock({}, 'test');
     const http = httpServiceMock.createSetupContract();
     const api = createApi({ http });
     const esHostService = createEsHostService({ api });
-    (storage.keys as jest.Mock).mockImplementation(() => []);
     return {
       ...coreStart,
       services: {

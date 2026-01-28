@@ -7,11 +7,11 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { ClusterGetComponentTemplateResponse } from '@elastic/elasticsearch/lib/api/types';
 import { BaseTemplate } from './base_template';
+import type { ComponentTemplatesResponseLike } from './types';
 
-export class ComponentTemplate extends BaseTemplate<ClusterGetComponentTemplateResponse> {
-  loadTemplates = (templates: ClusterGetComponentTemplateResponse) => {
+export class ComponentTemplate extends BaseTemplate<ComponentTemplatesResponseLike> {
+  loadTemplates = (templates: ComponentTemplatesResponseLike) => {
     this.templates = (templates.component_templates ?? []).map(({ name }) => name).sort();
   };
 }

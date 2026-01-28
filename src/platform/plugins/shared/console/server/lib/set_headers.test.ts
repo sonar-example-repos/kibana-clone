@@ -8,19 +8,18 @@
  */
 
 import { setHeaders } from './set_headers';
+import type { OutgoingHttpHeaders } from 'http';
 
-describe('#set_headers', function () {
-  it('throws if not given an object as the first argument', function () {
-    const fn = () => setHeaders(null, {});
-    expect(fn).toThrow();
+describe('#set_headers', () => {
+  it('throws if not given an object as the first argument', () => {
+    expect(() => setHeaders(null as unknown as OutgoingHttpHeaders, {})).toThrow();
   });
 
-  it('throws if not given an object as the second argument', function () {
-    const fn = () => setHeaders({}, null);
-    expect(fn).toThrow();
+  it('throws if not given an object as the second argument', () => {
+    expect(() => setHeaders({}, null as unknown as OutgoingHttpHeaders)).toThrow();
   });
 
-  it('returns a new object', function () {
+  it('returns a new object', () => {
     const originalHeaders = {};
     const newHeaders = {};
     const returnedHeaders = setHeaders(originalHeaders, newHeaders);
@@ -28,14 +27,14 @@ describe('#set_headers', function () {
     expect(returnedHeaders).not.toBe(newHeaders);
   });
 
-  it('returns object with newHeaders merged with originalHeaders', function () {
+  it('returns object with newHeaders merged with originalHeaders', () => {
     const originalHeaders = { foo: 'bar' };
     const newHeaders = { one: 'two' };
     const returnedHeaders = setHeaders(originalHeaders, newHeaders);
     expect(returnedHeaders).toEqual({ foo: 'bar', one: 'two' });
   });
 
-  it('returns object where newHeaders takes precedence for any matching keys', function () {
+  it('returns object where newHeaders takes precedence for any matching keys', () => {
     const originalHeaders = { foo: 'bar' };
     const newHeaders = { one: 'two', foo: 'notbar' };
     const returnedHeaders = setHeaders(originalHeaders, newHeaders);

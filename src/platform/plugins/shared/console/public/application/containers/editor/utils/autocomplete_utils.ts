@@ -15,10 +15,16 @@ import {
   getTopLevelUrlCompleteComponents,
   getUnmatchedEndpointComponents,
 } from '../../../../lib/kb';
-import type { AutoCompleteContext, ResultTerm } from '../../../../lib/autocomplete/types';
+import type {
+  AutoCompleteContext,
+  AutocompleteComponentLike,
+  JsonValue,
+  ResultTerm,
+} from '../../../../lib/autocomplete/types';
 import { type DataAutoCompleteRulesOneOf } from '../../../../lib/autocomplete/types';
 import { populateContext } from '../../../../lib/autocomplete/engine';
 import type { EditorRequest } from '../types';
+import { isRecord } from '../../../../../common/utils/record_utils';
 import { parseBody, parseLine, parseUrl } from './tokens_utils';
 import {
   END_OF_URL_TOKEN,
@@ -202,7 +208,7 @@ export const getUrlParamsCompletionItems = (
     urlParamTokenPath.push(currentUrlParamToken![0]);
   }
 
-  populateContext(urlParamTokenPath, context, undefined, true, urlParamsComponents);
+  populateContext(urlParamTokenPath, context, undefined, true, urlParamsComponents ?? []);
 
   if (context.autoCompleteSet && context.autoCompleteSet.length > 0) {
     const wordUntilPosition = model.getWordUntilPosition(position);
@@ -262,12 +268,9 @@ export const getBodyCompletionItems = async (
   // needed for scope linking + global term resolving
   context.endpointComponentResolver = getEndpointBodyCompleteComponents;
   context.globalComponentResolver = getGlobalAutocompleteComponents;
-  let components: unknown;
-  if (context.endpoint) {
-    components = context.endpoint.bodyAutocompleteRootComponents;
-  } else {
-    components = getUnmatchedEndpointComponents();
-  }
+  const components: AutocompleteComponentLike[] = context.endpoint
+    ? context.endpoint.bodyAutocompleteRootComponents
+    : getUnmatchedEndpointComponents();
   context.editor = editor;
   context.requestStartRow = requestStartLineNumber;
   populateContext(bodyTokens, context, editor, true, components);
@@ -375,9 +378,9 @@ export const getInsertText = (
 
   if (template && context.addTemplate) {
     let templateLines;
-    const { __raw, value: templateValue } = template;
-    if (__raw && templateValue) {
-      templateLines = templateValue.split(newLineRegex);
+    const rawValue = getRawTemplateValue(template);
+    if (rawValue) {
+      templateLines = rawValue.split(newLineRegex);
     } else {
       templateLines = JSON.stringify(template, null, 2).split(newLineRegex);
     }
@@ -399,7 +402,7 @@ export const getInsertText = (
 };
 
 const getConditionalTemplate = (
-  name: string | boolean,
+  name: string | boolean | number | null,
   bodyContent: string,
   endpoint: AutoCompleteContext['endpoint']
 ) => {
@@ -411,10 +414,10 @@ const getConditionalTemplate = (
   // get the rules for this property name
   const rules = autocompleteRules[name];
   // check if the rules have "__one_of" property
-  if (!rules || typeof rules !== 'object' || !('__one_of' in rules)) {
+  if (!isOneOfRules(rules)) {
     return;
   }
-  const oneOfRules = rules.__one_of as DataAutoCompleteRulesOneOf[];
+  const oneOfRules = rules.__one_of;
   // try to match one of the rules to the body content
   const matchedRule = oneOfRules.find((rule) => {
     if (rule.__condition && rule.__condition.lines_regex) {
@@ -427,6 +430,19 @@ const getConditionalTemplate = (
     return matchedRule.__template;
   }
 };
+
+function getRawTemplateValue(template: JsonValue): string | null {
+  if (!isRecord(template)) return null;
+  const raw = template.__raw;
+  const value = template.value;
+  return raw === true && typeof value === 'string' ? value : null;
+}
+
+function isOneOfRules(value: unknown): value is { __one_of: DataAutoCompleteRulesOneOf[] } {
+  if (!isRecord(value)) return false;
+  const oneOf = value.__one_of;
+  return Array.isArray(oneOf);
+}
 
 /*
  * This function checks the content of the line before the cursor and decides if the autocomplete

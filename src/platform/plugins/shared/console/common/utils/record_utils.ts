@@ -7,14 +7,11 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { getAutocompleteInfo } from '../../../../services';
-import { ListComponent } from '../list_component';
-
-export class LegacyTemplateAutocompleteComponent extends ListComponent {
-  constructor(name, parent) {
-    super(name, getAutocompleteInfo().getEntityProvider('legacyTemplates'), parent, true, true);
-  }
-  getContextKey() {
-    return 'template';
-  }
+/**
+ * Narrow an `unknown` value to an indexable record.
+ *
+ * Note: This intentionally excludes arrays, matching Console's usage.
+ */
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

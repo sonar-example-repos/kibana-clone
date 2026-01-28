@@ -24,9 +24,9 @@ describe('Console Resizing Tests', () => {
       getElementByIdSpy = jest.spyOn(document, 'getElementById');
       getElementByIdSpy.mockImplementation((id: string) => {
         if (id === 'app-fixed-viewport') {
-          return {
-            getBoundingClientRect: () => mockAppRect,
-          } as any;
+          const el = document.createElement('div');
+          el.getBoundingClientRect = () => ({ height: mockAppRect.height } as unknown as DOMRect);
+          return el;
         }
         return null;
       });

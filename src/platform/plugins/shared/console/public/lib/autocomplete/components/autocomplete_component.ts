@@ -7,16 +7,32 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type {
+  AutoCompleteContext,
+  AutocompleteEditor,
+  AutocompleteComponentLike,
+  AutocompleteMatch,
+  AutocompleteMatchResult,
+  AutocompleteTerm,
+  AutocompleteToken,
+} from '../types';
+
 export class AutocompleteComponent {
-  constructor(name) {
+  name: string;
+  next: AutocompleteComponentLike[] = [];
+
+  constructor(name: string) {
     this.name = name;
   }
-  /** called to get the possible suggestions for tokens, when this object is at the end of
+
+  /**
+   * called to get the possible suggestions for tokens, when this object is at the end of
    * the resolving chain (and thus can suggest possible continuation paths)
    */
-  getTerms() {
+  getTerms(_context: AutoCompleteContext, _editor: AutocompleteEditor): AutocompleteTerm[] | null {
     return [];
   }
+
   /*
  if the current matcher matches this term, this method should return an object with the following keys
  {
@@ -27,9 +43,15 @@ export class AutocompleteComponent {
  priority: optional priority to solve collisions between multiple paths. Min value is used across entire chain
  }
  */
-  match() {
-    return {
+  match(
+    _token: AutocompleteToken,
+    _context: AutoCompleteContext,
+    _editor: AutocompleteEditor
+  ): AutocompleteMatch {
+    const result: AutocompleteMatchResult = {
       next: this.next,
     };
+
+    return result;
   }
 }

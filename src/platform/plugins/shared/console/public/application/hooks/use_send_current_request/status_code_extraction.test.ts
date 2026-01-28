@@ -7,17 +7,19 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { HttpSetup } from '@kbn/core/public';
+import type { HttpSetup } from '@kbn/core-http-browser';
+import { httpServiceMock } from '@kbn/core-http-browser-mocks';
 
 jest.unmock('./send_request');
 
 describe('Status Code Extraction in sendRequest', () => {
-  let mockHttp: jest.Mocked<HttpSetup>;
+  let mockHttp: HttpSetup;
+  let mockPost: jest.Mock;
 
   beforeEach(() => {
-    mockHttp = {
-      post: jest.fn(),
-    } as any;
+    mockPost = jest.fn();
+    mockHttp = httpServiceMock.createSetupContract();
+    mockHttp.post = mockPost;
   });
 
   afterEach(() => {
@@ -41,7 +43,7 @@ describe('Status Code Extraction in sendRequest', () => {
         body: JSON.stringify({ error: 'index_not_found_exception' }),
       };
 
-      mockHttp.post.mockResolvedValue(mockResponse);
+      mockPost.mockResolvedValue(mockResponse);
 
       const result = await sendRequest({
         http: mockHttp,
@@ -69,7 +71,7 @@ describe('Status Code Extraction in sendRequest', () => {
         }),
       };
 
-      mockHttp.post.mockResolvedValue(mockResponse);
+      mockPost.mockResolvedValue(mockResponse);
 
       const result = await sendRequest({
         http: mockHttp,
@@ -95,7 +97,7 @@ describe('Status Code Extraction in sendRequest', () => {
         body: JSON.stringify({ error: 'validation error' }),
       };
 
-      mockHttp.post.mockResolvedValue(mockResponse);
+      mockPost.mockResolvedValue(mockResponse);
 
       const result = await sendRequest({
         http: mockHttp,

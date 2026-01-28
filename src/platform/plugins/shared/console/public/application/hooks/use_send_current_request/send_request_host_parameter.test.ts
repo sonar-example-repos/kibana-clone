@@ -7,30 +7,39 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { HttpSetup } from '@kbn/core-http-browser';
+import type { HttpResponse, HttpSetup, HttpFetchOptionsWithPath } from '@kbn/core-http-browser';
+import { httpServiceMock } from '@kbn/core-http-browser-mocks';
 import type { RequestArgs } from './send_request';
 import { sendRequest } from './send_request';
 import { send } from '../../../lib/es/es';
 
 jest.mock('../../../lib/es/es');
 
-const mockSend = send as jest.MockedFunction<typeof send>;
+const mockSend = jest.mocked(send);
 
 describe('sendRequest host parameter', () => {
-  let mockHttp: jest.Mocked<HttpSetup>;
+  let mockHttp: HttpSetup;
 
   beforeEach(() => {
-    mockHttp = {} as jest.Mocked<HttpSetup>;
+    mockHttp = httpServiceMock.createSetupContract();
     jest.clearAllMocks();
 
-    mockSend.mockResolvedValue({
-      response: {
-        status: 200,
-        statusText: 'OK',
-        headers: new Headers(),
-      },
+    const fetchOptions: HttpFetchOptionsWithPath = { path: '/api/console/proxy', asResponse: true };
+    const request = new Request('http://localhost');
+    const response = new Response('{"acknowledged": true}', {
+      status: 200,
+      statusText: 'OK',
+      headers: new Headers(),
+    });
+
+    const mockResponse: HttpResponse<string> = {
+      fetchOptions,
+      request,
+      response,
       body: '{"acknowledged": true}',
-    } as any);
+    };
+
+    mockSend.mockResolvedValue(mockResponse);
   });
 
   it('should pass host parameter to send function when provided', async () => {

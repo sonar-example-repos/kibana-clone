@@ -8,8 +8,12 @@
  */
 
 import { isPlainObject } from 'lodash';
+import type { OutgoingHttpHeaders } from 'http';
 
-export function setHeaders(originalHeaders: object, newHeaders: object) {
+export function setHeaders(
+  originalHeaders: OutgoingHttpHeaders,
+  newHeaders: OutgoingHttpHeaders
+): OutgoingHttpHeaders {
   if (!isPlainObject(originalHeaders)) {
     throw new Error(
       `Expected originalHeaders to be an object, but ${typeof originalHeaders} given`

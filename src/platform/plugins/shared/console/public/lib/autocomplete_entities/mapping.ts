@@ -9,14 +9,25 @@
 
 import _ from 'lodash';
 import { BehaviorSubject } from 'rxjs';
-import type { IndicesGetMappingResponse } from '@elastic/elasticsearch/lib/api/types';
 import type { HttpSetup } from '@kbn/core-http-browser';
+import type { IndicesGetMappingResponse } from '@elastic/elasticsearch/lib/api/types';
 import { type Settings } from '../../services';
 import { API_BASE_PATH } from '../../../common/constants';
 import type { ResultTerm, AutoCompleteContext } from '../autocomplete/types';
 import { expandAliases } from './expand_aliases';
 import type { Field, FieldMapping } from './types';
-import { type AutoCompleteEntitiesApiResponse } from './types';
+import type { AutoCompleteEntitiesApiResponse } from './types';
+
+type IndicesGetMappingResponseLike = Record<string, IndexMappingLike>;
+
+type IndexMappingLike = IndicesGetMappingResponse[string] | LegacyIndexMapping;
+
+type LegacyIndexMapping = Record<string, unknown> & {
+  mappings?: Record<string, unknown> & { properties?: Record<string, FieldMapping> };
+  properties?: Record<string, FieldMapping>;
+};
+
+type IndexTypeDict = Record<string, Field[]>;
 
 function getFieldNamesFromProperties(properties: Record<string, FieldMapping> = {}) {
   const fieldList = Object.entries(properties).flatMap(([fieldName, fieldMapping]) => {
@@ -29,16 +40,13 @@ function getFieldNamesFromProperties(properties: Record<string, FieldMapping> = 
   });
 }
 
-function getFieldNamesFromFieldMapping(
-  fieldName: string,
-  fieldMapping: FieldMapping
-): Array<{ name: string; type: string | undefined }> {
+function getFieldNamesFromFieldMapping(fieldName: string, fieldMapping: FieldMapping): Field[] {
   if (fieldMapping.enabled === false) {
     return [];
   }
-  let nestedFields;
+  let nestedFields: Field[] | undefined;
 
-  function applyPathSettings(nestedFieldNames: Array<{ name: string; type: string | undefined }>) {
+  function applyPathSettings(nestedFieldNames: Field[]) {
     const pathType = fieldMapping.path || 'full';
     if (pathType === 'full') {
       return nestedFieldNames.map((f) => {
@@ -57,7 +65,7 @@ function getFieldNamesFromFieldMapping(
 
   const fieldType = fieldMapping.type;
 
-  const ret = { name: fieldName, type: fieldType };
+  const ret: Field = { name: fieldName, type: fieldType };
 
   if (fieldMapping.index_name) {
     ret.name = fieldMapping.index_name;
@@ -76,7 +84,7 @@ function getFieldNamesFromFieldMapping(
 }
 
 export interface BaseMapping {
-  perIndexTypes: Record<string, object>;
+  perIndexTypes: Record<string, IndexTypeDict>;
   /**
    * Fetches mappings definition
    */
@@ -95,7 +103,7 @@ export interface BaseMapping {
    * Stores mappings definition
    * @param mappings
    */
-  loadMappings(mappings: IndicesGetMappingResponse): void;
+  loadMappings(mappings: IndicesGetMappingResponseLike): void;
   clearMappings(): void;
 }
 
@@ -107,7 +115,7 @@ export class Mapping implements BaseMapping {
   /**
    * Map of the mappings of actual ES indices.
    */
-  public perIndexTypes: Record<string, object> = {};
+  public perIndexTypes: Record<string, IndexTypeDict> = {};
 
   /**
    * Map of the user-input wildcards and actual indices.
@@ -148,7 +156,7 @@ export class Mapping implements BaseMapping {
   }
 
   getMappings = (
-    indices: string | string[],
+    indices: string | string[] = [],
     types?: string | string[],
     autoCompleteContext?: AutoCompleteContext
   ) => {
@@ -160,7 +168,7 @@ export class Mapping implements BaseMapping {
     indices = expandAliases(indices);
 
     if (typeof indices === 'string') {
-      const typeDict = this.perIndexTypes[indices] as Record<string, unknown>;
+      const typeDict = this.perIndexTypes[indices];
 
       if (!typeDict || Object.keys(typeDict).length === 0) {
         if (!autoCompleteContext) return ret;
@@ -170,46 +178,44 @@ export class Mapping implements BaseMapping {
 
         this.loadingState[indices] = true;
 
-        if (!autoCompleteContext.asyncResultsState) {
-          autoCompleteContext.asyncResultsState = {} as AutoCompleteContext['asyncResultsState'];
-        }
-
-        autoCompleteContext.asyncResultsState!.isLoading = true;
-
-        autoCompleteContext.asyncResultsState!.results = new Promise<ResultTerm[]>(
-          (resolve, reject) => {
+        const asyncState: NonNullable<AutoCompleteContext['asyncResultsState']> = {
+          isLoading: true,
+          lastFetched: null,
+          results: new Promise<ResultTerm[]>((resolve) => {
             this._isLoading$.next(true);
 
-            this.fetchMappings(indices as string)
+            this.fetchMappings(indices)
               .then((mapping) => {
                 this._isLoading$.next(false);
 
-                autoCompleteContext.asyncResultsState!.isLoading = false;
-                autoCompleteContext.asyncResultsState!.lastFetched = Date.now();
+                asyncState.isLoading = false;
+                asyncState.lastFetched = Date.now();
 
                 const mappingsIndices = Object.keys(mapping);
                 if (
                   mappingsIndices.length > 1 ||
                   (mappingsIndices[0] && mappingsIndices[0] !== indices)
                 ) {
-                  this.perWildcardIndices[indices as string] = Object.keys(mapping);
+                  this.perWildcardIndices[indices] = Object.keys(mapping);
                 }
 
                 // cache mappings
                 this.loadMappings(mapping);
 
                 const mappings = this.getMappings(indices, types, autoCompleteContext);
-                delete this.loadingState[indices as string];
+                delete this.loadingState[indices];
                 resolve(mappings);
               })
               .catch((error) => {
                 // eslint-disable-next-line no-console
                 console.error(error);
                 this._isLoading$.next(false);
-                delete this.loadingState[indices as string];
+                delete this.loadingState[indices];
               });
-          }
-        );
+          }),
+        };
+
+        autoCompleteContext.asyncResultsState = asyncState;
 
         return [];
       }
@@ -223,21 +229,17 @@ export class Mapping implements BaseMapping {
         // filter what we need
         Object.entries(typeDict).forEach(([type, fields]) => {
           if (!types || types.length === 0 || types.includes(type)) {
-            ret.push(fields as Field);
+            ret.push(...fields);
           }
         });
-
-        ret = ([] as Field[]).concat.apply([], ret);
       }
     } else {
       // multi index mode.
       Object.keys(this.perIndexTypes).forEach((index) => {
         if (!indices || indices.length === 0 || indices.includes(index)) {
-          ret.push(this.getMappings(index, types, autoCompleteContext) as unknown as Field);
+          ret.push(...this.getMappings(index, types, autoCompleteContext));
         }
       });
-
-      ret = ([] as Field[]).concat.apply([], ret);
     }
 
     return _.uniqBy(ret, function (f) {
@@ -245,24 +247,32 @@ export class Mapping implements BaseMapping {
     });
   };
 
-  loadMappings = (mappings: IndicesGetMappingResponse) => {
+  loadMappings = (mappings: IndicesGetMappingResponseLike) => {
     Object.entries(mappings).forEach(([index, indexMapping]) => {
-      const normalizedIndexMappings: Record<string, object[]> = {};
-      let transformedMapping: Record<string, any> = indexMapping;
+      const normalizedIndexMappings: IndexTypeDict = {};
 
       // Migrate 1.0.0 mappings. This format has changed, so we need to extract the underlying mapping.
       if (indexMapping.mappings && Object.keys(indexMapping).length === 1) {
-        transformedMapping = indexMapping.mappings;
-      }
-
-      Object.entries(transformedMapping).forEach(([typeName, typeMapping]) => {
-        if (typeName === 'properties') {
-          const fieldList = getFieldNamesFromProperties(typeMapping);
-          normalizedIndexMappings[typeName] = fieldList;
-        } else {
+        for (const typeName of Object.keys(indexMapping.mappings)) {
           normalizedIndexMappings[typeName] = [];
         }
-      });
+
+        const rawProperties = indexMapping.mappings.properties;
+        const properties: Record<string, FieldMapping> =
+          rawProperties && typeof rawProperties === 'object' && !Array.isArray(rawProperties)
+            ? (rawProperties as Record<string, FieldMapping>)
+            : {};
+
+        normalizedIndexMappings.properties = getFieldNamesFromProperties(properties);
+      } else {
+        for (const typeName of Object.keys(indexMapping)) {
+          normalizedIndexMappings[typeName] = [];
+        }
+
+        const properties = 'properties' in indexMapping ? indexMapping.properties ?? {} : {};
+        normalizedIndexMappings.properties = getFieldNamesFromProperties(properties);
+      }
+
       this.perIndexTypes[index] = normalizedIndexMappings;
     });
   };

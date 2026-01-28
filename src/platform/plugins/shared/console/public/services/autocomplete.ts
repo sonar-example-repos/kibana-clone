@@ -47,7 +47,7 @@ export class AutocompleteInfo {
 
   public getEntityProvider(
     type: string,
-    context: { indices: string[]; types: string[] } = { indices: [], types: [] }
+    context: { [key: string]: unknown; indices?: string | string[]; types?: string | string[] } = {}
   ) {
     switch (type) {
       case ENTITIES.INDICES:
@@ -59,7 +59,7 @@ export class AutocompleteInfo {
         ];
       case ENTITIES.FIELDS:
         return this.mapping.getMappings(
-          context.indices,
+          context.indices ?? [],
           context.types,
           Object.getPrototypeOf(context)
         );

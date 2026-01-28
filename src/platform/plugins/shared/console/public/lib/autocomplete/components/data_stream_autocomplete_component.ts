@@ -9,19 +9,19 @@
 
 import { getAutocompleteInfo, ENTITIES } from '../../../services';
 import { ListComponent } from './list_component';
+import type { SharedComponent } from './shared_component';
 
-export class ComponentTemplateAutocompleteComponent extends ListComponent {
-  constructor(name, parent) {
+export class DataStreamAutocompleteComponent extends ListComponent {
+  constructor(name: string, parent: SharedComponent | undefined, multiValued: boolean = true) {
     super(
       name,
-      getAutocompleteInfo().getEntityProvider(ENTITIES.COMPONENT_TEMPLATES),
+      getAutocompleteInfo().getEntityProvider(ENTITIES.DATA_STREAMS),
       parent,
-      true,
-      true
+      multiValued
     );
   }
 
-  getContextKey() {
-    return 'component_template';
+  override getContextKey(): string {
+    return 'data_stream';
   }
 }

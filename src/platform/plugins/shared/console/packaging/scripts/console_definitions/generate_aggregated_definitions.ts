@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 /*
  * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
  * or more contributor license agreements. Licensed under the "Elastic License
@@ -9,37 +7,73 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-const fs = require('fs');
-const path = require('path');
-const { merge } = require('lodash');
-const globby = require('globby');
+/* eslint-disable no-console */
+
+import * as fs from 'fs';
+import * as path from 'path';
+import { createRequire } from 'module';
+import { merge } from 'lodash';
+import globby = require('globby');
+import { isRecord } from '../../../common/utils/record_utils';
+
+type EndpointsAvailability = 'stack' | 'serverless';
+
+interface Availability {
+  stack?: boolean;
+  serverless?: boolean;
+}
+
+interface EndpointDescription {
+  availability?: Availability;
+  patterns?: string[];
+  url_params?: Record<string, unknown>;
+  documentation?: string;
+  [key: string]: unknown;
+}
+
+interface SpecDefinitionsJson {
+  name: string;
+  globals: Record<string, unknown>;
+  endpoints: Record<string, unknown>;
+}
+
+type JsSpecLoader = (service: StandaloneSpecDefinitionsService) => void;
 
 /**
  * Standalone version of SpecDefinitionsService for aggregation script
  */
-class StandaloneSpecDefinitionsService {
-  constructor(versionPath) {
-    this.name = 'es';
+export class StandaloneSpecDefinitionsService {
+  name = 'es';
+  globalRules: Record<string, unknown> = {};
+  endpoints: Record<string, Record<string, unknown>> = {};
+  hasLoadedDefinitions = false;
+
+  versionPath: string;
+
+  constructor(versionPath: string) {
     this.versionPath = versionPath;
-    this.globalRules = {};
-    this.endpoints = {};
-    this.hasLoadedDefinitions = false;
   }
 
-  addGlobalAutocompleteRules(parentNode, rules) {
+  addGlobalAutocompleteRules(parentNode: string, rules: unknown) {
     this.globalRules[parentNode] = rules;
   }
 
-  addEndpointDescription(endpoint, description = {}, docsLinkToApiReference = false) {
-    let copiedDescription = {};
-    if (this.endpoints[endpoint]) {
-      copiedDescription = { ...this.endpoints[endpoint] };
-    }
+  addEndpointDescription(
+    endpoint: string,
+    description: EndpointDescription = {},
+    docsLinkToApiReference: boolean = false
+  ) {
+    const copiedDescription: Record<string, unknown> = this.endpoints[endpoint]
+      ? { ...this.endpoints[endpoint] }
+      : {};
 
-    let urlParamsDef;
-    if (description.patterns) {
+    let urlParamsDef: Record<string, unknown> | undefined;
+    if (Array.isArray(description.patterns)) {
       description.patterns.forEach((p) => {
-        if (p.indexOf('{index}') >= 0) {
+        // Defensive guard: `patterns` values come from generated JSON + overrides/manual JSON + legacy
+        // JS loader modules. The runtime input isn't type-checked, so avoid calling `.includes()` on
+        // non-strings (which would crash this build script).
+        if (typeof p === 'string' && p.includes('{index}')) {
           urlParamsDef = urlParamsDef || {};
           urlParamsDef.ignore_unavailable = '__flag__';
           urlParamsDef.allow_no_indices = '__flag__';
@@ -49,11 +83,15 @@ class StandaloneSpecDefinitionsService {
     }
 
     if (urlParamsDef) {
-      description.url_params = Object.assign(
-        description.url_params || {},
-        copiedDescription.url_params
-      );
-      Object.assign(description.url_params, urlParamsDef);
+      const existingUrlParams = isRecord(copiedDescription.url_params)
+        ? copiedDescription.url_params
+        : {};
+      const mergedUrlParams = {
+        ...(isRecord(description.url_params) ? description.url_params : {}),
+        ...existingUrlParams,
+        ...urlParamsDef,
+      };
+      description.url_params = mergedUrlParams;
     }
 
     if (docsLinkToApiReference) {
@@ -71,7 +109,7 @@ class StandaloneSpecDefinitionsService {
     this.endpoints[endpoint] = copiedDescription;
   }
 
-  asJson() {
+  asJson(): SpecDefinitionsJson {
     return {
       name: this.name,
       globals: this.globalRules,
@@ -79,7 +117,7 @@ class StandaloneSpecDefinitionsService {
     };
   }
 
-  loadDefinitions(endpointsAvailability = 'stack') {
+  loadDefinitions(endpointsAvailability: EndpointsAvailability = 'stack') {
     if (!this.hasLoadedDefinitions) {
       this.loadJsonDefinitions(endpointsAvailability);
       this.loadJSDefinitions();
@@ -88,100 +126,112 @@ class StandaloneSpecDefinitionsService {
     return this.asJson();
   }
 
-  loadJsonDefinitions(endpointsAvailability) {
+  loadJsonDefinitions(endpointsAvailability: EndpointsAvailability) {
     const result = this.loadJSONDefinitionsFiles();
 
-    Object.keys(result).forEach((endpoint) => {
-      const description = result[endpoint];
+    Object.entries(result).forEach(([endpoint, raw]) => {
+      if (!isRecord(raw)) return;
+
+      const description = raw as EndpointDescription;
+      const availability = description.availability;
+
       const addEndpoint =
         // If the 'availability' property doesn't exist, display the endpoint by default
-        !description.availability ||
-        (endpointsAvailability === 'stack' && description.availability.stack) ||
-        (endpointsAvailability === 'serverless' && description.availability.serverless);
+        !availability ||
+        (endpointsAvailability === 'stack' && Boolean(availability.stack)) ||
+        (endpointsAvailability === 'serverless' && Boolean(availability.serverless));
+
       if (addEndpoint) {
         this.addEndpointDescription(endpoint, description, endpointsAvailability === 'serverless');
       }
     });
   }
 
-  loadJSONDefinitionsFiles() {
+  loadJSONDefinitionsFiles(): Record<string, unknown> {
     const jsonPath = path.join(this.versionPath, 'json');
     const generatedPath = path.join(jsonPath, 'generated');
     const overridesPath = path.join(jsonPath, 'overrides');
     const manualPath = path.join(jsonPath, 'manual');
 
-    // Use globby to find files
     const generatedFiles = globby.sync(path.join(generatedPath, '*.json'));
     const overrideFiles = globby.sync(path.join(overridesPath, '*.json'));
     const manualFiles = globby.sync(path.join(manualPath, '*.json'));
 
-    const jsonDefinitions = {};
+    const jsonDefinitions: Record<string, unknown> = {};
 
     // Load generated files with overrides
     generatedFiles.forEach((file) => {
       const overrideFile = overrideFiles.find((f) => path.basename(f) === path.basename(file));
-      const loadedDefinition = JSON.parse(fs.readFileSync(file, 'utf8'));
+      const loadedRaw: unknown = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (!isRecord(loadedRaw)) return;
+      const loadedDefinition: Record<string, unknown> = loadedRaw;
+
       if (overrideFile) {
-        merge(loadedDefinition, JSON.parse(fs.readFileSync(overrideFile, 'utf8')));
+        const overrideRaw: unknown = JSON.parse(fs.readFileSync(overrideFile, 'utf8'));
+        if (isRecord(overrideRaw)) {
+          merge(loadedDefinition, overrideRaw);
+        }
       }
+
       this.addToJsonDefinitions({ loadedDefinition, jsonDefinitions });
     });
 
     // Load manual files
     manualFiles.forEach((file) => {
-      const loadedDefinition = JSON.parse(fs.readFileSync(file, 'utf8'));
+      const loadedRaw: unknown = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (!isRecord(loadedRaw)) return;
+      const loadedDefinition: Record<string, unknown> = loadedRaw;
       this.addToJsonDefinitions({ loadedDefinition, jsonDefinitions });
     });
 
     return jsonDefinitions;
   }
 
-  addToJsonDefinitions({ loadedDefinition, jsonDefinitions }) {
+  addToJsonDefinitions({
+    loadedDefinition,
+    jsonDefinitions,
+  }: {
+    loadedDefinition: Record<string, unknown>;
+    jsonDefinitions: Record<string, unknown>;
+  }) {
     Object.entries(loadedDefinition).forEach(([endpointName, endpointDescription]) => {
       if (jsonDefinitions[endpointName]) {
-        // add timestamp to create a unique key
+        // Add timestamp to create a unique key
         jsonDefinitions[`${endpointName}${Date.now()}`] = endpointDescription;
       } else {
         jsonDefinitions[endpointName] = endpointDescription;
       }
     });
+
     return jsonDefinitions;
   }
 
   loadJSDefinitions() {
     const jsIndexPath = path.join(this.versionPath, 'js', 'index.ts');
 
-    // Check if JS definitions exist
     if (!fs.existsSync(jsIndexPath)) {
       console.log(`No JS definitions found at: ${jsIndexPath}`);
       return;
     }
 
     try {
-      // Register TypeScript loader
-      require('@kbn/babel-register').install();
-
-      // Load the JS spec loaders
       // Dynamic require is necessary here because the path is determined at runtime based on version directories
-      // eslint-disable-next-line import/no-dynamic-require
-      const { jsSpecLoaders } = require(jsIndexPath);
 
-      if (!jsSpecLoaders || !Array.isArray(jsSpecLoaders)) {
+      const localRequire = createRequire(__filename);
+      const loaded: unknown = localRequire(jsIndexPath);
+
+      const jsSpecLoaders = isRecord(loaded) ? loaded.jsSpecLoaders : undefined;
+      if (!isJsSpecLoaders(jsSpecLoaders)) {
         console.log(`Invalid jsSpecLoaders export in: ${jsIndexPath}`);
         return;
       }
 
-      // Execute each loader function with this service instance
-      jsSpecLoaders.forEach((loader) => {
-        if (typeof loader === 'function') {
-          loader(this);
-        }
-      });
+      jsSpecLoaders.forEach((loader) => loader(this));
 
       console.log(`✓ Loaded ${jsSpecLoaders.length} JS definition loaders`);
-    } catch (error) {
-      console.error(`Error loading JS definitions from ${jsIndexPath}:`, error.message);
-      console.error('Stack:', error.stack);
+    } catch (error: unknown) {
+      console.error(`Error loading JS definitions from ${jsIndexPath}:`, getErrorMessage(error));
+      console.error('Stack:', getErrorStack(error));
     }
   }
 }
@@ -189,7 +239,7 @@ class StandaloneSpecDefinitionsService {
 /**
  * Main aggregation function
  */
-async function generateAggregatedDefinitions() {
+export async function generateAggregatedDefinitions() {
   console.log('=== Console API Definitions Aggregator ===');
 
   const scriptDir = __dirname;
@@ -197,14 +247,12 @@ async function generateAggregatedDefinitions() {
 
   const consoleDefinitionsDir = path.join(scriptDir, '..', '..', 'console_definitions_target');
 
-  // Check if console_definitions directory exists
   if (!fs.existsSync(consoleDefinitionsDir)) {
     console.error('Console definitions directory not found:', consoleDefinitionsDir);
     console.error('Run generate_console_definitions.sh first to generate version folders');
     process.exit(1);
   }
 
-  // Find all version directories
   const versionDirs = fs
     .readdirSync(consoleDefinitionsDir)
     .filter((item) => {
@@ -215,9 +263,9 @@ async function generateAggregatedDefinitions() {
 
   console.log('Found versions:', versionDirs);
 
-  const aggregatedResponse = {};
+  const aggregatedResponse: Record<string, { es: SpecDefinitionsJson }> = {};
 
-  for (const version of versionDirs) {
+  versionDirs.forEach((version) => {
     const versionPath = path.join(consoleDefinitionsDir, version);
     console.log(`Processing version: ${version}`);
 
@@ -225,27 +273,23 @@ async function generateAggregatedDefinitions() {
       const service = new StandaloneSpecDefinitionsService(versionPath);
       const versionDefinitions = service.loadDefinitions('stack');
 
-      aggregatedResponse[version] = {
-        es: versionDefinitions,
-      };
+      aggregatedResponse[version] = { es: versionDefinitions };
 
       console.log(
         `✓ Processed version ${version}: ${
           Object.keys(versionDefinitions.endpoints).length
         } endpoints`
       );
-    } catch (error) {
-      console.error(`✗ Error processing version ${version}:`, error.message);
+    } catch (error: unknown) {
+      console.error(`✗ Error processing version ${version}:`, getErrorMessage(error));
     }
-  }
+  });
 
-  // Write individual versioned files to the target directory
   const outputDir = path.join(scriptDir, '..', '..', 'console_definitions_target');
-  const generatedFiles = [];
+  const generatedFiles: string[] = [];
 
   Object.entries(aggregatedResponse).forEach(([version, versionData]) => {
     const outputPath = path.join(outputDir, `${version}.json`);
-
     fs.writeFileSync(outputPath, JSON.stringify(versionData, null, 2));
     generatedFiles.push(outputPath);
   });
@@ -258,17 +302,21 @@ async function generateAggregatedDefinitions() {
       try {
         fs.rmSync(versionPath, { recursive: true, force: true });
         console.log(`Removed version folder: ${version}/`);
-      } catch (error) {
-        console.warn(`Warning: Could not remove version folder ${version}:`, error.message);
+      } catch (error: unknown) {
+        console.warn(
+          `Warning: Could not remove version folder ${version}:`,
+          getErrorMessage(error)
+        );
       }
     }
   });
 
-  console.log('\\n=== Generation Complete ===');
+  console.log('\n=== Generation Complete ===');
   console.log(`Generated ${generatedFiles.length} versioned definition files:`);
 
+  const versions = Object.keys(aggregatedResponse);
   generatedFiles.forEach((filePath, index) => {
-    const version = Object.keys(aggregatedResponse)[index];
+    const version = versions[index];
     const data = aggregatedResponse[version];
     const endpointCount = Object.keys(data.es.endpoints).length;
     const globalRuleCount = Object.keys(data.es.globals).length;
@@ -285,7 +333,20 @@ async function generateAggregatedDefinitions() {
 
 // Run the script if called directly
 if (require.main === module) {
-  generateAggregatedDefinitions().catch(console.error);
+  generateAggregatedDefinitions().catch((e) => {
+    console.error(getErrorMessage(e));
+    process.exitCode = 1;
+  });
 }
 
-module.exports = { generateAggregatedDefinitions, StandaloneSpecDefinitionsService };
+function isJsSpecLoaders(value: unknown): value is JsSpecLoader[] {
+  return Array.isArray(value) && value.every((v) => typeof v === 'function');
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function getErrorStack(error: unknown): string | undefined {
+  return error instanceof Error ? error.stack : undefined;
+}

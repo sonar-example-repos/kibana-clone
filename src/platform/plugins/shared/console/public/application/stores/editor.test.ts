@@ -18,7 +18,7 @@ import { RestoreMethod } from '../../types';
 
 describe('editor store', () => {
   it('should return initial state when no action matches', () => {
-    const action = { type: 'unknown' } as any;
+    const action = { type: 'unknown' } as unknown as Action;
     const newState = reducer(initialValue, action);
     expect(newState).toBe(initialValue);
   });

@@ -7,9 +7,10 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { ClientRequest, OutgoingHttpHeaders } from 'http';
+import type { ClientRequest, OutgoingHttpHeaders, RequestOptions } from 'http';
 import http from 'http';
 import * as sinon from 'sinon';
+import { Readable } from 'stream';
 import { proxyRequest } from './proxy_request';
 import { URL } from 'url';
 import { fail } from 'assert';
@@ -18,18 +19,21 @@ import { toURL } from './utils';
 describe(`Console's send request`, () => {
   let sandbox: sinon.SinonSandbox;
   let stub: sinon.SinonStub<Parameters<typeof http.request>, ClientRequest>;
-  let fakeRequest: http.ClientRequest;
+  let fakeRequest: ClientRequest | undefined;
 
   beforeEach(() => {
     sandbox = sinon.createSandbox();
     stub = sandbox.stub(http, 'request').callsFake(() => {
+      if (!fakeRequest) {
+        throw new Error('fakeRequest was not set');
+      }
       return fakeRequest;
     });
   });
 
   afterEach(() => {
     stub.restore();
-    fakeRequest = null as any;
+    fakeRequest = undefined;
   });
 
   const sendProxyRequest = async ({
@@ -42,10 +46,10 @@ describe(`Console's send request`, () => {
     timeout?: number;
   }) => {
     return await proxyRequest({
-      agent: null as any,
+      agent: new http.Agent(),
       headers,
       method: 'get',
-      payload: null as any,
+      payload: Readable.from([]),
       uri,
       timeout,
     });
@@ -60,11 +64,15 @@ describe(`Console's send request`, () => {
       host: 'nowhere.none',
       method: 'POST',
       path: '/_bulk',
-    } as any;
+    } as unknown as ClientRequest;
     try {
       await sendProxyRequest({ timeout: 0 }); // immediately timeout
       fail('Should not reach here!');
-    } catch (e) {
+    } catch (e: unknown) {
+      if (!(e instanceof Error)) {
+        throw e;
+      }
+
       expect(e.message).toEqual(
         'Client request timeout for: http://nowhere.none with request POST /_bulk'
       );
@@ -81,16 +89,16 @@ describe(`Console's send request`, () => {
           return fn('done');
         }
       },
-    } as any;
+    } as unknown as ClientRequest;
 
     // Don't set a host header this time
     const defaultResult = await sendProxyRequest({});
 
     expect(defaultResult).toEqual('done');
 
-    const [httpRequestOptions1] = stub.firstCall.args;
+    const httpRequestOptions1 = stub.firstCall.args[0] as RequestOptions;
 
-    expect((httpRequestOptions1 as any).headers).toEqual({
+    expect(httpRequestOptions1.headers).toEqual({
       'content-type': 'application/json',
       host: 'noone.nowhere.none', // Defaults to the provided host name
       'transfer-encoding': 'chunked',
@@ -101,8 +109,8 @@ describe(`Console's send request`, () => {
 
     expect(resultWithHostHeader).toEqual('done');
 
-    const [httpRequestOptions2] = stub.secondCall.args;
-    expect((httpRequestOptions2 as any).headers).toEqual({
+    const httpRequestOptions2 = stub.secondCall.args[0] as RequestOptions;
+    expect(httpRequestOptions2.headers).toEqual({
       'content-type': 'application/json',
       Host: 'myhost', // Uses provided host name
       'transfer-encoding': 'chunked',
@@ -119,7 +127,7 @@ describe(`Console's send request`, () => {
             return fn('done');
           }
         },
-      } as any;
+      } as unknown as ClientRequest;
     });
 
     const verifyRequestPath = async ({
@@ -134,8 +142,8 @@ describe(`Console's send request`, () => {
         uri: toURL('http://noone.nowhere.none', initialPath),
       });
       expect(result).toEqual('done');
-      const [httpRequestOptions] = stub.firstCall.args;
-      expect((httpRequestOptions as any).path).toEqual(expectedPath);
+      const httpRequestOptions = stub.firstCall.args[0] as RequestOptions;
+      expect(httpRequestOptions.path).toEqual(expectedPath);
     };
 
     it('should correctly encode invalid URL characters included in path', async () => {

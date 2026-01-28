@@ -14,7 +14,7 @@ cd "$CONSOLE_DEFINITIONS_DIR"
 bash generate_console_definitions.sh
 
 echo "Aggregate definitions..."
-node generate_aggregated_definitions.js
+node -r @kbn/setup-node-env generate_aggregated_definitions.ts
 
 echo "Build complete! Files generated in: $(realpath "$SCRIPT_DIR/../console_definitions_target")"
 ls -la "$SCRIPT_DIR/../console_definitions_target/" 2>/dev/null || echo "Output directory will be created when definitions are generated"

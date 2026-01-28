@@ -42,7 +42,7 @@ jest.mock('../../../services', () => {
 
 jest.mock('../../../lib/autocomplete/engine', () => {
   return {
-    populateContext: (...args: any) => {
+    populateContext: (...args: unknown[]) => {
       mockPopulateContext(args);
     },
   };
@@ -53,9 +53,18 @@ import type { monaco } from '@kbn/monaco';
 
 describe('Editor actions provider', () => {
   let editorActionsProvider: MonacoEditorActionsProvider;
-  let editor: jest.Mocked<monaco.editor.IStandaloneCodeEditor>;
+  let editorMock: {
+    [K in keyof monaco.editor.IStandaloneCodeEditor]?: unknown;
+  } & {
+    getModel: jest.Mock;
+    getSelection: jest.Mock;
+    getPosition: jest.Mock;
+    setPosition: jest.Mock;
+    executeEdits: jest.Mock;
+  };
+  let editor: monaco.editor.IStandaloneCodeEditor;
   beforeEach(() => {
-    editor = {
+    editorMock = {
       getModel: jest.fn(),
       createDecorationsCollection: () => ({
         clear: jest.fn(),
@@ -73,14 +82,16 @@ describe('Editor actions provider', () => {
       getScrollTop: jest.fn(),
       executeEdits: jest.fn(),
       setPosition: jest.fn(),
-    } as unknown as jest.Mocked<monaco.editor.IStandaloneCodeEditor>;
+    };
 
-    editor.getModel.mockReturnValue({
+    editor = editorMock as unknown as monaco.editor.IStandaloneCodeEditor;
+
+    editorMock.getModel.mockReturnValue({
       getLineMaxColumn: () => 10,
       getPositionAt: () => ({ lineNumber: 1 }),
       getLineContent: () => 'GET _search',
     } as unknown as monaco.editor.ITextModel);
-    editor.getSelection.mockReturnValue({
+    editorMock.getSelection.mockReturnValue({
       startLineNumber: 1,
       endLineNumber: 1,
     } as unknown as monaco.Selection);
@@ -110,7 +121,7 @@ describe('Editor actions provider', () => {
     });
 
     it('returns an empty string if there is a request but not in the selection range', async () => {
-      editor.getSelection.mockReturnValue({
+      editorMock.getSelection.mockReturnValue({
         // the request is on line 1, the user selected line 2
         startLineNumber: 2,
         endLineNumber: 2,
@@ -142,7 +153,7 @@ describe('Editor actions provider', () => {
     });
 
     it('returns null if there is a request but not in the selection range', async () => {
-      editor.getSelection.mockReturnValue({
+      editorMock.getSelection.mockReturnValue({
         // the request is on line 1, the user selected line 2
         startLineNumber: 2,
         endLineNumber: 2,
@@ -172,9 +183,9 @@ describe('Editor actions provider', () => {
       getLineCount: () => 1,
       getLineContent: () => 'GET ',
       getValueInRange: () => 'GET ',
-    } as unknown as jest.Mocked<monaco.editor.ITextModel>;
-    const mockPosition = { lineNumber: 1, column: 1 } as jest.Mocked<monaco.Position>;
-    const mockContext = {} as jest.Mocked<monaco.languages.CompletionContext>;
+    } as unknown as monaco.editor.ITextModel;
+    const mockPosition = { lineNumber: 1, column: 1 } as unknown as monaco.Position;
+    const mockContext = {} as monaco.languages.CompletionContext;
     it('returns completion items for method if no requests', async () => {
       mockGetParsedRequests.mockResolvedValue([]);
       const completionItems = await editorActionsProvider.provideCompletionItems(
@@ -248,7 +259,7 @@ describe('Editor actions provider', () => {
         },
       ]);
 
-      editor.getModel.mockReturnValue({
+      editorMock.getModel.mockReturnValue({
         getPositionAt: (offset: number) => {
           // mock for start offsets of the mocked requests
           if (offset === 1) {
@@ -293,7 +304,7 @@ describe('Editor actions provider', () => {
     });
     describe('moveToPreviousRequestEdge', () => {
       it('correctly sets position when cursor is at first line of a request', async () => {
-        editor.getPosition.mockReturnValue({
+        editorMock.getPosition.mockReturnValue({
           lineNumber: 6,
           column: 4,
         } as monaco.Position);
@@ -304,7 +315,7 @@ describe('Editor actions provider', () => {
       });
 
       it('correctly sets position when cursor is at last line of a request', async () => {
-        editor.getPosition.mockReturnValue({
+        editorMock.getPosition.mockReturnValue({
           lineNumber: 5,
           column: 1,
         } as monaco.Position);
@@ -315,7 +326,7 @@ describe('Editor actions provider', () => {
       });
 
       it('correctly sets position when cursor is inside a request', async () => {
-        editor.getPosition.mockReturnValue({
+        editorMock.getPosition.mockReturnValue({
           lineNumber: 4,
           column: 1,
         } as monaco.Position);
@@ -326,7 +337,7 @@ describe('Editor actions provider', () => {
       });
 
       it('correctly sets position when cursor is after a request', async () => {
-        editor.getPosition.mockReturnValue({
+        editorMock.getPosition.mockReturnValue({
           lineNumber: 7,
           column: 1,
         } as monaco.Position);
@@ -337,7 +348,7 @@ describe('Editor actions provider', () => {
       });
 
       it('correctly sets position to first line of editor when there are no requests before cursor', async () => {
-        editor.getPosition.mockReturnValue({
+        editorMock.getPosition.mockReturnValue({
           lineNumber: 2,
           column: 3,
         } as monaco.Position);
@@ -350,7 +361,7 @@ describe('Editor actions provider', () => {
 
     describe('moveToNextRequestEdge', () => {
       it('correctly sets position when cursor is at first line of a request', async () => {
-        editor.getPosition.mockReturnValue({
+        editorMock.getPosition.mockReturnValue({
           lineNumber: 2,
           column: 8,
         } as monaco.Position);
@@ -361,7 +372,7 @@ describe('Editor actions provider', () => {
       });
 
       it('correctly sets position when cursor is at last line of a request', async () => {
-        editor.getPosition.mockReturnValue({
+        editorMock.getPosition.mockReturnValue({
           lineNumber: 5,
           column: 1,
         } as monaco.Position);
@@ -372,7 +383,7 @@ describe('Editor actions provider', () => {
       });
 
       it('correctly sets position when cursor is inside a request', async () => {
-        editor.getPosition.mockReturnValue({
+        editorMock.getPosition.mockReturnValue({
           lineNumber: 3,
           column: 1,
         } as monaco.Position);
@@ -383,7 +394,7 @@ describe('Editor actions provider', () => {
       });
 
       it('correctly sets position when cursor is before a request', async () => {
-        editor.getPosition.mockReturnValue({
+        editorMock.getPosition.mockReturnValue({
           lineNumber: 1,
           column: 1,
         } as monaco.Position);
@@ -394,7 +405,7 @@ describe('Editor actions provider', () => {
       });
 
       it('correctly sets position to last line of editor when there are no requests after cursor', async () => {
-        editor.getPosition.mockReturnValue({
+        editorMock.getPosition.mockReturnValue({
           lineNumber: 6,
           column: 3,
         } as monaco.Position);
@@ -435,7 +446,7 @@ describe('Editor actions provider', () => {
         },
       ]);
 
-      editor.getModel.mockReturnValue({
+      editorMock.getModel.mockReturnValue({
         getLineMaxColumn: (lineNumber: number) => {
           // mock this function for line 4
           return 2;
@@ -479,11 +490,11 @@ describe('Editor actions provider', () => {
 
     it('insert the request at the beginning of the selected request', async () => {
       // the position of the cursor is in the middle of line 5
-      editor.getPosition.mockReturnValue({
+      editorMock.getPosition.mockReturnValue({
         lineNumber: 5,
         column: 4,
       } as monaco.Position);
-      editor.getSelection.mockReturnValue({
+      editorMock.getSelection.mockReturnValue({
         startLineNumber: 5,
         endLineNumber: 5,
       } as monaco.Selection);
@@ -507,11 +518,11 @@ describe('Editor actions provider', () => {
 
     it('insert the request at the end of the selected request', async () => {
       // the position of the cursor is at the end of line 4
-      editor.getPosition.mockReturnValue({
+      editorMock.getPosition.mockReturnValue({
         lineNumber: 4,
         column: 2,
       } as monaco.Position);
-      editor.getSelection.mockReturnValue({
+      editorMock.getSelection.mockReturnValue({
         startLineNumber: 4,
         endLineNumber: 4,
       } as monaco.Selection);
@@ -536,11 +547,11 @@ describe('Editor actions provider', () => {
       // mock no parsed requests
       mockGetParsedRequests.mockReturnValue([]);
       // the position of the cursor is at the end of line 4
-      editor.getPosition.mockReturnValue({
+      editorMock.getPosition.mockReturnValue({
         lineNumber: 4,
         column: 2,
       } as monaco.Position);
-      editor.getSelection.mockReturnValue({
+      editorMock.getSelection.mockReturnValue({
         startLineNumber: 4,
         endLineNumber: 4,
       } as monaco.Selection);
@@ -584,7 +595,7 @@ describe('Editor actions provider', () => {
         },
       ]);
 
-      editor.getModel.mockReturnValue({
+      editorMock.getModel.mockReturnValue({
         getPositionAt: (offset: number) => {
           // mock this function for start and end offsets of the mocked requests
           if (offset === 0) {
@@ -618,7 +629,7 @@ describe('Editor actions provider', () => {
     });
 
     it('returns true if a Kibana request is selected', async () => {
-      editor.getSelection.mockReturnValue({
+      editorMock.getSelection.mockReturnValue({
         startLineNumber: 2,
         endLineNumber: 2,
       } as monaco.Selection);
@@ -627,7 +638,7 @@ describe('Editor actions provider', () => {
     });
 
     it('returns false if a non-Kibana request is selected', async () => {
-      editor.getSelection.mockReturnValue({
+      editorMock.getSelection.mockReturnValue({
         startLineNumber: 1,
         endLineNumber: 1,
       } as monaco.Selection);
@@ -636,7 +647,7 @@ describe('Editor actions provider', () => {
     });
 
     it('returns true if multiple requests are selected and one of them is a Kibana request', async () => {
-      editor.getSelection.mockReturnValue({
+      editorMock.getSelection.mockReturnValue({
         startLineNumber: 1,
         endLineNumber: 2,
       } as monaco.Selection);
