@@ -23,6 +23,9 @@ paths:
                 description:
                   description: Description of the watchlist
                   type: string
+                managed:
+                  description: Indicates if the watchlist is managed by the system
+                  type: boolean
                 name:
                   description: Unique name for the watchlist
                   type: string
@@ -91,6 +94,9 @@ components:
         description:
           description: Description of the watchlist
           type: string
+        managed:
+          description: Indicates if the watchlist is managed by the system
+          type: boolean
         name:
           description: Unique name of the watchlist
           type: string
@@ -104,8 +110,7 @@ components:
       required:
         - name
         - riskModifier
-        - createdAt
-        - updatedAt
+        - managed
   securitySchemes:
     BasicAuth:
       scheme: basic
