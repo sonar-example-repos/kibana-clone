@@ -151,10 +151,10 @@ Key files:
   - Add validation for required vs. optional parameter documentation
 
 ### Phase 4.4: Add Checks for @returns Tags
-- [ ] Add `missingReturns` field to `ApiStats` in [packages/kbn-docs-utils/src/types.ts](packages/kbn-docs-utils/src/types.ts)
-- [ ] Add `trackMissingReturns` function in [packages/kbn-docs-utils/src/stats.ts](packages/kbn-docs-utils/src/stats.ts)
-- [ ] Extend `hasCommentIssues` to include `missingReturns`
-- [ ] Update mocks and fixture "Expected issues" blocks
+- [x] Add `missingReturns` field to `ApiStats` in [packages/kbn-docs-utils/src/types.ts](packages/kbn-docs-utils/src/types.ts)
+- [x] Add `trackMissingReturns` function in [packages/kbn-docs-utils/src/stats.ts](packages/kbn-docs-utils/src/stats.ts)
+- [x] Extend `hasCommentIssues` to include `missingReturns`
+- [x] Update mocks and fixture "Expected issues" blocks
 
 ### Phase 4.5: Add Param Doc Mismatch Checks
 - [ ] Add `paramDocMismatches` field to `ApiStats` in [packages/kbn-docs-utils/src/types.ts](packages/kbn-docs-utils/src/types.ts)
