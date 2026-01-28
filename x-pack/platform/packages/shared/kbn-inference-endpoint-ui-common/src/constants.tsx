@@ -35,6 +35,9 @@ export enum ServiceProviderKeys {
   contextualai = 'contextualai',
 }
 
+export const SERVICE_SETTINGS = 'service_settings';
+export const TASK_SETTINGS = 'task_settings';
+
 export const GEMINI_REGION_DOC_LINK = (
   <EuiLink
     data-test-subj="gemini-vertexai-api-doc"
@@ -95,5 +98,23 @@ export const INTERNAL_OVERRIDE_FIELDS: InternalOverrideFieldsType = {
       },
     ],
     serverlessOnly: true,
+  },
+  [ServiceProviderKeys.anthropic]: {
+    supplementalData: [
+      {
+        max_tokens: {
+          location: TASK_SETTINGS,
+        },
+      },
+    ],
+  },
+  [ServiceProviderKeys.openai]: {
+    supplementalData: [
+      {
+        headers: {
+          location: TASK_SETTINGS,
+        },
+      },
+    ],
   },
 };
