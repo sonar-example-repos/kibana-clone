@@ -23,7 +23,12 @@ function options(y: yargs.Argv) {
     .option('stackVersion', {
       describe: 'The stack version to generate documentation for',
       string: true,
-      default: '8.16', // TODO: master is on 9.0 now, not sure we can default to version in package.json?
+      default: 'latest',
+    })
+    .option('sourceClusterApiKey', {
+      describe: 'The source cluster API key',
+      string: true,
+      default: process.env.KIBANA_SOURCE_CLUSTER_API_KEY,
     })
     .option('targetFolder', {
       describe: 'The folder to generate the artifacts in',
@@ -44,14 +49,18 @@ function options(y: yargs.Argv) {
     .option('sourceClusterUsername', {
       describe: 'The source cluster username',
       string: true,
-      demandOption: true,
       default: process.env.KIBANA_SOURCE_CLUSTER_USERNAME,
     })
     .option('sourceClusterPassword', {
       describe: 'The source cluster password',
       string: true,
-      demandOption: true,
       default: process.env.KIBANA_SOURCE_CLUSTER_PASSWORD,
+    })
+    .option('sourceClusterIndex', {
+      describe: 'The source cluster index',
+      string: true,
+      demandOption: true,
+      default: process.env.KIBANA_SOURCE_INDEX,
     })
     .option('embeddingClusterUrl', {
       describe: 'The embedding cluster url',
@@ -90,6 +99,8 @@ export function runScript() {
         sourceClusterUrl: argv.sourceClusterUrl!,
         sourceClusterUsername: argv.sourceClusterUsername!,
         sourceClusterPassword: argv.sourceClusterPassword!,
+        sourceClusterApiKey: argv.sourceClusterApiKey!,
+        sourceClusterIndex: argv.sourceClusterIndex!,
         embeddingClusterUrl: argv.embeddingClusterUrl!,
         embeddingClusterUsername: argv.embeddingClusterUsername!,
         embeddingClusterPassword: argv.embeddingClusterPassword!,

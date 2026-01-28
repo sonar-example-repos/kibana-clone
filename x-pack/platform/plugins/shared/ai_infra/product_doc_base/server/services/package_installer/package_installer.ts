@@ -40,7 +40,7 @@ import {
   populateIndex,
 } from './steps';
 import { overrideInferenceSettings } from './steps/create_index';
-
+import { LATEST_PRODUCT_VERSION } from '../../../common/consts';
 interface PackageInstallerOpts {
   artifactsFolder: string;
   logger: Logger;
@@ -49,6 +49,7 @@ interface PackageInstallerOpts {
   artifactRepositoryUrl: string;
   kibanaVersion: string;
   elserInferenceId?: string;
+  isServerless?: boolean;
 }
 
 export class PackageInstaller {
@@ -59,6 +60,7 @@ export class PackageInstaller {
   private readonly artifactRepositoryUrl: string;
   private readonly currentVersion: string;
   private readonly elserInferenceId: string;
+  private readonly isServerless: boolean;
 
   constructor({
     artifactsFolder,
@@ -68,6 +70,7 @@ export class PackageInstaller {
     artifactRepositoryUrl,
     elserInferenceId,
     kibanaVersion,
+    isServerless,
   }: PackageInstallerOpts) {
     this.esClient = esClient;
     this.productDocClient = productDocClient;
@@ -76,6 +79,7 @@ export class PackageInstaller {
     this.currentVersion = majorMinor(kibanaVersion);
     this.log = logger;
     this.elserInferenceId = elserInferenceId || defaultInferenceEndpoints.ELSER;
+    this.isServerless = isServerless ?? false;
   }
 
   private async getInferenceInfo(inferenceId?: string) {
@@ -115,8 +119,18 @@ export class PackageInstaller {
       if (!availableVersions || !availableVersions.length) {
         return;
       }
-      const selectedVersion = selectVersion(this.currentVersion, availableVersions);
+      // Serverless/"latest" zip file has a special versioning strategy
+      // where we track by last date modified in the bucket
+      const shouldInstallLatest = this.isServerless;
+      const selectedVersion = selectVersion(
+        this.currentVersion,
+        availableVersions,
+        shouldInstallLatest
+      );
       if (productState.version !== selectedVersion || Boolean(forceUpdate)) {
+        this.log.info(
+          `Updating product [${productName}] from version [${productState.version}] to version [${selectedVersion}]`
+        );
         toUpdate.push({
           productName: productName as ProductName,
           productVersion: selectedVersion,
@@ -143,11 +157,18 @@ export class PackageInstaller {
 
     for (const productName of allProducts) {
       const availableVersions = repositoryVersions[productName];
+
       if (!availableVersions || !availableVersions.length) {
         this.log.warn(`No version found for product [${productName}]`);
         continue;
       }
-      const selectedVersion = selectVersion(this.currentVersion, availableVersions);
+
+      const shouldInstallLatest = this.isServerless;
+      const selectedVersion = selectVersion(
+        this.currentVersion,
+        availableVersions,
+        shouldInstallLatest
+      );
 
       await this.installPackage({
         productName,
@@ -172,7 +193,13 @@ export class PackageInstaller {
       `Starting installing documentation for product [${productName}] and version [${productVersion}] with inference ID [${inferenceId}]`
     );
 
-    productVersion = majorMinor(productVersion);
+    // Artifact name will always be {doc}-latest.zip,
+    // but we store the last modified date in productVersion for tracking (e.g. "latest-2026-01-27T23:25:54.727Z")
+    // so that's the artifact product version we will use
+    const artifactProductVersion = this.isServerless ? productVersion : majorMinor(productVersion);
+    const artifactFileNameVersion = this.isServerless
+      ? LATEST_PRODUCT_VERSION
+      : majorMinor(productVersion);
 
     await this.uninstallPackage({ productName, inferenceId });
 
@@ -180,7 +207,7 @@ export class PackageInstaller {
     try {
       await this.productDocClient.setInstallationStarted({
         productName,
-        productVersion,
+        productVersion: artifactProductVersion,
         inferenceId,
       });
 
@@ -204,12 +231,11 @@ export class PackageInstaller {
 
       const artifactFileName = getArtifactName({
         productName,
-        productVersion,
+        productVersion: artifactFileNameVersion,
         inferenceId: customInference?.inference_id ?? this.elserInferenceId,
       });
       const artifactUrl = `${this.artifactRepositoryUrl}/${artifactFileName}`;
       const artifactPathAtVolume = `${this.artifactsFolder}/${artifactFileName}`;
-
       this.log.debug(`Downloading from [${artifactUrl}] to [${artifactPathAtVolume}]`);
       const artifactFullPath = await downloadToDisk(artifactUrl, artifactPathAtVolume);
 
@@ -522,8 +548,22 @@ export class PackageInstaller {
   }
 }
 
-const selectVersion = (currentVersion: string, availableVersions: string[]): string => {
-  return availableVersions.includes(currentVersion)
+const selectVersion = (
+  currentVersion: string,
+  availableVersions: string[],
+  isServerless: boolean
+): string => {
+  const latestAvailableVersion = availableVersions.includes(currentVersion)
     ? currentVersion
     : latestVersion(availableVersions, currentVersion);
+
+  if (isServerless) {
+    const latestServerlessVersions = availableVersions.filter((version) =>
+      version.includes(LATEST_PRODUCT_VERSION)
+    );
+    return latestServerlessVersions.length > 0
+      ? latestServerlessVersions[0]
+      : latestAvailableVersion;
+  }
+  return latestAvailableVersion;
 };
