@@ -141,8 +141,8 @@ Key files:
   - Handle nested destructuring patterns
 
 ### Phase 4.2: ReactElement Signature Skipped Test
-- [ ] Unskip and fix `Test ReactElement signature` in [packages/kbn-docs-utils/src/build_api_declarations/build_api_declaration.test.ts](packages/kbn-docs-utils/src/build_api_declarations/build_api_declaration.test.ts)
-- [ ] Implement or adjust handling for ReactElement signatures to satisfy the test
+- [x] Unskip and fix `Test ReactElement signature` in [packages/kbn-docs-utils/src/build_api_declarations/build_api_declaration.test.ts](packages/kbn-docs-utils/src/build_api_declarations/build_api_declaration.test.ts)
+- [x] Implement or adjust handling for ReactElement signatures to satisfy the test
 
 ### Phase 4.3: Improve Missing Comments Detection
 - [ ] Update `collectStatsForApi` in [packages/kbn-docs-utils/src/stats.ts](packages/kbn-docs-utils/src/stats.ts):
