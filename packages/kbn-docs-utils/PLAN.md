@@ -223,11 +223,11 @@ Key files:
 - [x] Update other affected test files
 
 ## Phase 8: APM Metrics for New Validation Fields
-- [ ] Add APM metrics for `missingReturns` count
-- [ ] Add APM metrics for `paramDocMismatches` count
-- [ ] Add APM metrics for `missingComplexTypeInfo` count
-- [ ] Update `passesAllChecks` logic to include new fields
-- [ ] Add CLI output for new validation fields under `comments` option
+- [x] Add APM metrics for `missingReturns` count
+- [x] Add APM metrics for `paramDocMismatches` count
+- [x] Add APM metrics for `missingComplexTypeInfo` count
+- [x] Update `passesAllChecks` logic to include new fields
+- [x] Add CLI output for new validation fields under `comments` option
 
 ## Implementation Notes
 
