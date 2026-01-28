@@ -1,0 +1,344 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+export const agentBuilderTutorialCommands: string = `# Welcome to the Elastic Agent Builder Tutorial! 🤖
+# 🚀 This tutorial will guide you through working with the Elastic Agent Builder APIs using the Kibana Console.
+# After selecting a command, execute it by clicking the ▶️ button or pressing Ctrl+Enter or Cmd+Enter.
+
+# -----------------------------------------------
+# Prerequisites: Set up sample data 📚
+# -----------------------------------------------
+# First, let's create an index with sample data that our tools and agents can work with.
+
+PUT /kibana_sample_data_agents
+{
+  "mappings": {
+    "properties": {
+      "name": { "type": "text" },
+      "author": { "type": "text" },
+      "release_date": { "type": "date" },
+      "page_count": { "type": "integer" }
+    }
+  }
+}
+
+POST /_bulk
+{ "index" : { "_index" : "kibana_sample_data_agents" } }
+{"name": "Snow Crash", "author": "Neal Stephenson", "release_date": "1992-06-01", "page_count": 470}
+{ "index" : { "_index" : "kibana_sample_data_agents" } }
+{"name": "Revelation Space", "author": "Alastair Reynolds", "release_date": "2000-03-15", "page_count": 585}
+{ "index" : { "_index" : "kibana_sample_data_agents" } }
+{"name": "1984", "author": "George Orwell", "release_date": "1985-06-01", "page_count": 328}
+{ "index" : { "_index" : "kibana_sample_data_agents" } }
+{"name": "Fahrenheit 451", "author": "Ray Bradbury", "release_date": "1953-10-15", "page_count": 227}
+{ "index" : { "_index" : "kibana_sample_data_agents" } }
+{"name": "Brave New World", "author": "Aldous Huxley", "release_date": "1932-06-01", "page_count": 268}
+{ "index" : { "_index" : "kibana_sample_data_agents" } }
+{"name": "The Handmaids Tale", "author": "Margaret Atwood", "release_date": "1985-06-01", "page_count": 311}
+
+# ✅ Sample data created! Now let's explore the Agent Builder APIs.
+
+# ===============================================
+# TOOLS 🔧
+# ===============================================
+
+# -----------------------------------------------
+# Step 1: List all tools 📋
+# -----------------------------------------------
+# Use the list tools API to see all available tools including pre-built tools.
+
+GET kbn://api/agent_builder/tools
+
+# ✅ The response includes a list of all available tools, including builtin tools.
+
+# -----------------------------------------------
+# Step 2: Execute a builtin tool 🚀
+# -----------------------------------------------
+# Execute a builtin tool to generate an ES|QL query against our sample data
+
+POST kbn://api/agent_builder/tools/_execute
+{
+  "tool_id": "platform.core.generate_esql",
+  "tool_params": {
+    "query": "Build an ES|QL query to get the book with the most pages",
+    "index": "kibana_sample_data_agents"
+  }
+}
+
+# ✅ The response includes the ES|QL query that can be used to create a custom tool
+
+# -----------------------------------------------
+# Step 2: Create a custom ES|QL tool ✍️
+# -----------------------------------------------
+# Tools can be created to best fit common use cases with your agent interactions.
+# Using the query from the previous step, we are creating a tool that gets the book with the most pages.
+
+POST kbn://api/agent_builder/tools
+{
+  "id": "example-books-esql-tool",
+  "type": "esql",
+  "description": "An ES|QL query tool for getting the book with the most pages",
+  "configuration": {
+    "query": "FROM kibana_sample_data_agents | SORT page_count DESC | LIMIT 1",
+    "params": {}
+  }
+}
+
+# ✅ The response confirms the tool was created with its full configuration.
+
+# Let's run our new purpose-built tool to get the book with the most pages
+
+POST kbn://api/agent_builder/tools/_execute
+{
+    "tool_id": "example-books-esql-tool",
+    "tool_params": {}
+}
+
+# ✅ The response includes a result with the "tabular_data" type showing the query's output
+
+
+# -----------------------------------------------
+# Step 3: Get a tool by ID 🔍
+# -----------------------------------------------
+# Retrieve a specific tool using its ID.
+
+GET kbn://api/agent_builder/tools/example-books-esql-tool
+
+# ✅ The response includes the full tool definition.
+
+# -----------------------------------------------
+# Step 4: Update a tool ✏️
+# -----------------------------------------------
+# Modify an existing tool's configuration, description, or tags.
+
+# Let's update the tool to include parameters.
+
+PUT kbn://api/agent_builder/tools/example-books-esql-tool
+{
+  "description": "An ES|QL query tool for finding the longest books published before a certain year",
+  "configuration": {
+    "query": "FROM kibana_sample_data_agents | WHERE DATE_EXTRACT(\\"year\\", release_date) < ?maxYear | SORT page_count DESC | LIMIT ?limit",
+    "params": {
+      "maxYear": {
+        "type": "integer",
+        "description": "Minimum year to filter books (exclusive)"
+      },
+      "limit": {
+        "type": "integer",
+        "description": "Maximum number of results to return"
+      }
+    }
+  }
+}
+
+# ✅ The response confirms the tool was updated.
+
+# Let's run the updated tool to get the 2 longest books published before 1960
+
+POST kbn://api/agent_builder/tools/_execute
+{
+    "tool_id": "example-books-esql-tool",
+    "tool_params": {
+      "maxYear": 1960,
+      "limit": 2
+    }
+}
+
+# ✅ The response includes a result with the "tabular_data" showing the query's output
+
+
+# ===============================================
+# AGENTS 🤖
+# ===============================================
+
+# -----------------------------------------------
+# Step 6: List all agents 📋
+# -----------------------------------------------
+# Use the list agents API to see all available agents.
+
+GET kbn://api/agent_builder/agents
+
+# ✅ The response includes a list of all configured agents.
+
+# -----------------------------------------------
+# Step 7: Create a custom agent ✍️
+# -----------------------------------------------
+# Create an agent that helps users search our books index.
+# Notice how we include the custom tool we created in the agent's tools configuration.
+
+POST kbn://api/agent_builder/agents
+{
+  "id": "books-search-agent",
+  "name": "Books Search Helper",
+  "description": "Hi! I can help you search and analyze the books in our sample data collection.",
+  "labels": ["books", "sample-data", "search"],
+  "avatar_color": "#BFDBFF",
+  "avatar_symbol": "📚",
+  "configuration": {
+    "instructions": "You are a helpful agent that assists users in searching and analyzing book data from the kibana_sample_data_agents index. Help users find books by author, title, or analyze reading patterns.",
+    "tools": [
+      {
+        "tool_ids": [
+          "example-books-esql-tool",
+          "platform.core.search",
+          "platform.core.list_indices",
+          "platform.core.get_index_mapping",
+          "platform.core.get_document_by_id"
+        ]
+      }
+    ]
+  }
+}
+
+# ✅ The response confirms the agent was created with its full configuration.
+
+# -----------------------------------------------
+# Step 8: Get an agent by ID 🔍
+# -----------------------------------------------
+# Retrieve a specific agent using its ID.
+
+GET kbn://api/agent_builder/agents/books-search-agent
+
+# ✅ The response includes the full agent definition.
+
+# -----------------------------------------------
+# Step 9: Update an agent ✏️
+# -----------------------------------------------
+# Modify an existing agent's configuration, description, or labels.
+
+PUT kbn://api/agent_builder/agents/books-search-agent
+{
+  "name": "Books Search Helper",
+  "description": "Updated - Search and analyze our sample books collection with ease!",
+  "labels": ["books", "sample-data", "search", "updated"]
+}
+
+# ✅ The response confirms the agent was updated.
+
+# ===============================================
+# CHAT AND CONVERSATIONS 💬
+# ===============================================
+
+# -----------------------------------------------
+# Step 10: Chat with an agent 💬
+# -----------------------------------------------
+# Send a message to an agent using the converse API.
+
+POST kbn://api/agent_builder/converse
+{
+  "input": "What books do we have in our collection?",
+  "agent_id": "books-search-agent"
+}
+
+# ✅ The response includes the agent's reply and creates a new conversation.
+# Note the "conversation_id" at the top of the response which we will use in the next step.
+
+
+# Now let the agent match our specific query with the custom tool we created:
+
+POST kbn://api/agent_builder/converse
+{
+  "input": "Can you find the longest book published before 1960?",
+  "agent_id": "books-search-agent",
+  "conversation_id": "<CONVERSATION_ID>"
+}
+
+# ✅ Instead of multiple reasoning and tool call steps, the agent completes the task in a single step.
+# Optimizing tools for common use cases is a key to building efficient agents.
+
+# Tip: Chat with streaming events 🌊
+# You can also receive realtime chat responses through streaming via the async converse API:
+# https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-agent-builder-converse-async
+
+# -----------------------------------------------
+# Step 12: List all conversations 📋
+# -----------------------------------------------
+# View all your conversations with agents.
+
+GET kbn://api/agent_builder/conversations
+
+# ✅ The response includes a list of all your conversations.
+
+# -----------------------------------------------
+# Step 13: Get a conversation by ID 🔍
+# -----------------------------------------------
+# Retrieve the full history of a specific conversation.
+# Replace <CONVERSATION_ID> with an actual conversation ID.
+
+GET kbn://api/agent_builder/conversations/<CONVERSATION_ID>
+
+# ✅ The response includes the full conversation history with all messages.
+
+# ===============================================
+# A2A AGENT CARD CONFIGURATION 🃏
+# ===============================================
+
+# -----------------------------------------------
+# Step 14: Get A2A agent card configuration 🔗
+# -----------------------------------------------
+# Retrieve the Agent-to-Agent (A2A) protocol configuration for an agent.
+
+GET kbn://api/agent_builder/a2a/books-search-agent.json
+
+# ✅ The response includes the A2A agent card for use with external A2A clients.
+
+# ===============================================
+# CLEANUP (optional) 🧹
+# ===============================================
+
+# -----------------------------------------------
+# Step 15: Delete a conversation 🗑️
+# -----------------------------------------------
+# Remove a conversation when you no longer need it.
+# Replace <CONVERSATION_ID> with an actual conversation ID.
+
+DELETE kbn://api/agent_builder/conversations/<CONVERSATION_ID>
+
+# ✅ The response confirms the conversation was deleted.
+
+# -----------------------------------------------
+# Step 16: Delete the agent 🗑️
+# -----------------------------------------------
+# Remove the agent we created.
+
+DELETE kbn://api/agent_builder/agents/books-search-agent
+
+# ✅ The response confirms the agent was deleted.
+
+# -----------------------------------------------
+# Step 17: Delete the tool 🗑️
+# -----------------------------------------------
+# Remove the custom tool we created.
+
+DELETE kbn://api/agent_builder/tools/example-books-esql-tool
+
+# ✅ The response confirms the tool was deleted.
+
+# -----------------------------------------------
+# Step 18: Clean up sample data (optional) 🗑️
+# -----------------------------------------------
+# Delete the sample index to clean up.
+
+DELETE /kibana_sample_data_agents
+
+# ✅ The response confirms the index was deleted.
+
+# -----------------------------------------------
+# Conclusion 🎓
+# -----------------------------------------------
+# 🎉 Congratulations on building your first agent!
+
+# In this tutorial, you learned how to work with the Elastic Agent Builder APIs.
+# You covered creating and managing tools, agents, and conversations.
+
+# Use your kibana API key and the endpoints we've covered to build and test your agents in
+# your own environment or visit the Agent Builder UI in Kibana: /app/agent_builder/agents/books-search-agent
+
+# 📖 For complete API details, refer to the Kibana API reference: https://www.elastic.co/docs/api/doc/kibana/group/endpoint-agent-builder
+# 📖 Learn more about Agent Builder: https://www.elastic.co/docs/explore-analyze/ai-features/elastic-agent-builder
+# 🤖 Use the MCP server to build agents from your own client: https://www.elastic.co/docs/explore-analyze/ai-features/agent-builder/mcp-server
+`;
