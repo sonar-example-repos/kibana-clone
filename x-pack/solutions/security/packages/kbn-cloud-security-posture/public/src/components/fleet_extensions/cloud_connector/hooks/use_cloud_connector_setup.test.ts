@@ -9,14 +9,17 @@ import { renderHook, act } from '@testing-library/react';
 
 import { useCloudConnectorSetup } from './use_cloud_connector_setup';
 
-import type { NewPackagePolicy, NewPackagePolicyInput } from '@kbn/fleet-plugin/common';
+import type {
+  NewPackagePolicy,
+  NewPackagePolicyInput,
+  PackageInfo,
+} from '@kbn/fleet-plugin/common';
 import type { UpdatePolicy } from '../../types';
 import type { CloudConnectorCredentials } from '../types';
 
 // Mock utility functions
 jest.mock('../utils', () => ({
   updateInputVarsWithCredentials: jest.fn(),
-  updatePolicyInputs: jest.fn(),
   isAzureCloudConnectorVars: jest.fn(),
   isCloudConnectorNameValid: jest.fn((name: string | undefined) => {
     if (!name) return false;
@@ -25,15 +28,58 @@ jest.mock('../utils', () => ({
   }),
 }));
 
-import {
-  updateInputVarsWithCredentials,
-  updatePolicyInputs,
-  isAzureCloudConnectorVars,
-} from '../utils';
+// Mock accessor functions from fleet common
+jest.mock('@kbn/fleet-plugin/common', () => ({
+  extractRawCredentialVars: jest.fn((policy, _packageInfo) => {
+    // Return stream vars by default (input mode)
+    return policy.inputs?.[0]?.streams?.[0]?.vars ?? policy.vars ?? {};
+  }),
+  getCredentialStorageScope: jest.fn(() => 'input'),
+  resolveVarTarget: jest.fn((policy, mode) => {
+    if (mode === 'package') {
+      return { target: { mode: 'package' }, vars: policy.vars };
+    }
+    return {
+      target: { mode: 'input', inputIndex: 0, streamIndex: 0 },
+      vars: policy.inputs?.[0]?.streams?.[0]?.vars,
+    };
+  }),
+  applyVarsAtTarget: jest.fn((policy, updatedVars, target) => {
+    if (target.mode === 'package') {
+      return { ...policy, vars: updatedVars };
+    }
+    const { inputIndex, streamIndex } = target;
+    if (inputIndex === -1 || streamIndex === -1) {
+      return policy;
+    }
+    const updatedInputs = [...policy.inputs];
+    const updatedInput = { ...updatedInputs[inputIndex] };
+    const updatedStreams = [...updatedInput.streams];
+    updatedStreams[streamIndex] = { ...updatedStreams[streamIndex], vars: updatedVars };
+    updatedInput.streams = updatedStreams;
+    updatedInputs[inputIndex] = updatedInput;
+    return { ...policy, inputs: updatedInputs };
+  }),
+}));
+
+import { updateInputVarsWithCredentials, isAzureCloudConnectorVars } from '../utils';
 
 const mockIsAzureCloudConnectorVars = isAzureCloudConnectorVars as jest.MockedFunction<
   typeof isAzureCloudConnectorVars
 >;
+
+// Mock PackageInfo for testing
+const mockPackageInfo: PackageInfo = {
+  name: 'cloud_security_posture',
+  title: 'Cloud Security Posture',
+  version: '1.0.0',
+  release: 'ga',
+  description: 'Cloud Security Posture Management',
+  type: 'integration',
+  owner: { github: 'elastic/security-service-integrations' },
+  format_version: '1.0.0',
+  policy_templates: [],
+} as unknown as PackageInfo;
 
 describe('useCloudConnectorSetup', () => {
   const mockPolicy = {
@@ -97,25 +143,12 @@ describe('useCloudConnectorSetup', () => {
 
       return updatedVars;
     });
-
-    (updatePolicyInputs as jest.Mock).mockImplementation((policy, vars) => {
-      return {
-        ...policy,
-        inputs: mockPolicy.inputs.map((input) => ({
-          ...input,
-          streams: input.streams.map((stream) => ({
-            ...stream,
-            vars: { ...stream.vars, ...vars },
-          })),
-        })),
-      };
-    });
   });
 
   describe('updatePolicyWithNewCredentials', () => {
     it('should call utility functions and update policy with new credentials and validation', () => {
       const { result } = renderHook(() =>
-        useCloudConnectorSetup(mockInput, mockPolicy, mockUpdatePolicy)
+        useCloudConnectorSetup(mockPolicy, mockUpdatePolicy, mockPackageInfo)
       );
 
       const newCredentials: CloudConnectorCredentials = {
@@ -128,10 +161,9 @@ describe('useCloudConnectorSetup', () => {
       });
 
       expect(updateInputVarsWithCredentials).toHaveBeenCalledWith(
-        mockInput.streams[0].vars,
+        mockPolicy.inputs[0].streams[0].vars,
         newCredentials
       );
-      expect(updatePolicyInputs).toHaveBeenCalled();
       expect(mockUpdatePolicy).toHaveBeenCalledWith({
         isValid: expect.any(Boolean),
         updatedPolicy: expect.objectContaining({
@@ -144,7 +176,7 @@ describe('useCloudConnectorSetup', () => {
   describe('updatePolicyWithExistingCredentials', () => {
     it('should call utility functions and update policy with existing credentials without validation', () => {
       const { result } = renderHook(() =>
-        useCloudConnectorSetup(mockInput, mockPolicy, mockUpdatePolicy)
+        useCloudConnectorSetup(mockPolicy, mockUpdatePolicy, mockPackageInfo)
       );
 
       const existingCredentials: CloudConnectorCredentials = {
@@ -158,10 +190,9 @@ describe('useCloudConnectorSetup', () => {
       });
 
       expect(updateInputVarsWithCredentials).toHaveBeenCalledWith(
-        mockInput.streams[0].vars,
+        mockPolicy.inputs[0].streams[0].vars,
         existingCredentials
       );
-      expect(updatePolicyInputs).toHaveBeenCalled();
       expect(mockUpdatePolicy).toHaveBeenCalledWith({
         updatedPolicy: expect.objectContaining({
           cloud_connector_id: 'existing-connector-123',
@@ -172,7 +203,7 @@ describe('useCloudConnectorSetup', () => {
 
     it('should work with incomplete existing credentials without validation', () => {
       const { result } = renderHook(() =>
-        useCloudConnectorSetup(mockInput, mockPolicy, mockUpdatePolicy)
+        useCloudConnectorSetup(mockPolicy, mockUpdatePolicy, mockPackageInfo)
       );
 
       const incompleteExistingCredentials: CloudConnectorCredentials = {
@@ -214,21 +245,8 @@ describe('useCloudConnectorSetup', () => {
         ],
       } as NewPackagePolicy;
 
-      const emptyMockInput = {
-        ...mockInput,
-        streams: [
-          {
-            ...mockInput.streams[0],
-            vars: {
-              role_arn: { value: undefined },
-              external_id: { value: undefined },
-            },
-          },
-        ],
-      } as NewPackagePolicyInput;
-
       const { result } = renderHook(() =>
-        useCloudConnectorSetup(emptyMockInput, emptyMockPolicy, mockUpdatePolicy)
+        useCloudConnectorSetup(emptyMockPolicy, mockUpdatePolicy, mockPackageInfo)
       );
 
       expect(result.current.newConnectionCredentials).toEqual({
@@ -245,7 +263,7 @@ describe('useCloudConnectorSetup', () => {
 
     it('should initialize with credentials from input vars when available', () => {
       const { result } = renderHook(() =>
-        useCloudConnectorSetup(mockInput, mockPolicy, mockUpdatePolicy)
+        useCloudConnectorSetup(mockPolicy, mockUpdatePolicy, mockPackageInfo)
       );
 
       expect(result.current.newConnectionCredentials).toEqual({
@@ -262,7 +280,7 @@ describe('useCloudConnectorSetup', () => {
 
     it('should update new connection credentials when updatePolicyWithNewCredentials is called', () => {
       const { result } = renderHook(() =>
-        useCloudConnectorSetup(mockInput, mockPolicy, mockUpdatePolicy)
+        useCloudConnectorSetup(mockPolicy, mockUpdatePolicy, mockPackageInfo)
       );
 
       const newCredentials: CloudConnectorCredentials = {
@@ -279,7 +297,7 @@ describe('useCloudConnectorSetup', () => {
 
     it('should update existing connection credentials when updatePolicyWithExistingCredentials is called', () => {
       const { result } = renderHook(() =>
-        useCloudConnectorSetup(mockInput, mockPolicy, mockUpdatePolicy)
+        useCloudConnectorSetup(mockPolicy, mockUpdatePolicy, mockPackageInfo)
       );
 
       const existingCredentials: CloudConnectorCredentials = {
@@ -297,7 +315,7 @@ describe('useCloudConnectorSetup', () => {
 
     it('should provide setters for direct credential updates', () => {
       const { result } = renderHook(() =>
-        useCloudConnectorSetup(mockInput, mockPolicy, mockUpdatePolicy)
+        useCloudConnectorSetup(mockPolicy, mockUpdatePolicy, mockPackageInfo)
       );
 
       const directCredentials: CloudConnectorCredentials = {
@@ -375,7 +393,7 @@ describe('useCloudConnectorSetup', () => {
 
     it('should initialize with Azure credentials from input vars when available', () => {
       const { result } = renderHook(() =>
-        useCloudConnectorSetup(mockAzureInput, mockAzurePolicy, mockUpdatePolicy)
+        useCloudConnectorSetup(mockAzurePolicy, mockUpdatePolicy, mockPackageInfo)
       );
 
       expect(result.current.newConnectionCredentials).toEqual({
@@ -386,19 +404,6 @@ describe('useCloudConnectorSetup', () => {
     });
 
     it('should initialize with empty Azure credentials when input vars are empty', () => {
-      const emptyAzureMockInput = {
-        ...mockAzureInput,
-        streams: [
-          {
-            ...mockAzureInput.streams[0],
-            vars: {
-              tenant_id: { value: undefined, type: 'text' },
-              client_id: { value: undefined, type: 'text' },
-            },
-          },
-        ],
-      } as NewPackagePolicyInput;
-
       const emptyAzureMockPolicy = {
         ...mockAzurePolicy,
         inputs: [
@@ -418,7 +423,7 @@ describe('useCloudConnectorSetup', () => {
       } as NewPackagePolicy;
 
       const { result } = renderHook(() =>
-        useCloudConnectorSetup(emptyAzureMockInput, emptyAzureMockPolicy, mockUpdatePolicy)
+        useCloudConnectorSetup(emptyAzureMockPolicy, mockUpdatePolicy, mockPackageInfo)
       );
 
       expect(result.current.newConnectionCredentials).toEqual({
@@ -430,7 +435,7 @@ describe('useCloudConnectorSetup', () => {
 
     it('should update new connection Azure credentials when updatePolicyWithNewCredentials is called', () => {
       const { result } = renderHook(() =>
-        useCloudConnectorSetup(mockAzureInput, mockAzurePolicy, mockUpdatePolicy)
+        useCloudConnectorSetup(mockAzurePolicy, mockUpdatePolicy, mockPackageInfo)
       );
 
       const newAzureCredentials = {
@@ -447,7 +452,7 @@ describe('useCloudConnectorSetup', () => {
 
     it('should update existing connection Azure credentials when updatePolicyWithExistingCredentials is called', () => {
       const { result } = renderHook(() =>
-        useCloudConnectorSetup(mockAzureInput, mockAzurePolicy, mockUpdatePolicy)
+        useCloudConnectorSetup(mockAzurePolicy, mockUpdatePolicy, mockPackageInfo)
       );
 
       const existingAzureCredentials = {
@@ -465,19 +470,6 @@ describe('useCloudConnectorSetup', () => {
     });
 
     it('should handle azure.credentials.tenant_id and azure.credentials.client_id format', () => {
-      const newFormatAzureInput = {
-        ...mockAzureInput,
-        streams: [
-          {
-            ...mockAzureInput.streams[0],
-            vars: {
-              'azure.credentials.tenant_id': { value: 'new-format-tenant', type: 'text' },
-              'azure.credentials.client_id': { value: 'new-format-client', type: 'text' },
-            },
-          },
-        ],
-      } as NewPackagePolicyInput;
-
       const newFormatAzurePolicy = {
         ...mockAzurePolicy,
         inputs: [
@@ -497,7 +489,7 @@ describe('useCloudConnectorSetup', () => {
       } as NewPackagePolicy;
 
       const { result } = renderHook(() =>
-        useCloudConnectorSetup(newFormatAzureInput, newFormatAzurePolicy, mockUpdatePolicy)
+        useCloudConnectorSetup(newFormatAzurePolicy, mockUpdatePolicy, mockPackageInfo)
       );
 
       expect(result.current.newConnectionCredentials).toEqual({
@@ -536,7 +528,7 @@ describe('useCloudConnectorSetup', () => {
 
     it('should call updatePolicy with Azure credentials for new connection', () => {
       const { result } = renderHook(() =>
-        useCloudConnectorSetup(mockAzureInput, mockAzurePolicy, mockUpdatePolicy)
+        useCloudConnectorSetup(mockAzurePolicy, mockUpdatePolicy, mockPackageInfo)
       );
 
       const newAzureCredentials = {
@@ -549,10 +541,9 @@ describe('useCloudConnectorSetup', () => {
       });
 
       expect(updateInputVarsWithCredentials).toHaveBeenCalledWith(
-        mockAzureInput.streams[0].vars,
+        mockAzurePolicy.inputs[0].streams[0].vars,
         newAzureCredentials
       );
-      expect(updatePolicyInputs).toHaveBeenCalled();
       expect(mockUpdatePolicy).toHaveBeenCalledWith({
         isValid: expect.any(Boolean),
         updatedPolicy: expect.objectContaining({
@@ -563,7 +554,7 @@ describe('useCloudConnectorSetup', () => {
 
     it('should call updatePolicy with Azure cloud_connector_id for existing connection', () => {
       const { result } = renderHook(() =>
-        useCloudConnectorSetup(mockAzureInput, mockAzurePolicy, mockUpdatePolicy)
+        useCloudConnectorSetup(mockAzurePolicy, mockUpdatePolicy, mockPackageInfo)
       );
 
       const existingAzureCredentials = {
@@ -578,10 +569,9 @@ describe('useCloudConnectorSetup', () => {
       });
 
       expect(updateInputVarsWithCredentials).toHaveBeenCalledWith(
-        mockAzureInput.streams[0].vars,
+        mockAzurePolicy.inputs[0].streams[0].vars,
         existingAzureCredentials
       );
-      expect(updatePolicyInputs).toHaveBeenCalled();
       expect(mockUpdatePolicy).toHaveBeenCalledWith({
         updatedPolicy: expect.objectContaining({
           cloud_connector_id: 'azure-connector-456',
@@ -591,7 +581,7 @@ describe('useCloudConnectorSetup', () => {
 
     it('should handle Azure credentials without cloud_connector_id', () => {
       const { result } = renderHook(() =>
-        useCloudConnectorSetup(mockAzureInput, mockAzurePolicy, mockUpdatePolicy)
+        useCloudConnectorSetup(mockAzurePolicy, mockUpdatePolicy, mockPackageInfo)
       );
 
       const azureCredentialsWithoutConnector = {
@@ -613,7 +603,7 @@ describe('useCloudConnectorSetup', () => {
 
     it('should update Azure credentials using setter methods', () => {
       const { result } = renderHook(() =>
-        useCloudConnectorSetup(mockAzureInput, mockAzurePolicy, mockUpdatePolicy)
+        useCloudConnectorSetup(mockAzurePolicy, mockUpdatePolicy, mockPackageInfo)
       );
 
       const directAzureCredentials = {
@@ -647,7 +637,7 @@ describe('useCloudConnectorSetup', () => {
     describe('AWS credentials with name validation', () => {
       it('should set isValid to undefined when name is valid (any string)', () => {
         const { result } = renderHook(() =>
-          useCloudConnectorSetup(mockInput, mockPolicy, mockUpdatePolicy)
+          useCloudConnectorSetup(mockPolicy, mockUpdatePolicy, mockPackageInfo)
         );
 
         const credentialsWithValidName: CloudConnectorCredentials = {
@@ -671,7 +661,7 @@ describe('useCloudConnectorSetup', () => {
 
       it('should set isValid to undefined when name is 1 character', () => {
         const { result } = renderHook(() =>
-          useCloudConnectorSetup(mockInput, mockPolicy, mockUpdatePolicy)
+          useCloudConnectorSetup(mockPolicy, mockUpdatePolicy, mockPackageInfo)
         );
 
         const credentialsWithShortName: CloudConnectorCredentials = {
@@ -694,7 +684,7 @@ describe('useCloudConnectorSetup', () => {
 
       it('should set isValid to false when name is too long (> 255 chars)', () => {
         const { result } = renderHook(() =>
-          useCloudConnectorSetup(mockInput, mockPolicy, mockUpdatePolicy)
+          useCloudConnectorSetup(mockPolicy, mockUpdatePolicy, mockPackageInfo)
         );
 
         const credentialsWithLongName: CloudConnectorCredentials = {
@@ -717,7 +707,7 @@ describe('useCloudConnectorSetup', () => {
 
       it('should set isValid to undefined when name contains special characters', () => {
         const { result } = renderHook(() =>
-          useCloudConnectorSetup(mockInput, mockPolicy, mockUpdatePolicy)
+          useCloudConnectorSetup(mockPolicy, mockUpdatePolicy, mockPackageInfo)
         );
 
         const credentialsWithSpecialChars: CloudConnectorCredentials = {
@@ -741,7 +731,7 @@ describe('useCloudConnectorSetup', () => {
 
       it('should set isValid to false when name is undefined', () => {
         const { result } = renderHook(() =>
-          useCloudConnectorSetup(mockInput, mockPolicy, mockUpdatePolicy)
+          useCloudConnectorSetup(mockPolicy, mockUpdatePolicy, mockPackageInfo)
         );
 
         const credentialsWithoutName: CloudConnectorCredentials = {
@@ -764,7 +754,7 @@ describe('useCloudConnectorSetup', () => {
 
       it('should set isValid to undefined when name contains any valid characters', () => {
         const { result } = renderHook(() =>
-          useCloudConnectorSetup(mockInput, mockPolicy, mockUpdatePolicy)
+          useCloudConnectorSetup(mockPolicy, mockUpdatePolicy, mockPackageInfo)
         );
 
         const credentialsWithSpecialChars: CloudConnectorCredentials = {
@@ -787,7 +777,7 @@ describe('useCloudConnectorSetup', () => {
 
       it('should set isValid to false when name is empty string', () => {
         const { result } = renderHook(() =>
-          useCloudConnectorSetup(mockInput, mockPolicy, mockUpdatePolicy)
+          useCloudConnectorSetup(mockPolicy, mockUpdatePolicy, mockPackageInfo)
         );
 
         const credentialsWithEmptyName: CloudConnectorCredentials = {
@@ -810,7 +800,7 @@ describe('useCloudConnectorSetup', () => {
 
       it('should set isValid to undefined when name is exactly 255 characters', () => {
         const { result } = renderHook(() =>
-          useCloudConnectorSetup(mockInput, mockPolicy, mockUpdatePolicy)
+          useCloudConnectorSetup(mockPolicy, mockUpdatePolicy, mockPackageInfo)
         );
 
         const longName = 'A'.repeat(255);
@@ -868,29 +858,13 @@ describe('useCloudConnectorSetup', () => {
         ],
       } as NewPackagePolicy;
 
-      const mockAzureInput: NewPackagePolicyInput = {
-        type: 'cloudbeat/cis_azure',
-        policy_template: 'cis_azure',
-        enabled: true,
-        streams: [
-          {
-            enabled: true,
-            data_stream: { type: 'logs', dataset: 'azure.activitylogs' },
-            vars: {
-              'azure.credentials.tenant_id': { value: 'test-tenant-id' },
-              'azure.credentials.client_id': { value: 'test-client-id' },
-            },
-          },
-        ],
-      };
-
       beforeEach(() => {
         mockIsAzureCloudConnectorVars.mockReturnValue(true);
       });
 
       it('should set isValid to undefined when Azure name is valid', () => {
         const { result } = renderHook(() =>
-          useCloudConnectorSetup(mockAzureInput, mockAzurePolicy, mockUpdatePolicy)
+          useCloudConnectorSetup(mockAzurePolicy, mockUpdatePolicy, mockPackageInfo)
         );
 
         const azureCredentialsWithValidName = {
@@ -914,7 +888,7 @@ describe('useCloudConnectorSetup', () => {
 
       it('should set isValid to undefined when Azure name is 1 character', () => {
         const { result } = renderHook(() =>
-          useCloudConnectorSetup(mockAzureInput, mockAzurePolicy, mockUpdatePolicy)
+          useCloudConnectorSetup(mockAzurePolicy, mockUpdatePolicy, mockPackageInfo)
         );
 
         const azureCredentialsWithShortName = {
@@ -937,7 +911,7 @@ describe('useCloudConnectorSetup', () => {
 
       it('should set isValid to false when Azure name is too long (> 255 chars)', () => {
         const { result } = renderHook(() =>
-          useCloudConnectorSetup(mockAzureInput, mockAzurePolicy, mockUpdatePolicy)
+          useCloudConnectorSetup(mockAzurePolicy, mockUpdatePolicy, mockPackageInfo)
         );
 
         const azureCredentialsWithLongName = {
@@ -960,7 +934,7 @@ describe('useCloudConnectorSetup', () => {
 
       it('should set isValid to undefined when Azure name contains special characters', () => {
         const { result } = renderHook(() =>
-          useCloudConnectorSetup(mockAzureInput, mockAzurePolicy, mockUpdatePolicy)
+          useCloudConnectorSetup(mockAzurePolicy, mockUpdatePolicy, mockPackageInfo)
         );
 
         const azureCredentialsWithSpecialChars = {
@@ -984,7 +958,7 @@ describe('useCloudConnectorSetup', () => {
 
       it('should set isValid to false when Azure name is undefined', () => {
         const { result } = renderHook(() =>
-          useCloudConnectorSetup(mockAzureInput, mockAzurePolicy, mockUpdatePolicy)
+          useCloudConnectorSetup(mockAzurePolicy, mockUpdatePolicy, mockPackageInfo)
         );
 
         const azureCredentialsWithoutName = {
@@ -1007,7 +981,7 @@ describe('useCloudConnectorSetup', () => {
 
       it('should store credentials with valid name in state', () => {
         const { result } = renderHook(() =>
-          useCloudConnectorSetup(mockAzureInput, mockAzurePolicy, mockUpdatePolicy)
+          useCloudConnectorSetup(mockAzurePolicy, mockUpdatePolicy, mockPackageInfo)
         );
 
         const azureCredentialsWithName = {
@@ -1025,7 +999,7 @@ describe('useCloudConnectorSetup', () => {
 
       it('should set isValid to undefined for any length up to 255', () => {
         const { result } = renderHook(() =>
-          useCloudConnectorSetup(mockAzureInput, mockAzurePolicy, mockUpdatePolicy)
+          useCloudConnectorSetup(mockAzurePolicy, mockUpdatePolicy, mockPackageInfo)
         );
 
         const azureCredentialsWith100Chars = {
@@ -1048,7 +1022,7 @@ describe('useCloudConnectorSetup', () => {
 
       it('should set isValid to undefined when name is exactly 255 characters', () => {
         const { result } = renderHook(() =>
-          useCloudConnectorSetup(mockAzureInput, mockAzurePolicy, mockUpdatePolicy)
+          useCloudConnectorSetup(mockAzurePolicy, mockUpdatePolicy, mockPackageInfo)
         );
 
         const longName = 'A'.repeat(255);
@@ -1075,7 +1049,7 @@ describe('useCloudConnectorSetup', () => {
     describe('Existing credentials should not validate name', () => {
       it('should not include isValid when using existing AWS credentials', () => {
         const { result } = renderHook(() =>
-          useCloudConnectorSetup(mockInput, mockPolicy, mockUpdatePolicy)
+          useCloudConnectorSetup(mockPolicy, mockUpdatePolicy, mockPackageInfo)
         );
 
         const existingCredentials: CloudConnectorCredentials = {
@@ -1151,7 +1125,7 @@ describe('extractVarValue helper - secret reference handling', () => {
     } as NewPackagePolicy;
 
     const { result } = renderHook(() =>
-      useCloudConnectorSetup(stringInput, stringPolicy, mockUpdatePolicy)
+      useCloudConnectorSetup(stringPolicy, mockUpdatePolicy, mockPackageInfo)
     );
 
     expect(result.current.newConnectionCredentials).toEqual({
@@ -1184,7 +1158,7 @@ describe('extractVarValue helper - secret reference handling', () => {
     } as NewPackagePolicy;
 
     const { result } = renderHook(() =>
-      useCloudConnectorSetup(secretInput, secretPolicy, mockUpdatePolicy)
+      useCloudConnectorSetup(secretPolicy, mockUpdatePolicy, mockPackageInfo)
     );
 
     expect(result.current.newConnectionCredentials).toEqual({
@@ -1215,7 +1189,7 @@ describe('extractVarValue helper - secret reference handling', () => {
     } as NewPackagePolicy;
 
     const { result } = renderHook(() =>
-      useCloudConnectorSetup(undefinedInput, undefinedPolicy, mockUpdatePolicy)
+      useCloudConnectorSetup(undefinedPolicy, mockUpdatePolicy, mockPackageInfo)
     );
 
     expect(result.current.newConnectionCredentials).toEqual({
@@ -1246,7 +1220,7 @@ describe('extractVarValue helper - secret reference handling', () => {
     } as NewPackagePolicy;
 
     const { result } = renderHook(() =>
-      useCloudConnectorSetup(mixedInput, mixedPolicy, mockUpdatePolicy)
+      useCloudConnectorSetup(mixedPolicy, mockUpdatePolicy, mockPackageInfo)
     );
 
     expect(result.current.newConnectionCredentials).toEqual({
@@ -1321,7 +1295,7 @@ describe('Azure credentials with mixed secret and text vars', () => {
     } as NewPackagePolicy;
 
     const { result } = renderHook(() =>
-      useCloudConnectorSetup(stringInput, stringPolicy, mockUpdatePolicy)
+      useCloudConnectorSetup(stringPolicy, mockUpdatePolicy, mockPackageInfo)
     );
 
     expect(result.current.newConnectionCredentials).toEqual({
@@ -1357,7 +1331,7 @@ describe('Azure credentials with mixed secret and text vars', () => {
     } as NewPackagePolicy;
 
     const { result } = renderHook(() =>
-      useCloudConnectorSetup(azureCredentialsInput, azureCredentialsPolicy, mockUpdatePolicy)
+      useCloudConnectorSetup(azureCredentialsPolicy, mockUpdatePolicy, mockPackageInfo)
     );
 
     expect(result.current.newConnectionCredentials).toEqual({

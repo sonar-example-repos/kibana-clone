@@ -348,9 +348,9 @@ describe('CloudConnectorSetup', () => {
       renderComponent();
 
       expect(mockUseCloudConnectorSetup).toHaveBeenCalledWith(
-        defaultProps.input,
         defaultProps.newPolicy,
-        defaultProps.updatePolicy
+        defaultProps.updatePolicy,
+        defaultProps.packageInfo
       );
     });
 
@@ -456,9 +456,9 @@ describe('CloudConnectorSetup', () => {
 
       // Verify that the component renders without errors and calls the hooks correctly
       expect(mockUseCloudConnectorSetup).toHaveBeenCalledWith(
-        defaultProps.input,
         defaultProps.newPolicy,
-        defaultProps.updatePolicy
+        defaultProps.updatePolicy,
+        defaultProps.packageInfo
       );
 
       expect(mockCloudConnectorTabs).toHaveBeenCalledWith(
