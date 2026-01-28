@@ -172,6 +172,9 @@ export const runCheckPackageDocs = async (log: ToolingLog, flags: CliFlags) => {
   }
 };
 
+/**
+ * Runs the check package docs CLI, validating API documentation for Kibana plugins and packages.
+ */
 export const runCheckPackageDocsCli = () => {
   run(
     async ({ log, flags }) => {
