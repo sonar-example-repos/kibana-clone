@@ -145,7 +145,7 @@ Key files:
 - [x] Implement or adjust handling for ReactElement signatures to satisfy the test
 
 ### Phase 4.3: Improve Missing Comments Detection
-- [ ] Update `collectStatsForApi` in [packages/kbn-docs-utils/src/stats.ts](packages/kbn-docs-utils/src/stats.ts):
+- [x] Update `collectStatsForApi` in [packages/kbn-docs-utils/src/stats.ts](packages/kbn-docs-utils/src/stats.ts):
   - For destructured parameters, check if parent has comment OR properties have individual comments
   - Don't flag as missing if property-level JSDoc exists
   - Add validation for required vs. optional parameter documentation
