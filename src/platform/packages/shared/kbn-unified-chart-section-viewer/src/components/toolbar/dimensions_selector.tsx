@@ -9,7 +9,7 @@
 
 import React, { useMemo, useCallback } from 'react';
 import { FormattedMessage } from '@kbn/i18n-react';
-import { EuiFlexGroup, EuiFlexItem, EuiLoadingSpinner } from '@elastic/eui';
+import { EuiFlexGroup, EuiFlexItem, EuiLoadingSpinner, EuiNotificationBadge, EuiText, EuiToolTip, EuiButtonEmpty } from '@elastic/eui';
 import { ToolbarSelector, type SelectableEntry } from '@kbn/shared-ux-toolbar-selector';
 import { comboBoxFieldOptionMatcher } from '@kbn/field-utils';
 import { css } from '@emotion/react';
@@ -74,7 +74,7 @@ export const DimensionsSelector = ({
 
   const options: SelectableEntry[] = useMemo(() => {
     const isAtMaxLimit = selectedDimensions.length >= MAX_DIMENSIONS_SELECTIONS;
-    return dimensions.map<SelectableEntry>((dimension) => {
+    const mappedOptions = dimensions.map<SelectableEntry>((dimension) => {
       const isSelected = selectedNamesSet.has(dimension.name);
       const isIntersecting = intersectingDimensions.has(dimension.name);
       const isDisabledByLimit = singleSelection ? false : !isSelected && isAtMaxLimit;
@@ -87,6 +87,12 @@ export const DimensionsSelector = ({
         disabled: singleSelection ? false : !isIntersecting || isDisabledByLimit,
         key: dimension.name,
       };
+    });
+    // Sort so that selected options appear first
+    return mappedOptions.sort((a, b) => {
+      const aSelected = a.checked === 'on' ? 0 : 1;
+      const bSelected = b.checked === 'on' ? 0 : 1;
+      return aSelected - bSelected;
     });
   }, [
     dimensions,
@@ -109,9 +115,13 @@ export const DimensionsSelector = ({
     [onChange, dimensions]
   );
 
+  const handleClearAll = useCallback(() => {
+    onChange([]);
+  }, [onChange]);
+
   const buttonLabel = useMemo(() => {
     const count = selectedDimensions.length;
-    const dimensionLabel = selectedDimensions[0]?.name;
+    const isAtMaxDimensions = selectedDimensions.length >= MAX_DIMENSIONS_SELECTIONS;
 
     return (
       <EuiFlexGroup justifyContent="spaceBetween" alignItems="center" responsive={false}>
@@ -128,11 +138,31 @@ export const DimensionsSelector = ({
               values={{ maxDimensions: MAX_DIMENSIONS_SELECTIONS }}
             />
           ) : (
-            <FormattedMessage
-              id="metricsExperience.dimensionsSelector.breakdownFieldButtonLabelWithSelection"
-              defaultMessage="Breakdown by {dimensionLabel}"
-              values={{ dimensionLabel }}
-            />
+            <EuiFlexGroup alignItems='center'>
+              <EuiFlexItem grow={false}>
+                <FormattedMessage
+                  id="metricsExperience.dimensionsSelector.breakdownFieldButtonLabelWithSelection"
+                  defaultMessage="Dimensions"
+                />
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                {
+                  isAtMaxDimensions ? (
+                    <EuiToolTip content={
+                      <FormattedMessage
+                        id="metricsExperience.dimensionsSelector.maxDimensionsWarning"
+                        defaultMessage="Maximum of {maxDimensions} dimensions selected"
+                        values={{ maxDimensions: MAX_DIMENSIONS_SELECTIONS }}
+                      />
+                    }>
+                      <EuiNotificationBadge>{count}</EuiNotificationBadge>
+                    </EuiToolTip>
+                  ) : (
+                    <EuiNotificationBadge>{count}</EuiNotificationBadge>
+                  )
+                }
+              </EuiFlexItem>
+            </EuiFlexGroup>
           )}
         </EuiFlexItem>
         {isLoading && (
@@ -144,12 +174,51 @@ export const DimensionsSelector = ({
     );
   }, [selectedDimensions, isLoading]);
 
+  const popoverContentBelowSearch = useMemo(() => {
+    const count = selectedDimensions.length;
+    if (count === 0) {
+      return undefined;
+    }
+    return (
+      <EuiFlexGroup
+        direction="column"
+        gutterSize="xs"
+        css={css`
+          padding: 8px 0;
+        `}
+      >
+        <EuiFlexItem>
+          <EuiText size="xs" color="subdued">
+            <FormattedMessage
+              id="metricsExperience.dimensionsSelector.selectedDimensionsCount"
+              defaultMessage="{count, plural, one {# dimension selected} other {# dimensions selected}}"
+              values={{ count }}
+            />
+          </EuiText>
+        </EuiFlexItem>
+        <EuiFlexItem>
+          <EuiButtonEmpty
+            size="xs"
+            flush="left"
+            onClick={handleClearAll}
+          >
+            <FormattedMessage
+              id="metricsExperience.dimensionsSelector.clearAll"
+              defaultMessage="Clear all"
+            />
+          </EuiButtonEmpty>
+        </EuiFlexItem>
+      </EuiFlexGroup>
+    );
+  }, [selectedDimensions.length, handleClearAll]);
+
   return (
     <ToolbarSelector
       data-test-subj={METRICS_BREAKDOWN_SELECTOR_DATA_TEST_SUBJ}
       data-selected-value={[...selectedNamesSet]}
       searchable
       buttonLabel={buttonLabel}
+      popoverContentBelowSearch={popoverContentBelowSearch}
       optionMatcher={comboBoxFieldOptionMatcher}
       options={options}
       singleSelection={singleSelection}
