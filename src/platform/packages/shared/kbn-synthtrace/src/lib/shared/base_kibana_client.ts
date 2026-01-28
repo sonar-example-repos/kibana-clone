@@ -9,8 +9,6 @@
 
 /* eslint-disable max-classes-per-file*/
 
-import fetch from 'node-fetch';
-import type { RequestInit } from 'node-fetch';
 import { kibanaHeaders } from './client_headers';
 import { getFetchAgent } from '../../cli/utils/ssl';
 import { normalizeUrl } from '../utils/normalize_url';
@@ -50,15 +48,26 @@ export class KibanaClient {
   fetch(pathname: string, options: KibanaClientFetchOptionsWithIgnore) {
     const pathnameWithLeadingSlash = pathname.startsWith('/') ? pathname : `/${pathname}`;
     const url = new URL(`${this.target}${pathnameWithLeadingSlash}`);
+
+    // Extract credentials from URL and add them to headers (native fetch doesn't support credentials in URLs)
+    const authHeaders: Record<string, string> = {};
+    if (url.username || url.password) {
+      const credentials = `${url.username}:${url.password}`;
+      authHeaders.Authorization = `Basic ${Buffer.from(credentials).toString('base64')}`;
+      url.username = '';
+      url.password = '';
+    }
+
     const normalizedUrl = normalizeUrl(url.toString());
     return fetch(normalizedUrl, {
       ...options,
       headers: {
+        ...authHeaders,
         ...this.headers,
         ...options.headers,
       },
-      agent: getFetchAgent(normalizedUrl),
-    }).then(async (response) => {
+      dispatcher: getFetchAgent(normalizedUrl),
+    } as RequestInit).then(async (response) => {
       if (options.ignore && options.ignore.includes(response.status)) {
         return undefined;
       }
