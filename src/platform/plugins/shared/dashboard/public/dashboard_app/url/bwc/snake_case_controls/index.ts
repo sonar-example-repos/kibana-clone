@@ -7,18 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { OptionsListControlState } from '@kbn/controls-schemas';
-
-export const mockDataControlState = {
-  fieldName: 'sample field',
-  dataViewId: 'sample id',
-  value: ['0', '10'],
-};
-
-export const mockOptionsListControlState = {
-  ...mockDataControlState,
-  selectedOptions: [],
-  runPastTimeout: false,
-  singleSelect: false,
-  exclude: false,
-} as OptionsListControlState;
+export { snakeCaseESQLControl } from './snake_case_esql_control';
+export { snakeCaseOptionsList } from './snake_case_options_list';
+export { snakeCaseRangeSlider } from './snake_case_range_slider';
+export { snakeCaseTimeSlider } from './snake_case_time_slider';

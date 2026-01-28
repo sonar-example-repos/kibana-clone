@@ -7,8 +7,12 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { DataControlState } from '@kbn/controls-schemas';
-
-export type StoredDataControlState = Omit<DataControlState, 'dataViewId'> & {
-  dataViewRefName: string;
-};
+export type {
+  StoredDataControlState,
+  StoredESQLControlExplicitInput,
+  StoredOptionsListExplicitInput,
+  StoredPinnedControls,
+  StoredPinnedControlState,
+  StoredRangeSliderExplicitInput,
+  StoredTimeSliderExplicitInput,
+} from './types';

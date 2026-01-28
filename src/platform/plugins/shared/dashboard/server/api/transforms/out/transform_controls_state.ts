@@ -10,11 +10,14 @@
 import { flow } from 'lodash';
 
 import type { Reference } from '@kbn/content-management-utils';
+import type {
+  ControlsGroupState,
+  StoredPinnedControls,
+  StoredPinnedControlState,
+} from '@kbn/controls-schemas';
 import type { SerializableRecord } from '@kbn/utility-types';
-import type { ControlsGroupState } from '@kbn/controls-schemas';
 
 import type { DashboardPinnedPanelsState as DashboardControlsState } from '../../../../common';
-import type { StoredControlGroupInput, StoredControlState } from '../../../dashboard_saved_object';
 import { embeddableService, logger } from '../../../kibana_services';
 
 /**
@@ -33,12 +36,12 @@ export const transformControlsState: (
 };
 
 export function transformControlObjectToArray(
-  controls: StoredControlGroupInput['panels']
-): Array<StoredControlState> {
-  return Object.entries(controls).map(([id, control]) => ({ id, ...control }));
+  controls: StoredPinnedControls
+): Array<StoredPinnedControlState> {
+  return Object.entries(controls).map(([id, control]) => ({ ...control, id }));
 }
 
-export function transformControlProperties(controls: Array<StoredControlState>) {
+export function transformControlProperties(controls: Array<StoredPinnedControlState>) {
   return controls
     .sort(({ order: orderA = 0 }, { order: orderB = 0 }) => orderA - orderB)
     .map(({ explicitInput, id, type, grow, width }) => {
@@ -52,7 +55,7 @@ export function transformControlProperties(controls: Array<StoredControlState>) 
     });
 }
 
-function injectControlReferences(
+export function injectControlReferences(
   controls: ControlsGroupState,
   containerReferences: Reference[]
 ): DashboardControlsState {

@@ -31,6 +31,7 @@ export async function read(
   );
 
   const response = getDashboardCRUResponseBody(savedObject, 'read');
+
   return {
     ...response,
     meta: {
