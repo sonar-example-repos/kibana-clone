@@ -16,6 +16,7 @@ import type {
   SessionStorageFactory,
   SessionStorage,
   SessionStorageCookieOptions,
+  SessionStorageSetOptions,
 } from '@kbn/core-http-server';
 
 import { isDeepStrictEqual } from 'util';
@@ -30,9 +31,29 @@ class ScopedCookieSessionStorage<T extends object> implements SessionStorage<T> 
   ) {}
 
   public async get(): Promise<T | null> {
-    try {
-      const session = await this.server.auth.test('security-cookie', this.request);
+    let session;
 
+    try {
+      session = await this.server.auth.test('security-cookie', this.request);
+    } catch (e) {
+      /* empty */
+    }
+
+    if (!session) {
+      try {
+        session = await this.server.auth.test('intermediate', this.request);
+      } catch (e) {
+        this.log.debug(String(e));
+        return null;
+      }
+    }
+
+    // This is to keep TypeScript happy
+    if (!session) {
+      return null;
+    }
+
+    try {
       // A browser can send several cookies, if it's not an array, just return the session value
       if (!Array.isArray(session.credentials)) {
         return session.credentials as T;
@@ -74,12 +95,19 @@ class ScopedCookieSessionStorage<T extends object> implements SessionStorage<T> 
     }
   }
 
-  public set(sessionValue: T) {
-    return this.request.cookieAuth.set(sessionValue);
+  public set(sessionValue: T, options?: SessionStorageSetOptions) {
+    if (options) {
+      // Use custom cookie options
+      return this.request.intermediateCookieAuth.set(sessionValue);
+    } else {
+      // Use default cookie auth
+      return this.request.defaultCookieAuth.set(sessionValue);
+    }
   }
 
   public clear() {
-    return this.request.cookieAuth.clear();
+    this.request.intermediateCookieAuth.clear();
+    this.request.defaultCookieAuth.clear();
   }
 }
 
@@ -93,8 +121,11 @@ function validateOptions(options: SessionStorageCookieOptions<any>) {
  * Creates SessionStorage factory, which abstract the way of
  * session storage implementation and scoping to the incoming requests.
  *
+ * @param log - logger instance
  * @param server - hapi server to create SessionStorage for
  * @param cookieOptions - cookies configuration
+ * @param disableEmbedding - whether embedding is disabled
+ * @param basePath - optional base path for the Kibana server
  */
 export async function createCookieSessionStorageFactory<T extends object>(
   log: Logger,
@@ -125,10 +156,34 @@ export async function createCookieSessionStorageFactory<T extends object>(
       path: basePath === undefined ? '/' : basePath,
       clearInvalid: false,
       isHttpOnly: true,
+
       isSameSite: cookieOptions.sameSite ?? false,
       isPartitioned:
         cookieOptions.sameSite === 'None' && cookieOptions.isSecure && !disableEmbedding,
     },
+    requestDecoratorName: 'defaultCookieAuth',
+    validate: async (req: Request, session: T | T[]) => {
+      const result = cookieOptions.validate(session);
+      if (!result.isValid) {
+        clearInvalidCookie(req, result.path);
+      }
+      return { isValid: result.isValid };
+    },
+  });
+
+  server.auth.strategy('intermediate', 'cookie', {
+    cookie: {
+      name: 'intermediate',
+      password: cookieOptions.encryptionKey,
+      isSecure: true,
+      path: basePath === undefined ? '/' : basePath,
+      clearInvalid: false,
+      isHttpOnly: true,
+      isSameSite: 'None',
+      isPartitioned:
+        cookieOptions.sameSite === 'None' && cookieOptions.isSecure && !disableEmbedding,
+    },
+    requestDecoratorName: 'intermediateCookieAuth',
     validate: async (req: Request, session: T | T[]) => {
       const result = cookieOptions.validate(session);
       if (!result.isValid) {
