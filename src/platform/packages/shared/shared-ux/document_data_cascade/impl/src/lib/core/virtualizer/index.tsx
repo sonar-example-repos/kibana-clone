@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import React, { useCallback, useRef, useMemo, type CSSProperties, Fragment } from 'react';
+import React, { useCallback, useRef, useMemo, type CSSProperties, Fragment, useState } from 'react';
 import { type Row } from '@tanstack/react-table';
 import { useVirtualizer, defaultRangeExtractor, type VirtualItem } from '@tanstack/react-virtual';
 import type { GroupNode } from '../../../store_provider';
@@ -113,10 +113,11 @@ export const useCascadeVirtualizer = <G extends GroupNode>({
   getScrollElement,
 }: CascadeVirtualizerProps<G>): CascadeVirtualizerReturnValue => {
   const virtualizedRowsSizeCacheRef = useRef<Map<number, number>>(new Map());
-  const activeStickyIndexRef = useRef<number | null>(null);
+  // const activeStickyIndexRef = useRef<number | null>(null);
+  const [activeStickyIndexRef, setActiveStickyIndexRef] = useState<number | null>(null);
 
   const setActiveStickyIndex = useCallback((index: number | null) => {
-    activeStickyIndexRef.current = index;
+    setActiveStickyIndexRef(index);
   }, []);
 
   const rangeExtractor = useCascadeVirtualizerRangeExtractor<G>({
@@ -153,7 +154,7 @@ export const useCascadeVirtualizer = <G extends GroupNode>({
   return useMemo(
     () => ({
       get activeStickyIndex() {
-        return activeStickyIndexRef.current;
+        return activeStickyIndexRef;
       },
       getTotalSize: virtualizerImpl.getTotalSize.bind(virtualizerImpl),
       getVirtualItems: virtualizerImpl.getVirtualItems.bind(virtualizerImpl),
@@ -178,7 +179,7 @@ export const useCascadeVirtualizer = <G extends GroupNode>({
         return virtualizedRowsSizeCacheRef.current;
       },
     }),
-    [virtualizerImpl, rows.length]
+    [virtualizerImpl, activeStickyIndexRef, rows.length]
   );
 };
 

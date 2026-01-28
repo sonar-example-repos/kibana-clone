@@ -28,6 +28,7 @@ import type {
   EuiDataGridStyle,
   EuiDataGridProps,
   EuiDataGridToolBarVisibilityDisplaySelectorOptions,
+  EuiDataGridToolbarProps,
 } from '@elastic/eui';
 import {
   EuiDataGrid,
@@ -384,7 +385,10 @@ interface InternalUnifiedDataTableProps {
    * allowing hooks, context, and other React concepts to be used.
    * It receives #EuiDataGridCustomBodyProps as its only argument.
    */
-  renderCustomGridBody?: (args: EuiDataGridCustomBodyProps) => React.ReactNode;
+  renderCustomGridBody?: (
+    args: EuiDataGridCustomBodyProps,
+    context: Pick<EuiDataGridToolbarProps, 'renderCustomToolbar'>
+  ) => React.ReactNode;
   /**
    * Optional render for the grid toolbar
    * @param toolbarProps
@@ -1168,6 +1172,19 @@ const InternalUnifiedDataTable = React.forwardRef<
       [renderCustomToolbar, additionalControls, inTableSearchControl]
     );
 
+    const wrappedRenderCustomGridBody = useMemo(() => {
+      if (!renderCustomGridBody) return undefined;
+
+      // This allows us to pass functions internal
+      // to the data table to be accessible within the custom grid body,
+      // for example the toolbar rendering function
+      return (euiCustomGridBodyProps: EuiDataGridCustomBodyProps) => {
+        return renderCustomGridBody(euiCustomGridBodyProps, {
+          renderCustomToolbar: renderCustomToolbarFn,
+        });
+      };
+    }, [renderCustomGridBody, renderCustomToolbarFn]);
+
     const showDisplaySelector = useMemo(():
       | EuiDataGridToolBarVisibilityDisplaySelectorOptions
       | undefined => {
@@ -1406,7 +1423,7 @@ const InternalUnifiedDataTable = React.forwardRef<
                 toolbarVisibility={toolbarVisibility}
                 rowHeightsOptions={rowHeightsOptions}
                 gridStyle={gridStyle}
-                renderCustomGridBody={renderCustomGridBody}
+                renderCustomGridBody={wrappedRenderCustomGridBody}
                 renderCustomToolbar={renderCustomToolbarFn}
                 trailingControlColumns={trailingControlColumns}
                 cellContext={cellContextWithInTableSearchSupport}
