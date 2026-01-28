@@ -32,6 +32,10 @@ export const CreateWatchlistRequestBody = z.object({
    * Risk score modifier associated with the watchlist
    */
   riskModifier: z.number(),
+  /**
+   * Indicates if the watchlist is managed by the system
+   */
+  managed: z.boolean().optional(),
 });
 export type CreateWatchlistRequestBodyInput = z.input<typeof CreateWatchlistRequestBody>;
 

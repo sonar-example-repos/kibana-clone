@@ -26,7 +26,7 @@ export const getWatchlistRoute = (router: EntityAnalyticsRoutesDeps['router'], l
   router.versioned
     .get({
       access: 'public',
-      path: `${WATCHLISTS_MANAGEMENT_URL}/{id}`,
+      path: `${WATCHLISTS_MANAGEMENT_URL}/{name}`,
       security: {
         authz: {
           requiredPrivileges: ['securitySolution', `${APP_ID}-entity-analytics`],

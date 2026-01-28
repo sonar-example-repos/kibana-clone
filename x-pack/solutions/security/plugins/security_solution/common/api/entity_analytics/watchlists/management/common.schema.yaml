@@ -11,8 +11,8 @@ components:
       required:
         - name
         - riskModifier
-        - createdAt
-        - updatedAt
+        - managed
+
       properties:
         name:
           type: string
@@ -20,6 +20,9 @@ components:
         description:
           type: string
           description: Description of the watchlist
+        managed:
+          type: boolean
+          description: Indicates if the watchlist is managed by the system
         riskModifier:
           type: number
           description: Risk score modifier associated with the watchlist

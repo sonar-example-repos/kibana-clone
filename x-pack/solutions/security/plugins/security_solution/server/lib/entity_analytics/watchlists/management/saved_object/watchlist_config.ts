@@ -6,6 +6,7 @@
  */
 
 import type { SavedObjectsClientContract } from '@kbn/core/server';
+import type { SetOptional } from 'type-fest';
 import type { WatchlistObject } from '../../../../../../common/api/entity_analytics/watchlists/management/common.gen';
 import { watchlistConfigTypeName } from './watchlist_config_type';
 
@@ -16,6 +17,8 @@ interface WatchlistConfigClientDeps {
   namespace: string;
 }
 
+type WatchlistSavedObjectAttributes = Omit<WatchlistObject, 'createdAt' | 'updatedAt'>;
+
 export class WatchlistConfigClient {
   constructor(private readonly deps: WatchlistConfigClientDeps) {}
 
@@ -24,33 +27,33 @@ export class WatchlistConfigClient {
     return `watchlist-config-${this.deps.namespace}-${name}`;
   }
 
-  async create(attrs: Omit<WatchlistObject, 'createdAt' | 'updatedAt'>) {
-    const now = new Date().toISOString();
+  async create(
+    attrs: SetOptional<WatchlistSavedObjectAttributes, 'managed'>
+  ): Promise<WatchlistObject> {
     const id = this.getSavedObjectId(attrs.name);
-    const { attributes } = await this.deps.soClient.create<WatchlistObject>(
-      watchlistConfigTypeName,
-      {
-        ...attrs,
-        createdAt: now,
-        updatedAt: now,
-      },
-      { id, refresh: 'wait_for' }
-    );
-    return attributes;
+    const { attributes, created_at, updated_at } =
+      await this.deps.soClient.create<WatchlistSavedObjectAttributes>(
+        watchlistConfigTypeName,
+        { ...attrs, managed: attrs.managed ?? false },
+        { id, refresh: 'wait_for' }
+      );
+    return {
+      ...attributes,
+      createdAt: created_at,
+      updatedAt: updated_at,
+    };
   }
 
   async update(
     name: string,
-    attrs: Partial<Omit<WatchlistObject, 'createdAt' | 'updatedAt' | 'name'>>
+    attrs: Partial<Omit<WatchlistSavedObjectAttributes, 'createdAt' | 'updatedAt'>>
   ) {
     const id = this.getSavedObjectId(name);
-    const now = new Date().toISOString();
 
     const existing = await this.get(name);
     const update: Partial<WatchlistObject> = {
       ...existing,
       ...attrs,
-      updatedAt: now,
     };
     const { attributes } = await this.deps.soClient.update<WatchlistObject>(
       watchlistConfigTypeName,
@@ -68,7 +71,14 @@ export class WatchlistConfigClient {
         namespaces: [this.deps.namespace],
         perPage: MAX_PER_PAGE,
       })
-      .then((response) => response.saved_objects.map((so) => so.attributes));
+
+      .then((response) => {
+        return response.saved_objects.map((so) => ({
+          ...so.attributes,
+          createdAt: so.created_at,
+          updatedAt: so.updated_at,
+        }));
+      });
   }
 
   async get(name: string) {

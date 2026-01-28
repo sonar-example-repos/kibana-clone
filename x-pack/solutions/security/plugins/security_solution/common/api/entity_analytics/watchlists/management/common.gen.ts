@@ -27,15 +27,19 @@ export const WatchlistObject = z.object({
    */
   description: z.string().optional(),
   /**
+   * Indicates if the watchlist is managed by the system
+   */
+  managed: z.boolean(),
+  /**
    * Risk score modifier associated with the watchlist
    */
   riskModifier: z.number(),
   /**
    * Timestamp when the watchlist was created
    */
-  createdAt: z.string().datetime(),
+  createdAt: z.string().datetime().optional(),
   /**
    * Timestamp when the watchlist was last updated
    */
-  updatedAt: z.string().datetime(),
+  updatedAt: z.string().datetime().optional(),
 });

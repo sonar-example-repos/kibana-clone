@@ -32,6 +32,9 @@ paths:
                 riskModifier:
                   type: number
                   description: Risk score modifier associated with the watchlist
+                managed:
+                  type: boolean
+                  description: Indicates if the watchlist is managed by the system
       responses:
         "200":
           description: Watchlist created successfully
@@ -39,4 +42,3 @@ paths:
             application/json:
               schema:
                 $ref: "./common.schema.yaml#/components/schemas/WatchlistObject"
-                
