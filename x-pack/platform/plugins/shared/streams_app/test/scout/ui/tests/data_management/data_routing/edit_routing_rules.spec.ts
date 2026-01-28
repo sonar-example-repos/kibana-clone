@@ -115,4 +115,72 @@ test.describe('Stream data routing - editing routing rules', { tag: ['@ess', '@s
     // Verify rule still exists
     await pageObjects.streams.expectRoutingRuleVisible('logs.edit-test');
   });
+
+  test('should disable Update button when syntax editor has empty condition', async ({
+    page,
+    pageObjects,
+  }) => {
+    const routingRuleName = 'logs.edit-test';
+    await pageObjects.streams.clickEditRoutingRule(routingRuleName);
+
+    // Switch to syntax editor
+    await pageObjects.streams.toggleConditionEditorWithSyntaxSwitch();
+
+    // Clear the condition (empty JSON)
+    await pageObjects.streams.fillConditionEditorWithSyntax('');
+
+    // Verify Update button is disabled (condition stays at last valid value, no changes made)
+    const updateButton = page.getByTestId('streamsAppStreamDetailRoutingUpdateButton');
+    await expect(updateButton).toBeDisabled();
+
+    // Note: Error message is NOT shown because invalid JSON is silently ignored
+    // and the condition remains at its last valid value. This allows users to type
+    // partial JSON without the state being overridden.
+  });
+
+  test('should disable Update button when syntax editor has invalid JSON', async ({
+    page,
+    pageObjects,
+  }) => {
+    const routingRuleName = 'logs.edit-test';
+    await pageObjects.streams.clickEditRoutingRule(routingRuleName);
+
+    // Switch to syntax editor
+    await pageObjects.streams.toggleConditionEditorWithSyntaxSwitch();
+
+    // Enter invalid JSON
+    await pageObjects.streams.fillConditionEditorWithSyntax('{ invalid json }');
+
+    // Verify Update button is disabled (condition stays at last valid value, no changes made)
+    const updateButton = page.getByTestId('streamsAppStreamDetailRoutingUpdateButton');
+    await expect(updateButton).toBeDisabled();
+
+    // Note: Error message is NOT shown because invalid JSON is silently ignored
+    // and the condition remains at its last valid value. This allows users to type
+    // partial JSON without the state being overridden.
+  });
+
+  test('should disable Update button when no changes have been made', async ({
+    page,
+    pageObjects,
+  }) => {
+    const routingRuleName = 'logs.edit-test';
+    await pageObjects.streams.clickEditRoutingRule(routingRuleName);
+
+    // Without making any changes, verify Update button is disabled
+    const updateButton = page.getByTestId('streamsAppStreamDetailRoutingUpdateButton');
+    await expect(updateButton).toBeDisabled();
+
+    // Make a change
+    await pageObjects.streams.fillConditionEditor({ value: 'updated-service' });
+
+    // Now the Update button should be enabled
+    await expect(updateButton).toBeEnabled();
+
+    // Revert the change back to original value
+    await pageObjects.streams.fillConditionEditor({ value: 'test-service' });
+
+    // Update button should be disabled again since we're back to original state
+    await expect(updateButton).toBeDisabled();
+  });
 });

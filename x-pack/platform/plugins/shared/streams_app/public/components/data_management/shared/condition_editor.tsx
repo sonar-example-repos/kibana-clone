@@ -150,7 +150,9 @@ export function ConditionEditor(props: ConditionEditorProps) {
             try {
               handleConditionChange(JSON.parse(value));
             } catch (error: unknown) {
-              // do nothing
+              // Silently ignore invalid JSON - the condition remains at its last valid value.
+              // The Update button will be disabled via hasRoutingChanges guard if no valid
+              // changes have been made. This avoids overriding user's partial input while typing.
             }
           }}
           options={{

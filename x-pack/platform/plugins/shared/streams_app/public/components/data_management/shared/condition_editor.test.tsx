@@ -127,6 +127,105 @@ describe('ConditionEditor', () => {
         screen.getByText(/The condition is invalid or in unrecognized format/i)
       ).toBeInTheDocument();
     });
+
+    it('should NOT call onConditionChange when JSON parsing fails in syntax editor', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(
+        <ConditionEditor
+          condition={{ field: 'severity_text', eq: 'info' }}
+          status="enabled"
+          onConditionChange={mockOnConditionChange}
+        />
+      );
+
+      // Toggle to syntax editor
+      const switchButton = screen.getByTestId('streamsAppConditionEditorSwitch');
+      await user.click(switchButton);
+
+      // Clear any previous calls from initialization
+      mockOnConditionChange.mockClear();
+
+      const codeEditor = screen.getByTestId('streamsAppConditionEditorCodeEditor');
+
+      // Clear the editor to simulate empty/invalid JSON
+      await user.clear(codeEditor);
+
+      // Verify onConditionChange was NOT called when JSON is invalid
+      // This prevents overriding user's partial input while typing
+      expect(mockOnConditionChange).not.toHaveBeenCalled();
+    });
+
+    it('should NOT call onConditionChange when syntax editor contains invalid JSON', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(
+        <ConditionEditor
+          condition={{ field: 'severity_text', eq: 'info' }}
+          status="enabled"
+          onConditionChange={mockOnConditionChange}
+        />
+      );
+
+      // Toggle to syntax editor
+      const switchButton = screen.getByTestId('streamsAppConditionEditorSwitch');
+      await user.click(switchButton);
+
+      // Clear any previous calls from initialization
+      mockOnConditionChange.mockClear();
+
+      const codeEditor = screen.getByTestId('streamsAppConditionEditorCodeEditor');
+
+      // Type invalid JSON
+      await user.clear(codeEditor);
+      await user.type(codeEditor, '{{invalid');
+
+      // Verify onConditionChange was NOT called when JSON is invalid
+      // This prevents overriding user's partial input while typing
+      expect(mockOnConditionChange).not.toHaveBeenCalled();
+    });
+
+    it('should call onConditionChange when syntax editor contains valid JSON', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(
+        <ConditionEditor
+          condition={{ field: 'severity_text', eq: 'info' }}
+          status="enabled"
+          onConditionChange={mockOnConditionChange}
+        />
+      );
+
+      // Toggle to syntax editor
+      const switchButton = screen.getByTestId('streamsAppConditionEditorSwitch');
+      await user.click(switchButton);
+
+      // Clear any previous calls from initialization
+      mockOnConditionChange.mockClear();
+
+      const codeEditor = screen.getByTestId('streamsAppConditionEditorCodeEditor');
+
+      // Type valid JSON
+      await user.clear(codeEditor);
+      await user.type(codeEditor, '{{"field": "test", "eq": "value"}}');
+
+      // Verify onConditionChange was called with the parsed JSON
+      expect(mockOnConditionChange).toHaveBeenCalled();
+    });
+
+    it('should show error message when condition becomes invalid via syntax editor', () => {
+      // Render with an invalid condition (simulating what happens after the fix)
+      const invalidCondition = {} as any;
+
+      renderWithProviders(
+        <ConditionEditor
+          condition={invalidCondition}
+          status="enabled"
+          onConditionChange={mockOnConditionChange}
+        />
+      );
+
+      expect(
+        screen.getByText(/The condition is invalid or in unrecognized format/i)
+      ).toBeInTheDocument();
+    });
   });
 
   describe('help text for date math', () => {
