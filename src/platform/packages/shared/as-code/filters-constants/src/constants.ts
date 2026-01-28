@@ -7,14 +7,18 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export { timeRangeSchema } from './src/time_range';
-export { querySchema } from './src/query';
-export { storedFilterSchema } from './src/stored_filter';
+/**
+ * As Code Filter operator constants
+ * These operators are used in SimpleFilterCondition to specify how to match field values
+ */
+export const ASCODE_FILTER_OPERATOR = {
+  IS: 'is',
+  IS_ONE_OF: 'is_one_of',
+  EXISTS: 'exists',
+  RANGE: 'range',
+} as const;
 
-export type {
-  TimeRange,
-  AbsoluteTimeRange,
-  RelativeTimeRange,
-  AggregateQuery,
-  Query,
-} from './src/types';
+export const ASCODE_GROUPED_CONDITION_TYPE = {
+  AND: 'and',
+  OR: 'or',
+} as const;
