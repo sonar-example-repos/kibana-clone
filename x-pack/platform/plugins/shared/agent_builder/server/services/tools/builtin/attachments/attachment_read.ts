@@ -27,6 +27,7 @@ const attachmentReadSchema = z.object({
  */
 export const createAttachmentReadTool = ({
   attachmentManager,
+  getTypeDefinition,
 }: AttachmentToolsOptions): BuiltinToolDefinition<typeof attachmentReadSchema> => ({
   id: platformCoreTools.attachmentRead,
   type: ToolType.builtin,
@@ -34,8 +35,11 @@ export const createAttachmentReadTool = ({
     'Read the content of a conversation attachment by ID. Use this to retrieve data you previously stored or to check the current state of an attachment.',
   schema: attachmentReadSchema,
   tags: ['attachment'],
-  handler: async ({ attachment_id: attachmentId, version }) => {
-    const attachment = attachmentManager.get(attachmentId);
+  handler: async ({ attachment_id: attachmentId, version }, context) => {
+    const attachment = await attachmentManager.get(attachmentId, {
+      version,
+      context,
+    });
 
     if (!attachment) {
       return {
@@ -48,20 +52,7 @@ export const createAttachmentReadTool = ({
       };
     }
 
-    const versionData = version
-      ? attachmentManager.getVersion(attachmentId, version)
-      : attachmentManager.getLatest(attachmentId);
-
-    if (!versionData) {
-      return {
-        results: [
-          createErrorResult({
-            message: `Version ${version} not found for attachment '${attachmentId}'`,
-            metadata: { attachment_id: attachmentId, version },
-          }),
-        ],
-      };
-    }
+    const { data, type } = attachment;
 
     return {
       results: [
@@ -70,9 +61,9 @@ export const createAttachmentReadTool = ({
           type: ToolResultType.other,
           data: {
             attachment_id: attachmentId,
-            type: attachment.type,
-            version: versionData.version,
-            data: versionData.data,
+            type,
+            version,
+            data,
           },
         },
       ],
