@@ -27,11 +27,13 @@ import {
   DiamondNode,
   LabelNode,
   EdgeGroupNode,
+  RelationshipNode,
 } from '../node';
 import { layoutGraph } from './layout_graph';
 import { DefaultEdge } from '../edge';
 import { Minimap } from '../minimap/minimap';
 import type { EdgeViewModel, NodeViewModel } from '../types';
+import { isConnectorShape } from '../utils';
 import { ONLY_RENDER_VISIBLE_ELEMENTS, GRID_SIZE } from '../constants';
 
 import '@xyflow/react/dist/style.css';
@@ -91,6 +93,7 @@ const nodeTypes = {
   diamond: DiamondNode,
   label: LabelNode,
   group: EdgeGroupNode,
+  relationship: RelationshipNode,
 };
 
 const edgeTypes = {
@@ -329,7 +332,10 @@ const processGraph = (
       node.targetPosition = Position.Left;
       node.resizing = false;
       node.focusable = false;
-    } else if (nodeData.shape === 'label' && nodeData.parentId) {
+    } else if (
+      (nodeData.shape === 'label' || nodeData.shape === 'relationship') &&
+      nodeData.parentId
+    ) {
       node.parentId = nodeData.parentId;
       node.extent = 'parent';
       node.expandParent = false;
@@ -342,18 +348,13 @@ const processGraph = (
   const initialEdges: Array<Edge<EdgeViewModel>> = edgesModel
     .filter((edgeData) => nodesById[edgeData.source] && nodesById[edgeData.target])
     .map((edgeData) => {
-      const isIn =
-        nodesById[edgeData.source].shape !== 'label' &&
-        nodesById[edgeData.target].shape === 'group';
-      const isInside =
-        nodesById[edgeData.source].shape === 'group' &&
-        nodesById[edgeData.target].shape === 'label';
-      const isOut =
-        nodesById[edgeData.source].shape === 'label' &&
-        nodesById[edgeData.target].shape === 'group';
-      const isOutside =
-        nodesById[edgeData.source].shape === 'group' &&
-        nodesById[edgeData.target].shape !== 'label';
+      const sourceShape = nodesById[edgeData.source].shape;
+      const targetShape = nodesById[edgeData.target].shape;
+
+      const isIn = !isConnectorShape(sourceShape) && targetShape === 'group';
+      const isInside = sourceShape === 'group' && isConnectorShape(targetShape);
+      const isOut = isConnectorShape(sourceShape) && targetShape === 'group';
+      const isOutside = sourceShape === 'group' && !isConnectorShape(targetShape);
 
       return {
         id: edgeData.id,
