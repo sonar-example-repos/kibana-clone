@@ -273,6 +273,54 @@ describe('SyntheticsPrivateLocation', () => {
       },
     });
   });
+
+  describe('getExistingPolicies', () => {
+    it('should fetch all spaces and then get policies by ID', async () => {
+      const soClient = savedObjectsServiceMock.createStartContract().createInternalRepository();
+      soClient.find = jest.fn().mockResolvedValue({
+        total: 2,
+        per_page: 1000,
+        page: 1,
+        saved_objects: [
+          {
+            id: 'space1',
+            type: 'space',
+            attributes: {},
+            references: [],
+            namespaces: ['default'],
+          },
+          {
+            id: 'space2',
+            type: 'space',
+            attributes: {},
+            references: [],
+            namespaces: ['default'],
+          },
+        ],
+      });
+      serverMock.coreStart.savedObjects.createInternalRepository = jest
+        .fn()
+        .mockReturnValue(soClient);
+
+      const syntheticsPrivateLocation = new SyntheticsPrivateLocation(serverMock);
+      await syntheticsPrivateLocation.getExistingPolicies([testConfig], [mockPrivateLocation]);
+
+      expect(soClient.find).toHaveBeenCalledWith({
+        type: 'space',
+        fields: [],
+        perPage: 1000,
+      });
+
+      const expectedPolicyIds = ['testId-policyId-space1', 'testId-policyId-space2'];
+      expect(serverMock.fleet.packagePolicyService.getByIDs).toHaveBeenCalledWith(
+        soClient,
+        expect.arrayContaining(expectedPolicyIds),
+        {
+          ignoreMissing: true,
+        }
+      );
+    });
+  });
 });
 
 const dummyBrowserConfig: Partial<MonitorFields> & {
