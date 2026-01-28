@@ -17,6 +17,37 @@ import { buildBasicApiDeclaration } from './build_basic_api_declaration';
 import type { BuildApiDecOpts } from './types';
 import { buildApiId, getOptsForChild } from './utils';
 
+const cleanName = (name: string) => name.replace(/[{}]/g, '').replace(/\s+/g, ' ').trim();
+
+const normalizeTight = (name: string) => name.replace(/[{}]/g, '').replace(/\s+/g, '').trim();
+
+const applyParamComments = (
+  apiDec: ApiDeclaration,
+  jsDocs: JSDoc[] | undefined,
+  path: string[]
+) => {
+  if (!jsDocs) return;
+
+  const dotted = path.join('.');
+  const cleaned = cleanName(path[0]);
+  const cleanedPath = [cleaned, ...path.slice(1)].join('.');
+  const tightPath = [normalizeTight(path[0]), ...path.slice(1).map(normalizeTight)].join('.');
+  const baseCandidates = [dotted, cleanedPath, tightPath];
+  if (path.length === 1) {
+    baseCandidates.push(path[0]);
+  }
+  const candidates = Array.from(new Set(baseCandidates).values()).filter(Boolean);
+
+  const comment = getJSDocParamComment(jsDocs, candidates);
+  if (comment.length > 0) {
+    apiDec.description = comment;
+  }
+
+  if (apiDec.children) {
+    apiDec.children.forEach((child) => applyParamComments(child, jsDocs, [...path, child.label]));
+  }
+};
+
 /**
  * A helper function to capture function parameters, whether it comes from an arrow function, a regular function or
  * a function type.
@@ -38,14 +69,16 @@ export function buildApiDecsForParameters(
     // defined node, with children.
     // If we don't want the docs to be too deeply nested we could avoid this special handling.
     if (param.getTypeNode() && param.getTypeNode()!.getKind() === SyntaxKind.TypeLiteral) {
-      acc.push(buildApiDeclaration(param.getTypeNode()!, opts));
+      const apiDec = buildApiDeclaration(param.getTypeNode()!, opts);
+      applyParamComments(apiDec, jsDocs, [opts.name]);
+      acc.push(apiDec);
     } else {
       const apiDec = buildBasicApiDeclaration(param, opts);
+      applyParamComments(apiDec, jsDocs, [opts.name]);
       acc.push({
         ...apiDec,
         isRequired: param.getType().isNullable() === false,
         signature: extractImportReferences(param.getType().getText(), opts.plugins, opts.log),
-        description: jsDocs ? getJSDocParamComment(jsDocs, opts.name) : [],
       });
     }
     return acc;

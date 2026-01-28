@@ -9,7 +9,7 @@
 
 import Path from 'path';
 
-import apm from 'elastic-apm-node';
+import apm, { type Transaction } from 'elastic-apm-node';
 import type { ToolingLog } from '@kbn/tooling-log';
 import { run } from '@kbn/dev-cli-runner';
 import { REPO_ROOT } from '@kbn/repo-info';
@@ -25,12 +25,14 @@ import {
   type CliContext,
   type CliOptions,
 } from './cli';
+import { hasCommentIssues } from './stats';
 import type { PluginOrPackage, MissingApiItemMap } from './types';
 import type { AllPluginStats } from './cli/types';
+import { writeFlatStatsFiles } from './cli/tasks/flat_stats';
 
-type ValidationCheck = 'any' | 'comments' | 'exports';
+type ValidationCheck = 'any' | 'comments' | 'exports' | 'unnamed';
 
-const DEFAULT_VALIDATION_CHECKS: ValidationCheck[] = ['any', 'comments', 'exports'];
+const DEFAULT_VALIDATION_CHECKS: ValidationCheck[] = ['any', 'comments', 'exports', 'unnamed'];
 
 const rootDir = Path.join(__dirname, '../../..');
 
@@ -62,6 +64,7 @@ export const getValidationResults = (
   const shouldCheckAny = checks.includes('any');
   const shouldCheckComments = checks.includes('comments');
   const shouldCheckExports = checks.includes('exports');
+  const shouldCheckUnnamed = checks.includes('unnamed');
 
   const hasPluginFilter = pluginFilter && pluginFilter.length > 0;
   const hasPackageFilter = packageFilter && packageFilter.length > 0;
@@ -83,12 +86,13 @@ export const getValidationResults = (
         : 0;
 
       const hasAnyIssues = shouldCheckAny && pluginStats.isAnyType.length > 0;
-      const hasCommentIssues = shouldCheckComments && pluginStats.missingComments.length > 0;
+      const hasCommentProblems = shouldCheckComments && hasCommentIssues(pluginStats);
       const hasExportIssues = shouldCheckExports && missingExports > 0;
+      const hasUnnamedIssues = shouldCheckUnnamed && pluginStats.unnamedExports.length > 0;
 
       return {
         pluginId: plugin.id,
-        passed: !(hasAnyIssues || hasCommentIssues || hasExportIssues),
+        passed: !(hasAnyIssues || hasCommentProblems || hasExportIssues || hasUnnamedIssues),
       };
     });
 };
@@ -116,6 +120,7 @@ export const runCheckPackageDocs = async (log: ToolingLog, flags: CliFlags) => {
     const apiMapResult = buildApiMap(
       setupResult.project,
       setupResult.plugins,
+      setupResult.allPlugins,
       log,
       transaction,
       optionsWithChecks
@@ -129,7 +134,11 @@ export const runCheckPackageDocs = async (log: ToolingLog, flags: CliFlags) => {
       optionsWithChecks
     );
 
-    reportMetrics(setupResult, apiMapResult, allPluginStats, log, transaction, {
+    if (optionsWithChecks.writeStats) {
+      writeFlatStatsFiles(setupResult.plugins, apiMapResult, allPluginStats);
+    }
+
+    reportMetrics(setupResult, apiMapResult, allPluginStats, log, transaction as Transaction, {
       ...optionsWithChecks,
       stats: checks,
     });
@@ -164,6 +173,9 @@ export const runCheckPackageDocs = async (log: ToolingLog, flags: CliFlags) => {
   }
 };
 
+/**
+ * Runs the check package docs CLI, validating API documentation for Kibana plugins and packages.
+ */
 export const runCheckPackageDocsCli = () => {
   run(
     async ({ log, flags }) => {
@@ -175,11 +187,13 @@ export const runCheckPackageDocsCli = () => {
       },
       flags: {
         string: ['plugin', 'package', 'check'],
+        boolean: ['write'],
         help: `
           --plugin           Optionally, run for only a specific plugin by its plugin ID (plugin.id in kibana.jsonc).
           --package          Optionally, run for only a specific package by its package ID (id in kibana.jsonc, e.g., @kbn/core).
           --check            Optional. Specify validation checks: any, comments, exports, or all (default).
                              Can be provided multiple times to combine checks.
+          --write            Write stats to a flat JSON file in each plugin's target/api_docs/ directory.
         `,
       },
     }
