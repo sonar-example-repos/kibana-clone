@@ -7,13 +7,15 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { MAIN_CONTENT_SELECTORS } from '@kbn/core-chrome-layout-constants';
+import { DEFAULT_MAIN_CONTENT_SELECTORS } from '../constants';
 
 /**
- * Utility function for focusing the main Kibana content.
+ * Utility function for focusing the main content area.
+ * @param selectors - CSS selectors for the main content area.
+ *                   Defaults to ['main', '[role="main"]', '#app-content'] if not provided.
  */
-export const focusMainContent = () => {
-  const mainElement = document.querySelector(MAIN_CONTENT_SELECTORS.join(','));
+export const focusMainContent = (selectors: string[] = DEFAULT_MAIN_CONTENT_SELECTORS) => {
+  const mainElement = document.querySelector(selectors.join(','));
 
   if (mainElement instanceof HTMLElement) {
     mainElement.focus();
