@@ -10,13 +10,17 @@
 import { EmbeddableRenderer } from '@kbn/embeddable-plugin/public';
 import { i18n } from '@kbn/i18n';
 import type { DocViewRenderProps } from '@kbn/unified-doc-viewer/types';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { EuiDelayRender } from '@elastic/eui';
 import { css } from '@emotion/react';
+import { TRACE_ID_FIELD } from '@kbn/discover-utils';
+import { useGetGenerateDiscoverLink } from '../../../../../hooks/use_generate_discover_link';
+import { useDataSourcesContext } from '../../../../../hooks/use_data_sources';
 import { ContentFrameworkSection } from '../../../../..';
 import { getUnifiedDocViewerServices } from '../../../../../plugin';
 import { FullScreenWaterfall } from '../full_screen_waterfall';
 import { TraceWaterfallTourStep } from './full_screen_waterfall_tour_step';
+import { OPEN_IN_DISCOVER_LABEL, OPEN_IN_DISCOVER_ARIA_LABEL } from '../../common/constants';
 
 interface Props {
   traceId: string;
@@ -40,8 +44,18 @@ const sectionTitle = i18n.translate('unifiedDocViewer.observability.traces.trace
 
 export function TraceWaterfall({ traceId, docId, serviceName, dataView }: Props) {
   const { data } = getUnifiedDocViewerServices();
+  const { indexes } = useDataSourcesContext();
   const [showFullScreenWaterfall, setShowFullScreenWaterfall] = useState(false);
   const { from: rangeFrom, to: rangeTo } = data.query.timefilter.timefilter.getAbsoluteTime();
+
+  const { generateDiscoverLink } = useGetGenerateDiscoverLink({
+    indexPattern: indexes.apm.traces,
+  });
+
+  const openInDiscoverLink = useMemo(() => {
+    return generateDiscoverLink({ [TRACE_ID_FIELD]: traceId });
+  }, [generateDiscoverLink, traceId]);
+
   const getParentApi = useCallback(
     () => ({
       getSerializedStateForChild: () => ({
@@ -84,6 +98,17 @@ export function TraceWaterfall({ traceId, docId, serviceName, dataView }: Props)
             id: actionId,
             dataTestSubj: 'unifiedDocViewerObservabilityTracesTraceFullScreenButton',
           },
+          ...(openInDiscoverLink
+            ? [
+                {
+                  icon: 'discoverApp',
+                  label: OPEN_IN_DISCOVER_LABEL,
+                  ariaLabel: OPEN_IN_DISCOVER_ARIA_LABEL,
+                  href: openInDiscoverLink,
+                  dataTestSubj: 'unifiedDocViewerObservabilityTracesOpenInDiscoverButton',
+                },
+              ]
+            : []),
         ]}
       >
         {/* TODO: This is a workaround for layout issues when using hidePanelChrome outside of Dashboard.
