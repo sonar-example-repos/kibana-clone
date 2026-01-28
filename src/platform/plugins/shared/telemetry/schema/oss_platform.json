@@ -10580,6 +10580,12 @@
             }
           }
         },
+        "securitySolution:includedDataStreamNamespacesForRuleExecution": {
+          "type": "text",
+          "_meta": {
+            "description": "Non-default value of setting. Expected JSON format: { meta: { negate: false }, query: { bool: { filter: { terms: { \"data_stream.namespace\": string[] } } } } }"
+          }
+        },
         "securitySolution:maxUnassociatedNotes": {
           "type": "integer",
           "_meta": {
