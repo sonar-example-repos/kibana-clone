@@ -62758,6 +62758,15 @@ paths:
                                       - title
                                   - type: object
                                     properties:
+                                      esql:
+                                        additionalProperties: false
+                                        type: object
+                                        properties:
+                                          where:
+                                            description: ES|QL WHERE clause condition that combines the KQL query with the feature filter.
+                                            type: string
+                                        required:
+                                          - where
                                       evidence:
                                         items:
                                           type: string
@@ -62957,6 +62966,7 @@ paths:
                                         type: number
                                     required:
                                       - kql
+                                      - esql
                               type: array
                             rules:
                               items:
@@ -67221,6 +67231,15 @@ paths:
                                       - title
                                   - type: object
                                     properties:
+                                      esql:
+                                        additionalProperties: false
+                                        type: object
+                                        properties:
+                                          where:
+                                            description: ES|QL WHERE clause condition that combines the KQL query with the feature filter.
+                                            type: string
+                                        required:
+                                          - where
                                       evidence:
                                         items:
                                           type: string
@@ -67420,6 +67439,7 @@ paths:
                                         type: number
                                     required:
                                       - kql
+                                      - esql
                               type: array
                             rules:
                               items:
@@ -71435,6 +71455,15 @@ paths:
                                       - title
                                   - type: object
                                     properties:
+                                      esql:
+                                        additionalProperties: false
+                                        type: object
+                                        properties:
+                                          where:
+                                            description: ES|QL WHERE clause condition that combines the KQL query with the feature filter.
+                                            type: string
+                                        required:
+                                          - where
                                       evidence:
                                         items:
                                           type: string
@@ -71634,6 +71663,7 @@ paths:
                                         type: number
                                     required:
                                       - kql
+                                      - esql
                               type: array
                             rules:
                               items:
@@ -75710,6 +75740,15 @@ paths:
                                       - title
                                   - type: object
                                     properties:
+                                      esql:
+                                        additionalProperties: false
+                                        type: object
+                                        properties:
+                                          where:
+                                            description: ES|QL WHERE clause condition that combines the KQL query with the feature filter.
+                                            type: string
+                                        required:
+                                          - where
                                       evidence:
                                         items:
                                           type: string
@@ -75909,6 +75948,7 @@ paths:
                                         type: number
                                     required:
                                       - kql
+                                      - esql
                               type: array
                             rules:
                               items:
@@ -88530,6 +88570,15 @@ paths:
                                   - title
                               - type: object
                                 properties:
+                                  esql:
+                                    additionalProperties: false
+                                    type: object
+                                    properties:
+                                      where:
+                                        description: ES|QL WHERE clause condition that combines the KQL query with the feature filter.
+                                        type: string
+                                    required:
+                                      - where
                                   evidence:
                                     items:
                                       type: string
@@ -88729,6 +88778,7 @@ paths:
                                     type: number
                                 required:
                                   - kql
+                                  - esql
                         required:
                           - index
                       - additionalProperties: false
@@ -88839,6 +88889,15 @@ paths:
               additionalProperties: false
               type: object
               properties:
+                esql:
+                  additionalProperties: false
+                  type: object
+                  properties:
+                    where:
+                      description: ES|QL WHERE clause condition that combines the KQL query with the feature filter.
+                      type: string
+                  required:
+                    - where
                 evidence:
                   items:
                     type: string
@@ -89043,6 +89102,7 @@ paths:
               required:
                 - title
                 - kql
+                - esql
       responses: {}
       summary: Upsert a query to a stream
       tags:
