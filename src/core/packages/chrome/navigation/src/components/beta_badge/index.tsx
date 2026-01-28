@@ -8,7 +8,8 @@
  */
 
 import React from 'react';
-import { EuiBetaBadge, EuiThemeProvider } from '@elastic/eui';
+import type { IconType } from '@elastic/eui';
+import { EuiBadge, EuiBetaBadge, EuiThemeProvider, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
 
@@ -20,41 +21,62 @@ interface BetaBadgeProps {
   alignment?: 'bottom' | 'text-bottom';
 }
 
+interface BadgeConfig {
+  iconType?: IconType;
+  label: string;
+}
+
 /**
- * A badge to indicate that a feature is in beta.
+ * A badge to indicate that a feature is in beta, tech preview, or new.
  * It can be aligned to the middle or bottom of the text.
  */
 export const BetaBadge = ({ type, isInverted, alignment = 'bottom' }: BetaBadgeProps) => {
+  const { euiTheme } = useEuiTheme();
+  const isNew = type === 'new';
   const betaBadgeStyles = css`
     vertical-align: ${alignment === 'text-bottom' ? 'text-bottom' : 'bottom'};
   `;
 
-  const config =
-    type === 'techPreview'
-      ? {
-          iconType: 'flask',
-          label: i18n.translate('core.ui.chrome.sideNavigation.techPreviewBadgeLabel', {
-            defaultMessage: 'Tech preview',
-          }),
-        }
-      : {
-          iconType: 'beta',
-          label: i18n.translate('core.ui.chrome.sideNavigation.betaBadgeLabel', {
-            defaultMessage: 'Beta',
-          }),
-        };
+  // TODO: use a proper EuiBetaBadge variant once available https://github.com/elastic/eui/issues/9268
+  const newBadgeStyles = css`
+    border-radius: 50px;
+    border: none;
+    font-size: ${euiTheme.size.m};
+    line-height: calc(${euiTheme.size.base} * 1.25);
+  `;
+
+  const config: Record<BadgeType, BadgeConfig> = {
+    techPreview: {
+      iconType: 'flask',
+      label: i18n.translate('core.ui.chrome.sideNavigation.techPreviewBadgeLabel', {
+        defaultMessage: 'Tech preview',
+      }),
+    },
+    beta: {
+      iconType: 'beta',
+      label: i18n.translate('core.ui.chrome.sideNavigation.betaBadgeLabel', {
+        defaultMessage: 'Beta',
+      }),
+    },
+    new: {
+      label: i18n.translate('core.ui.chrome.sideNavigation.newBadgeLabel', {
+        defaultMessage: 'New',
+      }),
+    },
+  };
 
   return (
-    <EuiThemeProvider
-      colorMode={isInverted ? 'dark' : undefined}
-      wrapperProps={{ cloneElement: true }}
-    >
-      <EuiBetaBadge
-        css={betaBadgeStyles}
-        iconType={config.iconType}
-        label={config.label}
-        size="s"
-      />
+    <EuiThemeProvider colorMode={isInverted ? 'dark' : undefined}>
+      {isNew ? (
+        <EuiBadge css={newBadgeStyles} children={config[type].label} color="primary" />
+      ) : (
+        <EuiBetaBadge
+          css={betaBadgeStyles}
+          iconType={config[type].iconType}
+          label={config[type].label}
+          size="s"
+        />
+      )}
     </EuiThemeProvider>
   );
 };
