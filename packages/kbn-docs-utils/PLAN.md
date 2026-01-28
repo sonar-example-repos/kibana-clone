@@ -163,10 +163,10 @@ Key files:
 - [x] Update mocks and fixture "Expected issues" blocks
 
 ### Phase 4.6: Add Complex Type Info Checks
-- [ ] Add `missingComplexTypeInfo` field to `ApiStats` in [packages/kbn-docs-utils/src/types.ts](packages/kbn-docs-utils/src/types.ts)
-- [ ] Add `trackMissingComplexTypeInfo` function in [packages/kbn-docs-utils/src/stats.ts](packages/kbn-docs-utils/src/stats.ts)
-- [ ] Extend `hasCommentIssues` to include `missingComplexTypeInfo`
-- [ ] Update mocks and fixture "Expected issues" blocks
+- [x] Add `missingComplexTypeInfo` field to `ApiStats` in [packages/kbn-docs-utils/src/types.ts](packages/kbn-docs-utils/src/types.ts)
+- [x] Add `trackMissingComplexTypeInfo` function in [packages/kbn-docs-utils/src/stats.ts](packages/kbn-docs-utils/src/stats.ts)
+- [x] Extend `hasCommentIssues` to include `missingComplexTypeInfo`
+- [x] Update mocks and fixture "Expected issues" blocks
 
 ### Phase 4.7: Improve Multiple Call Signature Validation
 - [ ] Handle interfaces with multiple call signatures
