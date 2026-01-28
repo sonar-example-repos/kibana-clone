@@ -11,19 +11,35 @@ import type {
   OTelCollectorComponentID,
   OTelCollectorConfig,
   OTelCollectorPipelineID,
+  PackageInfo,
+  RegistryPolicyInputOnlyTemplate,
 } from '../../../common/types';
 import { OTEL_COLLECTOR_INPUT_TYPE, outputType } from '../../../common/constants';
 import { FleetError } from '../../errors';
 import { getOutputIdForAgentPolicy } from '../../../common/services/output_helpers';
+import { isInputOnlyPolicyTemplate } from '../../../common/services/policy_template';
+import { pkgToPkgKey } from '../epm/registry';
 
 // Generate OTel Collector policy
 export function generateOtelcolConfig(
   inputs: FullAgentPolicyInput[] | TemplateAgentPolicyInput[],
-  dataOutput?: Output
+  dataOutput?: Output,
+  packageInfoCache?: Map<string, PackageInfo>
 ): OTelCollectorConfig {
   const otelConfigs: OTelCollectorConfig[] = inputs
     .filter((input) => input.type === OTEL_COLLECTOR_INPUT_TYPE)
     .flatMap((input) => {
+      // Get package info from input meta if available
+      let packageInfo: PackageInfo | undefined;
+
+      if (packageInfoCache && 'meta' in input && (input as FullAgentPolicyInput).meta?.package) {
+        const pkgKey = pkgToPkgKey({
+          name: (input as FullAgentPolicyInput).meta?.package?.name || '',
+          version: (input as FullAgentPolicyInput).meta?.package?.version || '',
+        });
+        packageInfo = packageInfoCache.get(pkgKey);
+      }
+
       const otelInputs: OTelCollectorConfig[] = (input?.streams ?? []).map((stream) => {
         // Avoid dots in keys, as they can create subobjects in agent config.
         const suffix = (input.id + '-' + stream.id).replaceAll('.', '-');
@@ -33,7 +49,8 @@ export function generateOtelcolConfig(
           'data_stream' in input
             ? (input as FullAgentPolicyInput).data_stream.namespace
             : 'default',
-          suffix
+          suffix,
+          packageInfo
         );
         return appendOtelComponents(
           {
@@ -71,14 +88,14 @@ export function generateOtelcolConfig(
   return attachOtelcolExporter(config, dataOutput);
 }
 
-function generateOTelAttributesTransform(
+function generateOtelTypeTransforms(
   type: string,
   dataset: string,
-  namespace: string,
-  suffix: string
-): Record<OTelCollectorComponentID, any> {
+  namespace: string
+): Record<string, any> {
   let otelType: string;
   let context: string;
+
   switch (type) {
     case 'logs':
       otelType = 'log';
@@ -95,19 +112,52 @@ function generateOTelAttributesTransform(
     default:
       throw new FleetError(`unexpected data stream type ${type}`);
   }
+
   return {
-    [`transform/${suffix}-routing`]: {
-      [`${otelType}_statements`]: [
-        {
-          context,
-          statements: [
-            `set(attributes["data_stream.type"], "${type}")`,
-            `set(attributes["data_stream.dataset"], "${dataset}")`,
-            `set(attributes["data_stream.namespace"], "${namespace}")`,
-          ],
-        },
-      ],
-    },
+    [`${otelType}_statements`]: [
+      {
+        context,
+        statements: [
+          `set(attributes["data_stream.type"], "${type}")`,
+          `set(attributes["data_stream.dataset"], "${dataset}")`,
+          `set(attributes["data_stream.namespace"], "${namespace}")`,
+        ],
+      },
+    ],
+  };
+}
+
+function generateOTelAttributesTransform(
+  type: string,
+  dataset: string,
+  namespace: string,
+  suffix: string,
+  packageInfo?: PackageInfo
+): Record<OTelCollectorComponentID, any> {
+  // Check if package has multiple signal types defined
+  const availableTypes =
+    (
+      packageInfo?.policy_templates?.find(
+        (template) =>
+          isInputOnlyPolicyTemplate(template) && template.input === OTEL_COLLECTOR_INPUT_TYPE
+      ) as RegistryPolicyInputOnlyTemplate
+    )?.available_types ?? [];
+  const hasMultipleAvailableTypes = availableTypes && availableTypes.length > 1;
+
+  let transformStatements: Record<string, any> = {};
+  // If package has multiple signal types, generate transform with statements only for the available types
+  if (hasMultipleAvailableTypes) {
+    availableTypes.forEach((availableType) => {
+      const typeTransforms = generateOtelTypeTransforms(availableType, dataset, namespace);
+      Object.assign(transformStatements, typeTransforms);
+    });
+  } else {
+    // Single signal type
+    transformStatements = generateOtelTypeTransforms(type, dataset, namespace);
+  }
+
+  return {
+    [`transform/${suffix}-routing`]: transformStatements,
   };
 }
 
@@ -243,7 +293,7 @@ function attachOtelcolExporter(
         ...pipeline,
         exporters: [...(pipeline.exporters || []), 'forward'],
       };
-      signalTypes.add(signalType(id));
+      signalTypes.add(getSignalType(id));
     });
 
     signalTypes.forEach((id) => {
@@ -273,6 +323,6 @@ function generateOtelcolExporter(dataOutput: Output): Record<OTelCollectorCompon
   }
 }
 
-function signalType(id: string): string {
+function getSignalType(id: string): string {
   return id.substring(0, id.indexOf('/'));
 }

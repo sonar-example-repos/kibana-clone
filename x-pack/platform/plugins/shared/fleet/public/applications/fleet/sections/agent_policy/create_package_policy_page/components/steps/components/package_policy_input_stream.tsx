@@ -8,7 +8,7 @@
 import React, { useState, Fragment, memo, useMemo, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import styled from 'styled-components';
-import { uniq } from 'lodash';
+import { uniq, capitalize } from 'lodash';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { i18n } from '@kbn/i18n';
 import {
@@ -38,6 +38,7 @@ import { sendGetDataStreams, useStartServices } from '../../../../../../../../ho
 
 import {
   getRegistryDataStreamAssetBaseName,
+  isInputOnlyPolicyTemplate,
   mapPackageReleaseToIntegrationCardRelease,
 } from '../../../../../../../../../common/services';
 
@@ -56,6 +57,7 @@ import { useAgentless } from '../../../single_page_layout/hooks/setup_technology
 
 import { useIndexTemplateExists } from '../../datastream_hooks';
 
+import type { RegistryPolicyInputOnlyTemplate } from '../../../../../../../../../common/types/models/epm';
 import { shouldShowVar, isVarRequiredByVarGroup } from '../../../services/var_group_helpers';
 
 import { PackagePolicyInputVarField } from './package_policy_input_var_field';
@@ -111,8 +113,40 @@ export const PackagePolicyInputStreamConfig = memo<Props>(
     const customDatasetVarValue = customDatasetVar?.value?.dataset || customDatasetVar?.value;
 
     const customDataStreamTypeVar = packagePolicyInputStream.vars?.[DATA_STREAM_TYPE_VAR_NAME];
+    const availableTypes = useMemo(() => {
+      const templatesWithAvailableTypes = packageInfo?.policy_templates?.filter(
+        (template) =>
+          isInputOnlyPolicyTemplate(template) &&
+          template?.available_types &&
+          template?.available_types?.length > 0
+      );
+      return (
+        (templatesWithAvailableTypes as RegistryPolicyInputOnlyTemplate[])?.[0]?.available_types ??
+        []
+      );
+    }, [packageInfo?.policy_templates]);
+
+    // Get the default data stream type - use first available type if available_types is defined, otherwise fallback to logs
+    const defaultDataStreamType = availableTypes.length > 0 ? availableTypes[0] : 'logs';
+
     const customDataStreamTypeVarValue =
-      customDataStreamTypeVar?.value || packagePolicyInputStream.data_stream.type || 'logs';
+      customDataStreamTypeVar?.value ||
+      packagePolicyInputStream.data_stream.type ||
+      defaultDataStreamType;
+
+    // Filter available types to only show options that are present in available_types
+    const dataStreamTypeOptions = useMemo(() => {
+      return availableTypes.length > 0
+        ? availableTypes.map((type) => ({
+            id: type,
+            label: capitalize(type),
+          }))
+        : [
+            { id: 'logs', label: 'Logs' },
+            { id: 'metrics', label: 'Metrics' },
+            { id: 'traces', label: 'Traces' },
+          ];
+    }, [availableTypes]);
 
     const { exists: indexTemplateExists, isLoading: isLoadingIndexTemplate } =
       useIndexTemplateExists(
@@ -433,20 +467,7 @@ export const PackagePolicyInputStreamConfig = memo<Props>(
                               data-test-subj="packagePolicyDataStreamType"
                               disabled={isEditPage}
                               idSelected={customDataStreamTypeVarValue}
-                              options={[
-                                {
-                                  id: 'logs',
-                                  label: 'Logs',
-                                },
-                                {
-                                  id: 'metrics',
-                                  label: 'Metrics',
-                                },
-                                {
-                                  id: 'traces',
-                                  label: 'Traces',
-                                },
-                              ]}
+                              options={dataStreamTypeOptions}
                               onChange={(type: string) => {
                                 updatePackagePolicyInputStream({
                                   vars: {

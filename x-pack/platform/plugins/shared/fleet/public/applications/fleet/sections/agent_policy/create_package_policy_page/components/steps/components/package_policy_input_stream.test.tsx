@@ -21,6 +21,26 @@ import type {
 
 import { PackagePolicyInputStreamConfig } from './package_policy_input_stream';
 
+jest.mock('../../../../../../../../hooks', () => ({
+  ...jest.requireActual('../../../../../../../../hooks'),
+  useStartServices: () => ({
+    docLinks: {
+      links: {
+        fleet: {
+          datastreamsNamingScheme: 'https://docs.elastic.co',
+        },
+      },
+    },
+  }),
+  sendGetDataStreams: jest.fn(),
+}));
+
+jest.mock('../../datastream_hooks', () => ({
+  useIndexTemplateExists: () => ({
+    exists: true,
+    isLoading: false,
+  }),
+}));
 jest.mock('../../../single_page_layout/hooks/setup_technology', () => {
   return {
     useAgentless: jest.fn(),
