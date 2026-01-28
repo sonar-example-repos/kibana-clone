@@ -64,6 +64,7 @@ describe('reportMetrics', () => {
       plugins: [mockPlugin],
       pathsByPlugin: new Map(),
       project: {} as any,
+      allPlugins: [mockPlugin],
     };
 
     apiMapResult = {
@@ -81,6 +82,9 @@ describe('reportMetrics', () => {
         missingComments: [],
         isAnyType: [],
         noReferences: [],
+        missingReturns: [],
+        paramDocMismatches: [],
+        missingComplexTypeInfo: [],
         missingExports: 0,
         deprecatedAPIsReferencedCount: 0,
         unreferencedDeprecatedApisCount: 0,

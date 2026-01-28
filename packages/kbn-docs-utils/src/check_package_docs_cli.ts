@@ -120,6 +120,7 @@ export const runCheckPackageDocs = async (log: ToolingLog, flags: CliFlags) => {
     const apiMapResult = buildApiMap(
       setupResult.project,
       setupResult.plugins,
+      setupResult.allPlugins,
       log,
       transaction,
       optionsWithChecks
