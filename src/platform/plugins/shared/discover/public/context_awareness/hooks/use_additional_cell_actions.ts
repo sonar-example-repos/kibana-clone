@@ -34,13 +34,17 @@ export const useAdditionalCellActions = ({
   query,
   filters,
   timeRange,
+  additionalActions,
 }: Omit<AdditionalCellActionContext, 'field' | 'value'>) => {
   const { uiActions } = useDiscoverServices();
   const [instanceId, setInstanceId] = useState<string | undefined>();
   const getAdditionalCellActionsAccessor = useProfileAccessor('getAdditionalCellActions');
   const additionalCellActions = useMemo(
-    () => getAdditionalCellActionsAccessor(() => [])(),
-    [getAdditionalCellActionsAccessor]
+    () =>
+      getAdditionalCellActionsAccessor(() => [])({
+        actions: additionalActions ?? {},
+      }),
+    [additionalActions, getAdditionalCellActionsAccessor]
   );
 
   useEffect(() => {

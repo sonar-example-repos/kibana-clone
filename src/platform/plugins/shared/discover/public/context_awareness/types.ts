@@ -193,6 +193,22 @@ export interface DocViewerExtension {
 }
 
 /**
+ * Parameters passed to the additional cell actions extension
+ */
+export interface AdditionalCellActionsParams {
+  /**
+   * Available actions for the additional cell actions extension
+   */
+  actions?: {
+    /**
+     * Opens a new tab
+     * @param params The parameters for the open in new tab action
+     */
+    openInNewTab?: (params: OpenInNewTabParams) => void;
+  };
+}
+
+/**
  * Parameters passed to the doc viewer extension
  */
 export interface DocViewerExtensionParams {
@@ -386,7 +402,9 @@ export type DiscoverCellAction = CellAction<DiscoverCellActionExecutionContext>;
  * Context object passed to additional cell action methods
  */
 export type AdditionalCellActionContext = CellActionsData &
-  Omit<OmitIndexSignature<DiscoverCellActionMetadata>, 'instanceId'>;
+  Omit<OmitIndexSignature<DiscoverCellActionMetadata>, 'instanceId'> & {
+    additionalActions?: AdditionalCellActionsParams['actions'];
+  };
 
 /**
  * Additional action to show within expanded cell popovers in the data grid
@@ -510,7 +528,7 @@ export interface Profile {
    * Gets additional cell actions to show within expanded cell popovers in the data grid
    * @returns The additional cell actions to show in the data grid
    */
-  getAdditionalCellActions: () => AdditionalCellAction[];
+  getAdditionalCellActions: (params: AdditionalCellActionsParams) => AdditionalCellAction[];
 
   /**
    * Allows setting the pagination mode and its configuration
