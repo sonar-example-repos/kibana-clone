@@ -131,11 +131,11 @@ Key files:
 - [x] Add [packages/kbn-docs-utils/scripts/update_fixture_comments.js](packages/kbn-docs-utils/scripts/update_fixture_comments.js) for fixture maintenance
 
 ### Phase 4.1: Fix Destructured Parameter Validation
-- [ ] Update `getJSDocParamComment` in [packages/kbn-docs-utils/src/build_api_declarations/js_doc_utils.ts](packages/kbn-docs-utils/src/build_api_declarations/js_doc_utils.ts):
+- [x] Update `getJSDocParamComment` in [packages/kbn-docs-utils/src/build_api_declarations/js_doc_utils.ts](packages/kbn-docs-utils/src/build_api_declarations/js_doc_utils.ts):
   - Support dot notation (`obj.prop`) for property-level tags
   - Handle nested property access (`obj.nested.prop`)
   - Match JSDoc spec: https://jsdoc.app/tags-param#parameters-with-properties
-- [ ] Update `buildApiDecsForParameters` in [packages/kbn-docs-utils/src/build_api_declarations/build_parameter_decs.ts](packages/kbn-docs-utils/src/build_api_declarations/build_parameter_decs.ts):
+- [x] Update `buildApiDecsForParameters` in [packages/kbn-docs-utils/src/build_api_declarations/build_parameter_decs.ts](packages/kbn-docs-utils/src/build_api_declarations/build_parameter_decs.ts):
   - For destructured params, check for property-level JSDoc tags
   - Only flag missing comments if parent param AND property-level tags are missing
   - Handle nested destructuring patterns

@@ -49,10 +49,67 @@ export function getJSDocReturnTagComment(node: Node | JSDoc[]): TextWithLinks {
   return [];
 }
 
-export function getJSDocParamComment(node: Node | JSDoc[], name: string): TextWithLinks {
+export function getJSDocParamComment(node: Node | JSDoc[], name: string | string[]): TextWithLinks {
   const tags = getJSDocTags(node);
-  const paramTag = tags.find((tag) => Node.isJSDocParameterTag(tag) && tag.getName() === name);
+  const names = Array.isArray(name) ? name : [name];
+  const normalizeName = (n: string) => n.replace(/[{}\s]/g, '');
+  const normalizedNames = names.map(normalizeName);
+  const paramTag = tags.find((tag) => {
+    if (!Node.isJSDocParameterTag(tag)) return false;
+    const normalizedTagName = normalizeName(tag.getName());
+    return (
+      normalizedNames.includes(normalizedTagName) ||
+      normalizedNames.some((n) => normalizedTagName.endsWith(`.${n}`))
+    );
+  });
   if (paramTag) return getTextWithLinks(paramTag.getCommentText());
+
+  // Fallback: parse raw JSDoc text for @param entries that ts-morph might not normalize
+  const parseParamLines = (text: string) => {
+    const lines = text.split(/\r?\n/);
+    for (const line of lines) {
+      const trimmed = line.replace(/^\s*\*\s?/, '');
+      if (!trimmed.includes('@param')) continue;
+      const compact = trimmed.trim();
+      const body = compact.replace(/^@param\s+/, '');
+      const parts = body.split(/\s+/);
+      if (parts.length === 0) continue;
+      let idx = 0;
+      if (parts[0].startsWith('{')) {
+        while (idx < parts.length && !parts[idx].endsWith('}')) idx += 1;
+        idx += 1; // move past the type token
+      }
+      const nameToken = parts[idx];
+      const commentText = parts.slice(idx + 1).join(' ');
+      const rawName = normalizeName(nameToken);
+      if (
+        normalizedNames.includes(rawName) ||
+        normalizedNames.some((n) => rawName.endsWith(`.${n}`))
+      ) {
+        return getTextWithLinks(commentText.trim());
+      }
+    }
+  };
+
+  const jsDocs = node instanceof Array ? node : getJSDocs(node);
+  if (jsDocs) {
+    for (const jsDoc of jsDocs) {
+      const parsed = parseParamLines(jsDoc.getText());
+      if (parsed) return parsed;
+    }
+  }
+
+  // Final fallback: scan leading comments for @param tags
+  if (!(node instanceof Array) && node.getLeadingCommentRanges().length > 0) {
+    const leadingText = node
+      .getLeadingCommentRanges()
+      .map((c) => c.getText())
+      .join('\n');
+    const parsed = parseParamLines(leadingText);
+    if (parsed) {
+      return parsed;
+    }
+  }
   return [];
 }
 
