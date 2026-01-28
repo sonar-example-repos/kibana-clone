@@ -7,6 +7,7 @@
 
 import expect from '@kbn/expect';
 import { timerange } from '@kbn/synthtrace-client';
+import { orderBy } from 'lodash';
 import {
   type ApmSynthtraceEsClient,
   generateTraceMetricsData,
@@ -218,6 +219,48 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
         expect(notificationService).to.be.ok();
         // Configured at 30% failure rate: 3 failures / 10 total = 0.3
         expect(notificationService!.failureRate).to.be(0.3);
+      });
+
+      it('returns values sorted by latency descending by default', () => {
+        expect(resultData.items).to.eql(orderBy(resultData.items, 'latency', 'desc'));
+      });
+
+      describe('when sorting by metrics', () => {
+        const sortByMetrics = ['latency', 'throughput', 'failureRate'];
+
+        for (const metric of sortByMetrics) {
+          it(`returns values sorted by ${metric} descending when sortBy=${metric}`, async () => {
+            const results = await agentBuilderApiClient.executeTool<GetTraceMetricsToolResult>({
+              id: OBSERVABILITY_GET_TRACE_METRICS_TOOL_ID,
+              params: {
+                start: START,
+                end: END,
+                sortBy: metric,
+              },
+            });
+            const { items } = results[0].data;
+            expect(items).to.eql(orderBy(items, metric, 'desc'));
+          });
+        }
+      });
+
+      describe('when sorting by latency with different latency types', () => {
+        const latencyTypes = ['avg', 'p95', 'p99'] as const;
+        for (const latencyType of latencyTypes) {
+          it(`returns values sorted by average latency descending when latencyType=${latencyType}`, async () => {
+            const results = await agentBuilderApiClient.executeTool<GetTraceMetricsToolResult>({
+              id: OBSERVABILITY_GET_TRACE_METRICS_TOOL_ID,
+              params: {
+                start: START,
+                end: END,
+                sortBy: 'latency',
+                latencyType,
+              },
+            });
+            const { items } = results[0].data;
+            expect(items).to.eql(orderBy(items, 'latency', 'desc'));
+          });
+        }
       });
     });
 

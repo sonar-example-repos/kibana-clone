@@ -9,10 +9,7 @@ import { ApmDocumentType } from '@kbn/apm-data-access-plugin/common';
 import type { ChangePointType } from '@kbn/es-types/src';
 import type { AggregationsAggregationContainer } from '@elastic/elasticsearch/lib/api/types';
 import { intervalToSeconds } from '@kbn/apm-data-access-plugin/common/utils/get_preferred_bucket_size_and_data_source';
-import {
-  getOutcomeAggregation,
-  getDurationFieldForTransactions,
-} from '@kbn/apm-data-access-plugin/server/utils';
+import { getOutcomeAggregation } from '@kbn/apm-data-access-plugin/server/utils';
 import type {
   ObservabilityAgentBuilderPluginSetupDependencies,
   ObservabilityAgentBuilderPluginStart,
@@ -23,6 +20,12 @@ import { parseDatemath } from '../../utils/time';
 import { buildApmResources } from '../../utils/build_apm_resources';
 import { getPreferredDocumentSource } from '../../utils/get_preferred_document_source';
 import type { ChangePointDetails } from '../../utils/get_change_points';
+import {
+  type LatencyAggregationType,
+  type DocumentType,
+  getLatencyAggregation,
+  getLatencyValue,
+} from '../../utils/get_latency_aggregation';
 
 interface Bucket {
   key: string | number;
@@ -39,29 +42,14 @@ interface BucketChangePoints extends Bucket {
   changes_latency: ChangePointResult;
   changes_throughput: ChangePointResult;
   changes_failure_rate: ChangePointResult;
-  time_series: {
-    buckets: Array<
-      Bucket & {
-        latency: {
-          value: number | null;
-        };
-        throughput: {
-          value: number | null;
-        };
-        failure_rate: {
-          value: number | null;
-        };
-      }
-    >;
-  };
+  latency_type: LatencyAggregationType;
+  time_series: Array<{
+    group: string;
+    latency: number | null;
+    throughput: number | null;
+    failure_rate: number | null;
+  }>;
 }
-
-type LatencyAggregationType = 'avg' | 'p99' | 'p95';
-
-type DocumentType =
-  | ApmDocumentType.ServiceTransactionMetric
-  | ApmDocumentType.TransactionMetric
-  | ApmDocumentType.TransactionEvent;
 
 function getChangePointsAggs(bucketsPath: string) {
   const changePointAggs = {
@@ -71,21 +59,6 @@ function getChangePointsAggs(bucketsPath: string) {
     // elasticsearch@9.0.0 change_point aggregation is missing in the types: https://github.com/elastic/elasticsearch-specification/issues/3671
   } as AggregationsAggregationContainer;
   return changePointAggs;
-}
-
-function getLatencyAggregation(latencyAggregationType: LatencyAggregationType, field: string) {
-  return {
-    latency: {
-      ...(latencyAggregationType === 'avg'
-        ? { avg: { field } }
-        : {
-            percentiles: {
-              field,
-              percents: [latencyAggregationType === 'p95' ? 95 : 99],
-            },
-          }),
-    },
-  };
 }
 
 export async function getToolHandler({
@@ -131,10 +104,6 @@ export async function getToolHandler({
 
   const { rollupInterval, hasDurationSummaryField } = source;
   const documentType = source.documentType as DocumentType;
-  // cant calculate percentile aggregation on transaction.duration.summary field
-  const useDurationSummaryField =
-    hasDurationSummaryField && latencyType !== 'p95' && latencyType !== 'p99';
-  const durationField = getDurationFieldForTransactions(documentType, useDurationSummaryField);
   const bucketSizeInSeconds = intervalToSeconds(rollupInterval);
 
   const calculateFailedTransactionRate =
@@ -170,7 +139,11 @@ export async function getToolHandler({
             },
             aggs: {
               ...getOutcomeAggregation(documentType),
-              ...getLatencyAggregation(latencyType, durationField),
+              ...getLatencyAggregation({
+                latencyAggregationType: latencyType,
+                hasDurationSummaryField,
+                documentType,
+              }),
               failure_rate:
                 documentType === ApmDocumentType.ServiceTransactionMetric
                   ? {
@@ -218,5 +191,26 @@ export async function getToolHandler({
     },
   });
 
-  return (response.aggregations?.groups?.buckets as BucketChangePoints[]) ?? [];
+  const buckets = response.aggregations?.groups?.buckets ?? [];
+
+  const changePoints = buckets.map((bucket) => {
+    const timeSeries = bucket.time_series.buckets.map((tsBucket) => {
+      return {
+        group: bucket.key as string,
+        latency: getLatencyValue({
+          latencyAggregationType: latencyType,
+          aggregation: tsBucket.latency,
+        }),
+        throughput: tsBucket.throughput.value,
+        failure_rate: tsBucket.failure_rate ? tsBucket.failure_rate.value : null,
+      };
+    });
+    return {
+      ...bucket,
+      time_series: timeSeries,
+      latency_type: latencyType,
+    };
+  });
+
+  return changePoints as BucketChangePoints[];
 }
