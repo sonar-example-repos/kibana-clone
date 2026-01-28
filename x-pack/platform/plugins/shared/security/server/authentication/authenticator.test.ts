@@ -637,8 +637,10 @@ describe('Authenticator', () => {
       expect(mockOptions.session.create).toHaveBeenCalledTimes(1);
       expect(mockOptions.session.create).toHaveBeenCalledWith(request, {
         username: user.username,
+        userProfileId: undefined,
         provider: mockSessVal.provider,
         state: { authorization },
+        stateCookieOptions: undefined,
       });
       expectAuditEvents({ action: 'user_login', outcome: 'success' });
       expect(mockOptions.userProfileService.activate).not.toHaveBeenCalled();
@@ -670,6 +672,7 @@ describe('Authenticator', () => {
         userProfileId: 'some-profile-uid',
         provider: mockSessVal.provider,
         state: { authorization },
+        stateCookieOptions: undefined,
       });
       expectAuditEvents({ action: 'user_login', outcome: 'success' });
       expect(mockOptions.userProfileService.activate).toHaveBeenCalledTimes(1);
@@ -702,6 +705,7 @@ describe('Authenticator', () => {
         username: user.username,
         provider: mockSessVal.provider,
         state: { authorization },
+        stateCookieOptions: undefined,
       });
       expectAuditEvents({ action: 'user_login', outcome: 'success' });
       expect(mockOptions.userProfileService.activate).toHaveBeenCalledTimes(1);
@@ -781,8 +785,10 @@ describe('Authenticator', () => {
         expect(mockOptions.session.create).toHaveBeenCalledTimes(1);
         expect(mockOptions.session.create).toHaveBeenCalledWith(request, {
           username: user.username,
+          userProfileId: undefined,
           provider: { type: 'saml', name: 'saml2' },
           state: { token: 'access-token' },
+          stateCookieOptions: undefined,
         });
 
         expect(mockBasicAuthenticationProvider.login).not.toHaveBeenCalled();
@@ -829,13 +835,17 @@ describe('Authenticator', () => {
         expect(mockOptions.session.create).toHaveBeenCalledTimes(2);
         expect(mockOptions.session.create).toHaveBeenCalledWith(request, {
           username: user.username,
+          userProfileId: undefined,
           provider: { type: 'saml', name: 'saml1' },
           state: { result: '200' },
+          stateCookieOptions: undefined,
         });
         expect(mockOptions.session.create).toHaveBeenCalledWith(request, {
           username: undefined,
+          userProfileId: undefined,
           provider: { type: 'saml', name: 'saml1' },
           state: { result: '302' },
+          stateCookieOptions: undefined,
         });
 
         expect(mockBasicAuthenticationProvider.login).not.toHaveBeenCalled();

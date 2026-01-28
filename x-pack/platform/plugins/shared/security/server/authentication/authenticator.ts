@@ -913,6 +913,7 @@ export class Authenticator {
         userProfileId,
         provider,
         state: authenticationResult.shouldUpdateState() ? authenticationResult.state : null,
+        stateCookieOptions: authenticationResult.stateCookieOptions,
       });
 
       const duration = performance.now() - startTime;
