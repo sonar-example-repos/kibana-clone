@@ -5,8 +5,39 @@
  * 2.0.
  */
 
-import type { SavedObjectsModelVersionMap } from '@kbn/core-saved-objects-server';
-import { rawMaintenanceWindowSchemaV1 } from './schema';
+import type {
+  SavedObjectModelDataBackfillFn,
+  SavedObjectsModelVersionMap,
+} from '@kbn/core-saved-objects-server';
+import type { TypeOf } from '@kbn/config-schema';
+import { rawMaintenanceWindowSchemaV1, rawMaintenanceWindowSchemaV2 } from './schema';
+import { transformRRuleToCustomSchedule } from '../lib/transforms/rrule_to_custom/latest';
+
+type MaintenanceWindowV1 = TypeOf<typeof rawMaintenanceWindowSchemaV1>;
+type MaintenanceWindowV2 = TypeOf<typeof rawMaintenanceWindowSchemaV2>;
+
+const scheduleAndScopeBackfill: SavedObjectModelDataBackfillFn<
+  MaintenanceWindowV1,
+  MaintenanceWindowV2
+> = (doc) => {
+  // Add schedule and scope objects to existing maintenance windows
+  let schedule;
+  let scope;
+  if (doc.attributes?.duration && doc.attributes?.rRule) {
+    const scheduleWithoutCustom = transformRRuleToCustomSchedule({
+      duration: doc.attributes.duration,
+      rRule: doc.attributes.rRule,
+    });
+
+    schedule = { custom: scheduleWithoutCustom };
+  }
+  if (doc.attributes?.scopedQuery) {
+    scope = {
+      alerting: doc.attributes.scopedQuery,
+    };
+  }
+  return { attributes: { ...doc.attributes, schedule, scope } };
+};
 
 export const maintenanceWindowModelVersions: SavedObjectsModelVersionMap = {
   '1': {
@@ -55,6 +86,18 @@ export const maintenanceWindowModelVersions: SavedObjectsModelVersionMap = {
     ],
     schemas: {
       forwardCompatibility: rawMaintenanceWindowSchemaV1.extends({}, { unknowns: 'ignore' }),
+    },
+  },
+  '4': {
+    changes: [
+      {
+        type: 'data_backfill',
+        backfillFn: scheduleAndScopeBackfill,
+      },
+    ],
+    schemas: {
+      forwardCompatibility: rawMaintenanceWindowSchemaV2.extends({}, { unknowns: 'ignore' }),
+      create: rawMaintenanceWindowSchemaV2,
     },
   },
 };
