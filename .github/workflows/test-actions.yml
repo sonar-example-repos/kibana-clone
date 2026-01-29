@@ -1,0 +1,22 @@
+name: Test GitHub Actions
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Print info
+        run: |
+          echo "GitHub Actions is working!"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Triggered by: ${{ github.event_name }}"
+      
+      - name: Success
+        run: echo "✅ Workflow completed successfully"
